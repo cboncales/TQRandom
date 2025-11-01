@@ -71,11 +71,27 @@ export const useAuthUserStore = defineStore("authUser", () => {
       clearAuthTokens();
       userData.value = null;
 
+      // Clear test store cache to prevent data leaking between users
+      // Import testStore dynamically to avoid circular dependency
+      const { useTestStore } = await import('./testStore');
+      const testStore = useTestStore();
+      testStore.clearCache();
+
       return { success: true };
     } catch (error) {
       // Even if API call fails, clear local data
       clearAuthTokens();
       userData.value = null;
+      
+      // Clear cache even on error
+      try {
+        const { useTestStore } = await import('./testStore');
+        const testStore = useTestStore();
+        testStore.clearCache();
+      } catch (e) {
+        console.error('Failed to clear cache:', e);
+      }
+      
       return { success: true };
     } finally {
       isLoading.value = false;

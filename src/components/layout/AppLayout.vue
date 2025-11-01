@@ -6,8 +6,6 @@ import { useAuthUserStore } from "@/stores/authUser";
 const router = useRouter();
 const authStore = useAuthUserStore();
 const isMenuOpen = ref(false);
-const isAuthenticated = ref(false);
-const userData = ref(null);
 
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value;
@@ -22,33 +20,20 @@ const handleLogout = async () => {
   const result = await authStore.logout();
 
   if (result.success) {
-    isAuthenticated.value = false;
-    userData.value = null;
     router.push({ name: "home" });
   }
   isMenuOpen.value = false;
 };
 
-// Check authentication status on mount and watch for changes
+// Use computed properties from auth store (reactive)
+const isAuthenticated = computed(() => authStore.isAuthenticated);
+const userData = computed(() => authStore.userData);
+
+// Check authentication status only once on mount
 onMounted(async () => {
-  await checkAuthStatus();
-});
-
-// Function to check auth status
-const checkAuthStatus = async () => {
-  isAuthenticated.value = await authStore.checkAuth();
-  if (isAuthenticated.value) {
-    userData.value = authStore.userData;
-    // Debug: Log user data to see what's available
-    console.log("User data:", userData.value);
-  } else {
-    userData.value = null;
+  if (!authStore.userData) {
+    await authStore.checkAuth();
   }
-};
-
-// Update auth status when route changes (for real-time updates)
-router.afterEach(async () => {
-  await checkAuthStatus();
 });
 
 // Computed property to get user's display name from various sources

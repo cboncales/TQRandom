@@ -1,7 +1,49 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
 import { testApi, questionApi, answerApi } from "@/services/api";
 
 export const useTestStore = defineStore("testStore", () => {
+  // ============================================
+  // CACHE STATE
+  // ============================================
+  
+  const testsCache = ref(null);
+  const testsCacheTime = ref(null);
+  const questionsCache = ref({}); // { testId: { data, timestamp } }
+  const singleTestCache = ref({}); // { testId: { data, timestamp } }
+  
+  const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+  
+  /**
+   * Check if cache is valid
+   */
+  function isCacheValid(timestamp) {
+    if (!timestamp) return false;
+    return Date.now() - timestamp < CACHE_DURATION;
+  }
+  
+  /**
+   * Clear all cache
+   */
+  function clearCache() {
+    testsCache.value = null;
+    testsCacheTime.value = null;
+    questionsCache.value = {};
+    singleTestCache.value = {};
+  }
+  
+  /**
+   * Clear specific test cache
+   */
+  function clearTestCache(testId) {
+    if (testId) {
+      delete questionsCache.value[testId];
+      delete singleTestCache.value[testId];
+    }
+    testsCache.value = null;
+    testsCacheTime.value = null;
+  }
+
   // ============================================
   // TEST MANAGEMENT
   // ============================================
@@ -17,6 +59,10 @@ export const useTestStore = defineStore("testStore", () => {
         return { error: result.error };
       }
 
+      // Invalidate tests cache
+      testsCache.value = null;
+      testsCacheTime.value = null;
+
       return { data: result.data.data };
     } catch (error) {
       return { error: error.message };
@@ -24,16 +70,27 @@ export const useTestStore = defineStore("testStore", () => {
   }
 
   /**
-   * Get all tests for the authenticated user
+   * Get all tests for the authenticated user (with caching)
    */
-  async function getUserTests() {
+  async function getUserTests(forceRefresh = false) {
     try {
+      // Return cached data if valid and not forcing refresh
+      if (!forceRefresh && isCacheValid(testsCacheTime.value)) {
+        console.log('Returning cached tests');
+        return { data: testsCache.value };
+      }
+
+      console.log('Fetching tests from API');
       const result = await testApi.getUserTests();
       
       if (result.error) {
         return { error: result.error };
       }
 
+      // Update cache
+      testsCache.value = result.data.data;
+      testsCacheTime.value = Date.now();
+
       return { data: result.data.data };
     } catch (error) {
       return { error: error.message };
@@ -41,15 +98,29 @@ export const useTestStore = defineStore("testStore", () => {
   }
 
   /**
-   * Get a single test by ID
+   * Get a single test by ID (with caching)
    */
-  async function getTest(testId) {
+  async function getTest(testId, forceRefresh = false) {
     try {
+      // Check cache
+      const cached = singleTestCache.value[testId];
+      if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
+        console.log(`Returning cached test ${testId}`);
+        return { data: cached.data };
+      }
+
+      console.log(`Fetching test ${testId} from API`);
       const result = await testApi.getTest(testId);
       
       if (result.error) {
         return { error: result.error };
       }
+
+      // Update cache
+      singleTestCache.value[testId] = {
+        data: result.data.data,
+        timestamp: Date.now(),
+      };
 
       return { data: result.data.data };
     } catch (error) {
@@ -68,6 +139,9 @@ export const useTestStore = defineStore("testStore", () => {
         return { error: result.error };
       }
 
+      // Invalidate cache for this test
+      clearTestCache(testId);
+
       return { data: result.data.data };
     } catch (error) {
       return { error: error.message };
@@ -84,6 +158,9 @@ export const useTestStore = defineStore("testStore", () => {
       if (result.error) {
         return { error: result.error };
       }
+
+      // Invalidate all related caches
+      clearTestCache(testId);
 
       return { success: true };
     } catch (error) {
@@ -106,6 +183,9 @@ export const useTestStore = defineStore("testStore", () => {
         return { error: result.error };
       }
 
+      // Invalidate questions cache for this test
+      delete questionsCache.value[testId];
+
       return { data: result.data.data };
     } catch (error) {
       return { error: error.message };
@@ -113,15 +193,29 @@ export const useTestStore = defineStore("testStore", () => {
   }
 
   /**
-   * Get all questions for a test with their answer choices
+   * Get all questions for a test with their answer choices (with caching)
    */
-  async function getTestQuestions(testId) {
+  async function getTestQuestions(testId, forceRefresh = false) {
     try {
+      // Check cache
+      const cached = questionsCache.value[testId];
+      if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
+        console.log(`Returning cached questions for test ${testId}`);
+        return { data: cached.data };
+      }
+
+      console.log(`Fetching questions for test ${testId} from API`);
       const result = await questionApi.getTestQuestions(testId);
       
       if (result.error) {
         return { error: result.error };
       }
+
+      // Update cache
+      questionsCache.value[testId] = {
+        data: result.data.data,
+        timestamp: Date.now(),
+      };
 
       return { data: result.data.data };
     } catch (error) {
@@ -132,12 +226,20 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Update a question and its answer choices
    */
-  async function updateQuestion(questionId, questionText, answerChoices) {
+  async function updateQuestion(questionId, questionText, answerChoices, testId = null) {
     try {
       const result = await questionApi.updateQuestion(questionId, questionText, answerChoices);
       
       if (result.error) {
         return { error: result.error };
+      }
+
+      // Invalidate questions cache for this test if testId provided
+      if (testId) {
+        delete questionsCache.value[testId];
+      } else {
+        // Clear all questions cache if testId not provided
+        questionsCache.value = {};
       }
 
       return { success: true };
@@ -149,12 +251,20 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Delete a question and its answer choices
    */
-  async function deleteQuestion(questionId) {
+  async function deleteQuestion(questionId, testId = null) {
     try {
       const result = await questionApi.deleteQuestion(questionId);
       
       if (result.error) {
         return { error: result.error };
+      }
+
+      // Invalidate questions cache for this test if testId provided
+      if (testId) {
+        delete questionsCache.value[testId];
+      } else {
+        // Clear all questions cache if testId not provided
+        questionsCache.value = {};
       }
 
       return { success: true };
@@ -216,6 +326,9 @@ export const useTestStore = defineStore("testStore", () => {
     // Answer management
     storeCorrectAnswer,
     getCorrectAnswersForTest,
+    // Cache management
+    clearCache,
+    clearTestCache,
   };
 });
 
