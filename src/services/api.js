@@ -47,9 +47,9 @@ export function clearAuthTokens() {
 }
 
 /**
- * Make an authenticated API request
+ * Make an authenticated API request with automatic token refresh
  */
-async function apiRequest(endpoint, options = {}) {
+async function apiRequest(endpoint, options = {}, retryCount = 0) {
   const token = getAuthToken();
   
   const headers = {
@@ -77,6 +77,27 @@ async function apiRequest(endpoint, options = {}) {
       data = await response.json();
     } else {
       data = await response.text();
+    }
+
+    // If 401 and we haven't retried yet, try to refresh token
+    if (response.status === 401 && retryCount === 0 && !endpoint.includes('/auth/')) {
+      const refreshToken = getRefreshToken();
+      if (refreshToken) {
+        try {
+          // Try to refresh the token
+          const refreshResult = await authApi.refreshToken(refreshToken);
+          if (!refreshResult.error && refreshResult.data) {
+            // Store new tokens
+            setAuthToken(refreshResult.data.access_token);
+            setRefreshToken(refreshResult.data.refresh_token);
+            
+            // Retry the original request with new token
+            return apiRequest(endpoint, options, retryCount + 1);
+          }
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+        }
+      }
     }
 
     if (!response.ok) {

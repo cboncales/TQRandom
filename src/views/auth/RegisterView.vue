@@ -230,7 +230,7 @@ const capitalizeWords = (str) => {
           class="bg-red-50 border border-red-200 rounded-md p-4"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-red-400"
                 fill="currentColor"
@@ -255,7 +255,7 @@ const capitalizeWords = (str) => {
           class="bg-green-50 border border-green-200 rounded-md p-4"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-green-400"
                 fill="currentColor"

@@ -10,7 +10,7 @@ const route = useRoute();
 const router = useRouter();
 const testStore = useTestStore();
 
-const testId = parseInt(route.params.testId);
+const testId = parseInt(route.params.id);
 const showQuestionForm = ref(false);
 const editingQuestion = ref(null);
 const isLoading = ref(true);
@@ -27,8 +27,6 @@ const openQuestionForm = () => {
 
 const editQuestion = async (question) => {
   try {
-    console.log("Question object:", question);
-
     // Get the correct answer for this question
     const answersResult = await testStore.getCorrectAnswersForTest(testId);
     let correctAnswerChoiceId = null;
@@ -40,32 +38,21 @@ const editQuestion = async (question) => {
       correctAnswerChoiceId = questionAnswer?.answer_choices_id;
     }
 
-    console.log("Correct answer choice ID:", correctAnswerChoiceId);
-
     // Check if answer_choices exists, if not, we need to fetch the question with its choices
     let answerChoices = question.answer_choices;
 
     if (!answerChoices) {
-      console.log(
-        "No answer_choices in question object, fetching question data..."
-      );
       // Get the full question data with answer choices
       const questionsResult = await testStore.getTestQuestions(testId);
       if (questionsResult.data) {
         const fullQuestion = questionsResult.data.find(
           (q) => q.id === question.id
         );
-        console.log("Full question from database:", fullQuestion);
         answerChoices = fullQuestion?.answer_choices || [];
-        console.log("Fetched answer choices:", answerChoices);
 
         // If we fetched the full question, use its text for the question field
         if (fullQuestion) {
           question.question = fullQuestion.text;
-          console.log(
-            "Updated question with text from database:",
-            question.question
-          );
         }
       }
     }
@@ -85,7 +72,6 @@ const editQuestion = async (question) => {
       paraphrases: [], // Add paraphrases support later if needed
     };
 
-    console.log("Editing question prepared:", editingQuestion.value);
     showQuestionForm.value = true;
   } catch (error) {
     console.error("Error preparing question for editing:", error);
@@ -130,7 +116,8 @@ const handleQuestionSaved = async (questionData) => {
               if (correctChoice) {
                 await testStore.storeCorrectAnswer(
                   editingQuestion.value.id,
-                  correctChoice.id
+                  correctChoice.id,
+                  testId
                 );
               }
             }
@@ -154,49 +141,30 @@ const handleQuestionSaved = async (questionData) => {
       } else {
         // Find the correct answer and store it
         const correctOption = questionData.options.find((opt) => opt.isCorrect);
-        console.log("Correct option found:", correctOption);
 
         if (correctOption && result.data) {
-          console.log(
-            "Attempting to store correct answer for question ID:",
-            result.data.id
-          );
-
           // Get the created question's answer choices to find the correct choice ID
           const questionsResult = await testStore.getTestQuestions(testId);
-          console.log("Questions result:", questionsResult);
 
           if (questionsResult.data) {
             const createdQuestion = questionsResult.data.find(
               (q) => q.id === result.data.id
             );
-            console.log("Created question found:", createdQuestion);
 
             if (createdQuestion && createdQuestion.answer_choices) {
               const correctChoice = createdQuestion.answer_choices.find(
                 (choice) => choice.text.trim() === correctOption.text.trim()
               );
-              console.log("Correct choice found:", correctChoice);
 
               if (correctChoice) {
-                const answerResult = await testStore.storeCorrectAnswer(
+                await testStore.storeCorrectAnswer(
                   result.data.id,
-                  correctChoice.id
-                );
-                console.log("Store correct answer result:", answerResult);
-              } else {
-                console.warn(
-                  "Could not find matching answer choice for correct option"
+                  correctChoice.id,
+                  testId
                 );
               }
-            } else {
-              console.warn("Created question has no answer choices");
             }
-          } else {
-            console.warn("Could not retrieve created question data");
           }
-        } else {
-          console.warn("No correct option found or question creation failed");
         }
 
         // Reload questions to get fresh data
@@ -214,7 +182,7 @@ const handleQuestionSaved = async (questionData) => {
 
 const handleQuestionDeleted = async (questionId) => {
   try {
-    const result = await testStore.deleteQuestion(questionId);
+    const result = await testStore.deleteQuestion(questionId, testId);
 
     if (result.error) {
       alert(`Error deleting question: ${result.error}`);
@@ -248,7 +216,6 @@ const loadTest = async () => {
     return true;
   } catch (error) {
     errorMessage.value = "Failed to load test information";
-    console.error("Load test error:", error);
     return false;
   }
 };
@@ -265,8 +232,6 @@ const loadQuestions = async () => {
     // Get correct answers for all questions in this test
     const answersResult = await testStore.getCorrectAnswersForTest(testId);
     const correctAnswers = answersResult.data || [];
-
-    console.log("Loaded correct answers:", correctAnswers);
 
     // Create a map of question_id to correct answer_choices_id
     const correctAnswerMap = {};
@@ -287,7 +252,6 @@ const loadQuestions = async () => {
       paraphrases: [], // Not implemented in database yet
     }));
 
-    console.log("Questions with correct answers:", questions.value);
   } catch (error) {
     errorMessage.value = "Failed to load questions";
     console.error("Load questions error:", error);
@@ -295,13 +259,26 @@ const loadQuestions = async () => {
 };
 
 const goBackToDashboard = () => {
-  router.push("/dashboard");
+  router.push({ name: "dashboard" });
 };
 
 onMounted(async () => {
-  isLoading.value = true;
   errorMessage.value = "";
+  
+  // Check if we have valid cached data for test, questions, and answers
+  const hasValidTestCache = testStore.$state.singleTestCache?.[testId] && 
+    (Date.now() - testStore.$state.singleTestCache[testId].timestamp < 5 * 60 * 1000);
+  const hasValidQuestionsCache = testStore.$state.questionsCache?.[testId] && 
+    (Date.now() - testStore.$state.questionsCache[testId].timestamp < 5 * 60 * 1000);
+  const hasValidAnswersCache = testStore.$state.answersCache?.[testId] && 
+    (Date.now() - testStore.$state.answersCache[testId].timestamp < 5 * 60 * 1000);
+  
+  // Only show loading if we don't have cached data
+  if (!hasValidTestCache || !hasValidQuestionsCache || !hasValidAnswersCache) {
+    isLoading.value = true;
+  }
 
+  // Load test and questions (will use cache if available)
   const testLoaded = await loadTest();
   if (testLoaded) {
     await loadQuestions();
@@ -379,7 +356,7 @@ onMounted(async () => {
           class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-red-400"
                 fill="currentColor"

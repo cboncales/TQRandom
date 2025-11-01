@@ -8,7 +8,7 @@ const route = useRoute();
 const router = useRouter();
 const testStore = useTestStore();
 
-const testId = route.params.testId;
+const testId = route.params.id;
 const isLoading = ref(true);
 const isSaving = ref(false);
 const errorMessage = ref("");

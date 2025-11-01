@@ -126,27 +126,69 @@ async function getCorrectAnswersForTest(req, res) {
       return res.status(404).json({ error: 'Test not found or access denied' });
     }
 
-    const { data, error } = await supabase
-      .from('answers')
-      .select(
-        `
-        id,
-        question_id,
-        answer_choices_id,
-        created_at,
-        questions!inner(test_id, text),
-        answer_choices_data:answer_choices(text)
-      `
-      )
-      .eq('questions.test_id', testId)
-      .order('question_id', { ascending: true });
+    // First get all questions for this test
+    const { data: questions, error: questionsError } = await supabase
+      .from('questions')
+      .select('id, text')
+      .eq('test_id', testId);
 
-    if (error) {
-      console.error('Error fetching correct answers:', error);
-      return res.status(500).json({ error: error.message });
+    if (questionsError) {
+      console.error('Error fetching questions:', questionsError);
+      return res.status(500).json({ error: questionsError.message });
     }
 
-    res.json({ data });
+    if (!questions || questions.length === 0) {
+      // No questions yet, return empty array
+      return res.json({ data: [] });
+    }
+
+    const questionIds = questions.map(q => q.id);
+
+    // Get answers for these questions
+    const { data: answers, error: answersError } = await supabase
+      .from('answers')
+      .select('id, question_id, answer_choices_id, created_at')
+      .in('question_id', questionIds)
+      .order('question_id', { ascending: true });
+
+    if (answersError) {
+      console.error('Error fetching answers:', answersError);
+      return res.status(500).json({ error: answersError.message });
+    }
+
+    // If no answers yet, return empty array
+    if (!answers || answers.length === 0) {
+      return res.json({ data: [] });
+    }
+
+    // Get answer choice texts
+    const answerChoiceIds = answers.map(a => a.answer_choices_id);
+    const { data: answerChoices, error: choicesError } = await supabase
+      .from('answer_choices')
+      .select('id, text')
+      .in('id', answerChoiceIds);
+
+    if (choicesError) {
+      console.error('Error fetching answer choices:', choicesError);
+      return res.status(500).json({ error: choicesError.message });
+    }
+
+    // Combine the data
+    const result = answers.map(answer => {
+      const question = questions.find(q => q.id === answer.question_id);
+      const choice = answerChoices?.find(c => c.id === answer.answer_choices_id);
+      
+      return {
+        id: answer.id,
+        question_id: answer.question_id,
+        answer_choices_id: answer.answer_choices_id,
+        created_at: answer.created_at,
+        questions: question ? { test_id: testId, text: question.text } : null,
+        answer_choices_data: choice ? { text: choice.text } : null,
+      };
+    });
+
+    res.json({ data: result });
   } catch (error) {
     console.error('Error in getCorrectAnswersForTest:', error);
     res.status(500).json({ error: 'Failed to fetch correct answers' });

@@ -71,7 +71,7 @@ const userDisplayName = computed(() => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Brand -->
-          <div class="flex-shrink-0 flex items-center">
+          <div class="shrink-0 flex items-center">
             <h1 class="text-xl font-bold text-gray-800">TQ Random</h1>
           </div>
 

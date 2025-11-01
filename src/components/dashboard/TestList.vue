@@ -15,11 +15,11 @@ const router = useRouter();
 const showDeleteConfirm = ref(null);
 
 const editTest = (testId) => {
-  router.push(`/dashboard/test/${testId}/edit`);
+  router.push({ name: 'edit-test', params: { id: testId } });
 };
 
 const manageQuestions = (testId) => {
-  router.push(`/dashboard/test/${testId}/questions`);
+  router.push({ name: 'question-management', params: { id: testId } });
 };
 
 const confirmDelete = (testId) => {

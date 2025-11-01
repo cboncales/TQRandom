@@ -62,19 +62,31 @@ const router = createRouter({
 // Navigation guard for protected routes
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthUserStore();
-  const isAuthenticated = await authStore.checkAuth();
   
-  // Redirect authenticated users away from guest-only pages (login/register)
-  if (to.meta.guestOnly && isAuthenticated) {
+  // Check if user has a token
+  const hasToken = !!localStorage.getItem('access_token');
+  
+  // For guest-only pages (login/register)
+  if (to.meta.guestOnly && hasToken) {
     next({ name: 'dashboard' });
     return;
   }
   
-  // Check if route requires authentication
-  if (to.meta.requiresAuth && !isAuthenticated) {
-    // Redirect to login page with redirect query
-    next({ name: 'login', query: { redirect: to.fullPath } });
-    return;
+  // For protected routes
+  if (to.meta.requiresAuth) {
+    if (!hasToken) {
+      // No token, redirect to login
+      next({ name: 'login', query: { redirect: to.fullPath } });
+      return;
+    }
+    
+    // Has token, verify it's valid
+    const isAuthenticated = await authStore.checkAuth();
+    if (!isAuthenticated) {
+      // Token invalid, redirect to login
+      next({ name: 'login', query: { redirect: to.fullPath } });
+      return;
+    }
   }
   
   // Allow navigation

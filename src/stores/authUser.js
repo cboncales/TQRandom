@@ -141,14 +141,51 @@ export const useAuthUserStore = defineStore("authUser", () => {
       return false;
     }
 
-    // Try to get user information
+    // If we already have user data, consider authenticated
+    // This prevents unnecessary API calls on every route change
+    if (userData.value) {
+      return true;
+    }
+
+    // Try to get user information only if we don't have it
     const result = await getUserInformation();
     
     if (result.error) {
+      // Only return false, let getUserInformation handle token clearing on 401
       return false;
     }
 
     return true;
+  }
+
+  /**
+   * Refresh the access token
+   */
+  async function refreshAccessToken() {
+    try {
+      const refreshToken = localStorage.getItem('refresh_token');
+      
+      if (!refreshToken) {
+        return { error: 'No refresh token available' };
+      }
+
+      const result = await authApi.refreshToken(refreshToken);
+      
+      if (result.error) {
+        // Refresh failed, clear everything
+        clearAuthTokens();
+        userData.value = null;
+        return { error: result.error };
+      }
+
+      // Store new tokens
+      setAuthToken(result.data.access_token);
+      setRefreshToken(result.data.refresh_token);
+
+      return { success: true };
+    } catch (error) {
+      return { error: error.message };
+    }
   }
 
   /**
@@ -253,6 +290,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
     logout,
     getUserInformation,
     checkAuth,
+    refreshAccessToken,
     resetPassword,
     updatePassword,
     signInWithGoogle,

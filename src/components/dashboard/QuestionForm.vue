@@ -49,19 +49,10 @@ const resetForm = () => {
 watch(
   () => props.editingQuestion,
   (newQuestion) => {
-    console.log("QuestionForm: Editing question changed:", newQuestion);
     if (newQuestion) {
-      console.log(
-        "QuestionForm: Setting question text to:",
-        newQuestion.question
-      );
       questionText.value = newQuestion.question;
       options.value = [...newQuestion.options];
       paraphrases.value = [...(newQuestion.paraphrases || [])];
-      console.log(
-        "QuestionForm: Form populated with question text:",
-        questionText.value
-      );
     } else {
       resetForm();
     }
@@ -75,9 +66,6 @@ watch(
   (isOpen) => {
     if (isOpen && !props.editingQuestion) {
       // Modal opened for new question (not editing), reset the form
-      console.log(
-        "QuestionForm: Modal opened for new question, resetting form"
-      );
       resetForm();
     }
   }
@@ -202,7 +190,7 @@ const hasCorrectAnswer = () => {
         class="bg-red-50 border border-red-200 rounded-md p-4 mb-6"
       >
         <div class="flex">
-          <div class="flex-shrink-0">
+          <div class="shrink-0">
             <svg
               class="h-5 w-5 text-red-400"
               fill="currentColor"
@@ -281,7 +269,7 @@ const hasCorrectAnswer = () => {
             >
               <!-- Option Letter -->
               <span
-                class="flex-shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium"
+                class="shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium"
               >
                 {{ String.fromCharCode(65 + index) }}
               </span>

@@ -11,6 +11,7 @@ export const useTestStore = defineStore("testStore", () => {
   const testsCacheTime = ref(null);
   const questionsCache = ref({}); // { testId: { data, timestamp } }
   const singleTestCache = ref({}); // { testId: { data, timestamp } }
+  const answersCache = ref({}); // { testId: { data, timestamp } }
   
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   
@@ -30,6 +31,7 @@ export const useTestStore = defineStore("testStore", () => {
     testsCacheTime.value = null;
     questionsCache.value = {};
     singleTestCache.value = {};
+    answersCache.value = {};
   }
   
   /**
@@ -39,6 +41,7 @@ export const useTestStore = defineStore("testStore", () => {
     if (testId) {
       delete questionsCache.value[testId];
       delete singleTestCache.value[testId];
+      delete answersCache.value[testId];
     }
     testsCache.value = null;
     testsCacheTime.value = null;
@@ -76,11 +79,9 @@ export const useTestStore = defineStore("testStore", () => {
     try {
       // Return cached data if valid and not forcing refresh
       if (!forceRefresh && isCacheValid(testsCacheTime.value)) {
-        console.log('Returning cached tests');
         return { data: testsCache.value };
       }
 
-      console.log('Fetching tests from API');
       const result = await testApi.getUserTests();
       
       if (result.error) {
@@ -105,11 +106,9 @@ export const useTestStore = defineStore("testStore", () => {
       // Check cache
       const cached = singleTestCache.value[testId];
       if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
-        console.log(`Returning cached test ${testId}`);
         return { data: cached.data };
       }
 
-      console.log(`Fetching test ${testId} from API`);
       const result = await testApi.getTest(testId);
       
       if (result.error) {
@@ -200,11 +199,10 @@ export const useTestStore = defineStore("testStore", () => {
       // Check cache
       const cached = questionsCache.value[testId];
       if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
-        console.log(`Returning cached questions for test ${testId}`);
+        const cacheAge = Math.floor((Date.now() - cached.timestamp) / 1000);
         return { data: cached.data };
       }
 
-      console.log(`Fetching questions for test ${testId} from API`);
       const result = await questionApi.getTestQuestions(testId);
       
       if (result.error) {
@@ -280,12 +278,17 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Store the correct answer for a question
    */
-  async function storeCorrectAnswer(questionId, answerChoiceId) {
+  async function storeCorrectAnswer(questionId, answerChoiceId, testId = null) {
     try {
       const result = await answerApi.storeCorrectAnswer(questionId, answerChoiceId);
       
       if (result.error) {
         return { error: result.error };
+      }
+
+      // Invalidate answers cache for this test if testId provided
+      if (testId) {
+        delete answersCache.value[testId];
       }
 
       return { data: result.data.data };
@@ -295,15 +298,28 @@ export const useTestStore = defineStore("testStore", () => {
   }
 
   /**
-   * Get correct answers for a test
+   * Get correct answers for a test (with caching)
    */
-  async function getCorrectAnswersForTest(testId) {
+  async function getCorrectAnswersForTest(testId, forceRefresh = false) {
     try {
+      // Check cache
+      const cached = answersCache.value[testId];
+      if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
+        const cacheAge = Math.floor((Date.now() - cached.timestamp) / 1000);
+        return { data: cached.data };
+      }
+
       const result = await answerApi.getCorrectAnswersForTest(testId);
       
       if (result.error) {
         return { error: result.error };
       }
+
+      // Update cache
+      answersCache.value[testId] = {
+        data: result.data.data,
+        timestamp: Date.now(),
+      };
 
       return { data: result.data.data };
     } catch (error) {
