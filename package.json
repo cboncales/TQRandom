@@ -12,10 +12,12 @@
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\""
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.78.0",
     "@tailwindcss/vite": "^4.1.16",
     "pinia": "^3.0.3",
     "tailwindcss": "^4.1.16",
-    "vue": "^3.5.22"
+    "vue": "^3.5.22",
+    "vue-router": "^4.6.3"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",

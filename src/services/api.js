@@ -1,0 +1,318 @@
+/**
+ * API Service Layer
+ * Handles all HTTP requests to the Express backend
+ */
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// Token storage keys
+const TOKEN_KEY = 'access_token';
+const REFRESH_TOKEN_KEY = 'refresh_token';
+
+/**
+ * Get the auth token from localStorage
+ */
+function getAuthToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+/**
+ * Set the auth token in localStorage
+ */
+export function setAuthToken(token) {
+  localStorage.setItem(TOKEN_KEY, token);
+}
+
+/**
+ * Get the refresh token from localStorage
+ */
+function getRefreshToken() {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
+}
+
+/**
+ * Set the refresh token in localStorage
+ */
+export function setRefreshToken(token) {
+  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+}
+
+/**
+ * Clear all auth tokens
+ */
+export function clearAuthTokens() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem('user');
+}
+
+/**
+ * Make an authenticated API request
+ */
+async function apiRequest(endpoint, options = {}) {
+  const token = getAuthToken();
+  
+  const headers = {
+    'Content-Type': 'application/json',
+    ...options.headers,
+  };
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const config = {
+    ...options,
+    headers,
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    // Handle non-JSON responses
+    const contentType = response.headers.get('content-type');
+    let data;
+    
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+
+    if (!response.ok) {
+      return {
+        error: data.error || data.message || `HTTP error! status: ${response.status}`,
+        status: response.status,
+      };
+    }
+
+    return { data, status: response.status };
+  } catch (error) {
+    console.error('API request error:', error);
+    return {
+      error: error.message || 'Network error occurred',
+    };
+  }
+}
+
+// ============================================
+// AUTH ENDPOINTS
+// ============================================
+
+export const authApi = {
+  /**
+   * Register a new user
+   */
+  async register(email, password, firstName, lastName) {
+    return apiRequest('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({ email, password, firstName, lastName }),
+    });
+  },
+
+  /**
+   * Login user
+   */
+  async login(email, password) {
+    return apiRequest('/api/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+    });
+  },
+
+  /**
+   * Logout user
+   */
+  async logout() {
+    return apiRequest('/api/auth/logout', {
+      method: 'POST',
+    });
+  },
+
+  /**
+   * Get current user information
+   */
+  async getCurrentUser() {
+    return apiRequest('/api/auth/me', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Refresh access token
+   */
+  async refreshToken(refreshToken) {
+    return apiRequest('/api/auth/refresh', {
+      method: 'POST',
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+  },
+
+  /**
+   * Request password reset
+   */
+  async resetPasswordRequest(email) {
+    return apiRequest('/api/auth/reset-password-request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  /**
+   * Update password
+   */
+  async updatePassword(password) {
+    return apiRequest('/api/auth/password', {
+      method: 'PUT',
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  /**
+   * Sign in with Google
+   */
+  async signInWithGoogle() {
+    return apiRequest('/api/auth/google', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Handle OAuth callback
+   */
+  async handleOAuthCallback(code) {
+    return apiRequest(`/api/auth/callback?code=${code}`, {
+      method: 'GET',
+    });
+  },
+};
+
+// ============================================
+// TEST ENDPOINTS
+// ============================================
+
+export const testApi = {
+  /**
+   * Create a new test
+   */
+  async createTest(title, description) {
+    return apiRequest('/api/tests', {
+      method: 'POST',
+      body: JSON.stringify({ title, description }),
+    });
+  },
+
+  /**
+   * Get all tests for the authenticated user
+   */
+  async getUserTests() {
+    return apiRequest('/api/tests', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Get a single test by ID
+   */
+  async getTest(testId) {
+    return apiRequest(`/api/tests/${testId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update a test
+   */
+  async updateTest(testId, updates) {
+    return apiRequest(`/api/tests/${testId}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  },
+
+  /**
+   * Delete a test
+   */
+  async deleteTest(testId) {
+    return apiRequest(`/api/tests/${testId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ============================================
+// QUESTION ENDPOINTS
+// ============================================
+
+export const questionApi = {
+  /**
+   * Create a new question with answer choices
+   */
+  async createQuestion(testId, questionText, answerChoices) {
+    return apiRequest('/api/questions', {
+      method: 'POST',
+      body: JSON.stringify({ testId, questionText, answerChoices }),
+    });
+  },
+
+  /**
+   * Get all questions for a test
+   */
+  async getTestQuestions(testId) {
+    return apiRequest(`/api/questions/test/${testId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update a question
+   */
+  async updateQuestion(questionId, questionText, answerChoices) {
+    return apiRequest(`/api/questions/${questionId}`, {
+      method: 'PUT',
+      body: JSON.stringify({ questionText, answerChoices }),
+    });
+  },
+
+  /**
+   * Delete a question
+   */
+  async deleteQuestion(questionId) {
+    return apiRequest(`/api/questions/${questionId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// ============================================
+// ANSWER ENDPOINTS
+// ============================================
+
+export const answerApi = {
+  /**
+   * Store or update the correct answer for a question
+   */
+  async storeCorrectAnswer(questionId, answerChoiceId) {
+    return apiRequest('/api/answers/correct', {
+      method: 'POST',
+      body: JSON.stringify({ questionId, answerChoiceId }),
+    });
+  },
+
+  /**
+   * Get all correct answers for a test
+   */
+  async getCorrectAnswersForTest(testId) {
+    return apiRequest(`/api/answers/test/${testId}/correct`, {
+      method: 'GET',
+    });
+  },
+};
+
+export default {
+  authApi,
+  testApi,
+  questionApi,
+  answerApi,
+};
+

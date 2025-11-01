@@ -73,6 +73,11 @@ const handleRegister = async () => {
       errorMessage.value = result.error;
     } else {
       successMessage.value = "Account created successfully! Logging you in...";
+      
+      // Save credentials before resetting form
+      const savedEmail = email.value.trim();
+      const savedPassword = password.value;
+      
       // Reset form after successful registration
       resetForm();
 
@@ -80,8 +85,8 @@ const handleRegister = async () => {
       setTimeout(async () => {
         try {
           const loginResult = await authStore.login(
-            email.value.trim(),
-            password.value
+            savedEmail,
+            savedPassword
           );
 
           if (loginResult.error) {
@@ -89,13 +94,13 @@ const handleRegister = async () => {
             successMessage.value =
               "Redirecting to login...";
             setTimeout(() => {
-              router.push("/login");
+              router.push({ name: "login" });
             }, 1500);
           } else {
             successMessage.value =
               "Registration successful! Redirecting to dashboard...";
             setTimeout(() => {
-              router.push("/dashboard");
+              router.push({ name: "dashboard" });
             }, 1000);
           }
         } catch (loginError) {

@@ -42,7 +42,7 @@ const handleLogin = async () => {
       successMessage.value = "Login successful!";
       // Redirect to dashboard after successful login
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push({ name: "dashboard" });
       }, 1500);
     }
   } catch (error) {

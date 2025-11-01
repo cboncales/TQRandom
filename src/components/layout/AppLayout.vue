@@ -24,7 +24,7 @@ const handleLogout = async () => {
   if (result.success) {
     isAuthenticated.value = false;
     userData.value = null;
-    router.push("/");
+    router.push({ name: "home" });
   }
   isMenuOpen.value = false;
 };
@@ -36,9 +36,8 @@ onMounted(async () => {
 
 // Function to check auth status
 const checkAuthStatus = async () => {
-  isAuthenticated.value = await authStore.isAuthenticated();
+  isAuthenticated.value = await authStore.checkAuth();
   if (isAuthenticated.value) {
-    await authStore.getUserInformation();
     userData.value = authStore.userData;
     // Debug: Log user data to see what's available
     console.log("User data:", userData.value);
