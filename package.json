@@ -6,13 +6,20 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "dev:server": "cd server && npm run dev",
+    "dev:client": "vite",
+    "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\""
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.1.16",
+    "pinia": "^3.0.3",
+    "tailwindcss": "^4.1.16",
     "vue": "^3.5.22"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.1",
+    "concurrently": "^9.2.1",
     "vite": "^7.1.7"
   }
 }
