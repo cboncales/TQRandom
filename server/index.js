@@ -11,6 +11,7 @@ import questionRoutes from './routes/questionRoutes.js';
 import answerRoutes from './routes/answerRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import versionRoutes from './routes/versionRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -62,6 +63,7 @@ app.use('/api/questions', questionRoutes);
 app.use('/api/answers', answerRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/versions', versionRoutes);
+app.use('/api/user', userRoutes);
 
 // 404 handler
 app.use((req, res) => {

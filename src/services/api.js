@@ -421,6 +421,41 @@ export const versionApi = {
   },
 };
 
+// ============================================
+// USER ENDPOINTS
+// ============================================
+
+export const userApi = {
+  /**
+   * Get current user profile
+   */
+  async getProfile() {
+    return apiRequest('/api/user/profile', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update user profile (name)
+   */
+  async updateProfile(firstName, lastName) {
+    return apiRequest('/api/user/profile', {
+      method: 'PUT',
+      body: JSON.stringify({ firstName, lastName }),
+    });
+  },
+
+  /**
+   * Update user password
+   */
+  async updatePassword(currentPassword, newPassword) {
+    return apiRequest('/api/user/password', {
+      method: 'PUT',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  },
+};
+
 export default {
   authApi,
   testApi,
@@ -428,5 +463,6 @@ export default {
   answerApi,
   uploadApi,
   versionApi,
+  userApi,
 };
 

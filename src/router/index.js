@@ -43,6 +43,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/views/UserSettingsView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/403',
     name: 'forbidden',
     component: () => import('@/views/errors/ForbiddenView.vue'),
