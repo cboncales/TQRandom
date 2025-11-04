@@ -330,10 +330,103 @@ export const answerApi = {
   },
 };
 
+// ============================================
+// UPLOAD ENDPOINTS
+// ============================================
+
+export const uploadApi = {
+  /**
+   * Upload and parse a document (PDF or DOCX)
+   */
+  async uploadDocument(file) {
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/upload/document`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      if (!response.ok) {
+        return {
+          error: data.error || data.message || `HTTP error! status: ${response.status}`,
+          status: response.status,
+        };
+      }
+
+      return { data, status: response.status };
+    } catch (error) {
+      console.error('Upload error:', error);
+      return {
+        error: error.message || 'Network error occurred',
+      };
+    }
+  },
+};
+
+// ============================================
+// VERSION ENDPOINTS
+// ============================================
+
+export const versionApi = {
+  /**
+   * Generate randomized versions of a test
+   */
+  async generateVersions(testId, versionCount, questionsPerVersion) {
+    return apiRequest('/api/versions/generate', {
+      method: 'POST',
+      body: JSON.stringify({ testId, versionCount, questionsPerVersion }),
+    });
+  },
+
+  /**
+   * Get all versions for a test
+   */
+  async getTestVersions(testId) {
+    return apiRequest(`/api/versions/test/${testId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Get a single version with all questions and answers
+   */
+  async getVersion(versionId) {
+    return apiRequest(`/api/versions/${versionId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Delete a version
+   */
+  async deleteVersion(versionId) {
+    return apiRequest(`/api/versions/${versionId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
 export default {
   authApi,
   testApi,
   questionApi,
   answerApi,
+  uploadApi,
+  versionApi,
 };
 

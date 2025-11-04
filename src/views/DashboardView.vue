@@ -125,7 +125,7 @@ onMounted(() => {
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                   <svg
                     class="h-6 w-6 text-blue-600"
                     fill="none"
@@ -157,7 +157,7 @@ onMounted(() => {
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                   <svg
                     class="h-6 w-6 text-green-600"
                     fill="none"
@@ -189,7 +189,7 @@ onMounted(() => {
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                   <svg
                     class="h-6 w-6 text-yellow-600"
                     fill="none"
@@ -221,7 +221,7 @@ onMounted(() => {
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                   <svg
                     class="h-6 w-6 text-purple-600"
                     fill="none"
@@ -259,7 +259,7 @@ onMounted(() => {
           class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-red-400"
                 fill="currentColor"

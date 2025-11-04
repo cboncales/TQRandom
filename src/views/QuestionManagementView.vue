@@ -5,6 +5,8 @@ import QuestionList from "@/components/dashboard/QuestionList.vue";
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTestStore } from "@/stores/testStore";
+import { uploadApi, versionApi } from "@/services/api";
+import { jsPDF } from "jspdf";
 
 const route = useRoute();
 const router = useRouter();
@@ -19,6 +21,24 @@ const errorMessage = ref("");
 
 const test = ref({});
 const questions = ref([]);
+
+// Tab management
+const activeTab = ref("questions"); // 'questions' or 'versions'
+
+// Version management
+const versions = ref([]);
+const showGenerateVersionModal = ref(false);
+const versionCount = ref(1);
+const questionsPerVersion = ref(50);
+const isGeneratingVersions = ref(false);
+const isLoadingVersions = ref(false);
+
+// File upload
+const showUploadModal = ref(false);
+const selectedFile = ref(null);
+const isUploadingFile = ref(false);
+const uploadProgress = ref(0);
+const answerKeyText = ref("");
 
 const openQuestionForm = () => {
   editingQuestion.value = null;
@@ -262,6 +282,406 @@ const goBackToDashboard = () => {
   router.push({ name: "dashboard" });
 };
 
+// UI-only functions (no backend functionality yet)
+const openUploadModal = () => {
+  showUploadModal.value = true;
+  selectedFile.value = null;
+  answerKeyText.value = "";
+};
+
+const closeUploadModal = () => {
+  showUploadModal.value = false;
+  selectedFile.value = null;
+  answerKeyText.value = "";
+};
+
+const handleFileSelect = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    selectedFile.value = file;
+  }
+};
+
+/**
+ * Parse answer key text into a map of question number to answer letter
+ * Format: "1. A" or "1) A" or "1 A"
+ */
+const parseAnswerKey = (text) => {
+  const answerMap = {};
+  if (!text || !text.trim()) {
+    return answerMap;
+  }
+
+  const lines = text.split('\n');
+  const pattern = /^(\d+)[\.\):\s]+([A-H])\s*$/i;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const match = trimmed.match(pattern);
+    if (match) {
+      const questionNumber = parseInt(match[1]);
+      const answerLetter = match[2].toUpperCase();
+      answerMap[questionNumber] = answerLetter;
+    }
+  }
+
+  return answerMap;
+};
+
+const handleFileUpload = async () => {
+  if (!selectedFile.value) {
+    return;
+  }
+
+  isUploadingFile.value = true;
+  uploadProgress.value = 0;
+
+  try {
+    // Parse answer key if provided
+    const answerKeyMap = parseAnswerKey(answerKeyText.value);
+    console.log('Parsed answer key:', answerKeyMap);
+
+    // Upload and parse the document
+    const result = await uploadApi.uploadDocument(selectedFile.value);
+
+    if (result.error) {
+      alert(`Upload failed: ${result.error}`);
+      isUploadingFile.value = false;
+      return;
+    }
+
+    const parsedQuestions = result.data.data;
+    console.log(`Successfully parsed ${parsedQuestions.length} questions from document`);
+
+    // Now add each parsed question to the test
+    let successCount = 0;
+    let failCount = 0;
+    let answerSetCount = 0;
+
+    for (let i = 0; i < parsedQuestions.length; i++) {
+      uploadProgress.value = Math.round(((i + 1) / parsedQuestions.length) * 50); // First 50% for creating questions
+
+      const parsed = parsedQuestions[i];
+      const questionNumber = i + 1;
+      
+      // Convert answer_choices array to the format expected by createQuestion
+      const answerChoices = parsed.answer_choices.map(text => ({ text }));
+
+      // Create the question
+      const createResult = await testStore.createQuestion(
+        testId,
+        parsed.question_text,
+        answerChoices
+      );
+
+      if (createResult.error) {
+        console.error(`Failed to create question ${questionNumber}:`, createResult.error);
+        failCount++;
+      } else {
+        successCount++;
+
+        // If answer key is provided for this question, set the correct answer
+        const correctAnswerLetter = answerKeyMap[questionNumber];
+        if (correctAnswerLetter && createResult.data) {
+          uploadProgress.value = Math.round(50 + ((i + 1) / parsedQuestions.length) * 50); // Second 50% for setting answers
+
+          // Get the created question with its answer choices
+          const questionsResult = await testStore.getTestQuestions(testId, true); // Force refresh
+          if (questionsResult.data) {
+            const createdQuestion = questionsResult.data.find(q => q.id === createResult.data.id);
+            
+            if (createdQuestion && createdQuestion.answer_choices) {
+              // Find the answer choice that matches the letter (A=0, B=1, C=2, etc.)
+              const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+              const correctChoice = createdQuestion.answer_choices[choiceIndex];
+              
+              if (correctChoice) {
+                const answerResult = await testStore.storeCorrectAnswer(
+                  createResult.data.id,
+                  correctChoice.id,
+                  testId
+                );
+                if (!answerResult.error) {
+                  answerSetCount++;
+                  console.log(`Set correct answer for Q${questionNumber}: ${correctAnswerLetter}`);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Close modal and reload questions
+    closeUploadModal();
+    await loadQuestions();
+
+    // Show summary
+    let message = `Upload complete!\n\nSuccessfully added: ${successCount} questions`;
+    if (failCount > 0) {
+      message += `\nFailed: ${failCount} questions`;
+    }
+    if (answerSetCount > 0) {
+      message += `\nCorrect answers set: ${answerSetCount}`;
+    }
+    alert(message);
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert(`An error occurred during upload: ${error.message}`);
+  } finally {
+    isUploadingFile.value = false;
+    uploadProgress.value = 0;
+  }
+};
+
+const loadVersions = async () => {
+  try {
+    isLoadingVersions.value = true;
+    const result = await versionApi.getTestVersions(testId);
+
+    if (result.error) {
+      console.error('Error loading versions:', result.error);
+      return;
+    }
+
+    // Format versions for UI
+    versions.value = result.data.data.map(v => ({
+      id: v.id,
+      name: `Version ${v.version_number}`,
+      createdAt: v.created_at,
+      questionCount: v.question_count
+    }));
+
+  } catch (error) {
+    console.error('Load versions error:', error);
+  } finally {
+    isLoadingVersions.value = false;
+  }
+};
+
+const openGenerateVersionModal = () => {
+  showGenerateVersionModal.value = true;
+  versionCount.value = 1;
+  questionsPerVersion.value = questions.value.length;
+};
+
+const closeGenerateVersionModal = () => {
+  showGenerateVersionModal.value = false;
+};
+
+const handleGenerateVersions = async () => {
+  if (versionCount.value < 1 || versionCount.value > 100) {
+    alert('Please enter a version count between 1 and 100');
+    return;
+  }
+
+  if (questionsPerVersion.value < 1 || questionsPerVersion.value > questions.value.length) {
+    alert(`Please enter questions per version between 1 and ${questions.value.length}`);
+    return;
+  }
+
+  isGeneratingVersions.value = true;
+
+  try {
+    const result = await versionApi.generateVersions(
+      testId,
+      versionCount.value,
+      questionsPerVersion.value
+    );
+
+    if (result.error) {
+      alert(`Failed to generate versions: ${result.error}`);
+      return;
+    }
+
+    closeGenerateVersionModal();
+    
+    // Switch to versions tab and reload
+    activeTab.value = 'versions';
+    await loadVersions();
+
+    alert(`✅ Successfully generated ${result.data.data.length} randomized version(s) using Fisher-Yates algorithm!`);
+
+  } catch (error) {
+    console.error('Generate versions error:', error);
+    alert(`An error occurred: ${error.message}`);
+  } finally {
+    isGeneratingVersions.value = false;
+  }
+};
+
+const downloadVersion = async (versionId) => {
+  try {
+    // Get version data
+    const result = await versionApi.getVersion(versionId);
+
+    if (result.error) {
+      alert(`Failed to download version: ${result.error}`);
+      return;
+    }
+
+    const versionData = result.data.data;
+    
+    // Create PDF
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'letter' // 8.5" x 11"
+    });
+
+    // Page settings
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const contentWidth = pageWidth - (2 * margin);
+    let yPosition = margin;
+
+    // Helper function to add new page if needed
+    const checkPageBreak = (neededSpace) => {
+      if (yPosition + neededSpace > pageHeight - margin) {
+        doc.addPage();
+        yPosition = margin;
+        return true;
+      }
+      return false;
+    };
+
+    // Helper function to wrap text
+    const wrapText = (text, maxWidth) => {
+      return doc.splitTextToSize(text, maxWidth);
+    };
+
+    // Header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text(versionData.test_title, margin, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Version ${versionData.version_number}`, margin, yPosition);
+    yPosition += 6;
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${new Date(versionData.created_at).toLocaleString()}`, margin, yPosition);
+    yPosition += 4;
+
+    // Horizontal line
+    doc.setDrawColor(200, 200, 200);
+    doc.line(margin, yPosition, pageWidth - margin, yPosition);
+    yPosition += 10;
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Questions
+    versionData.questions.forEach((q, qIndex) => {
+      // Check if we need a new page for the question
+      checkPageBreak(25); // Minimum space for question start
+
+      // Question number and text
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      
+      const questionPrefix = `${q.question_number}. `;
+      const questionLines = wrapText(q.question_text, contentWidth - 10);
+      
+      // First line with number
+      doc.text(questionPrefix, margin, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.text(questionLines[0], margin + 10, yPosition);
+      yPosition += 6;
+
+      // Remaining lines
+      for (let i = 1; i < questionLines.length; i++) {
+        checkPageBreak(6);
+        doc.text(questionLines[i], margin + 10, yPosition);
+        yPosition += 6;
+      }
+
+      yPosition += 2; // Small space before answer choices
+
+      // Answer choices
+      q.answer_choices.forEach((choice, choiceIndex) => {
+        checkPageBreak(6);
+        
+        const letter = String.fromCharCode(65 + choiceIndex); // A, B, C, D...
+        const choicePrefix = `     ${letter}. `;
+        const choiceLines = wrapText(choice.text, contentWidth - 20);
+
+        // First line with letter
+        doc.setFontSize(10);
+        doc.text(choicePrefix, margin, yPosition);
+        doc.text(choiceLines[0], margin + 15, yPosition);
+        yPosition += 5;
+
+        // Remaining lines
+        for (let i = 1; i < choiceLines.length; i++) {
+          checkPageBreak(5);
+          doc.text(choiceLines[i], margin + 15, yPosition);
+          yPosition += 5;
+        }
+      });
+
+      yPosition += 8; // Space between questions
+
+      // Add extra space after every 5 questions for readability
+      if ((qIndex + 1) % 5 === 0 && qIndex !== versionData.questions.length - 1) {
+        yPosition += 5;
+      }
+    });
+
+    // Footer on all pages
+    const totalPages = doc.internal.pages.length - 1; // -1 because first element is null
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Page ${i} of ${totalPages}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+    }
+
+    // Download PDF
+    const filename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}.pdf`;
+    doc.save(filename);
+
+  } catch (error) {
+    console.error('Download error:', error);
+    alert(`An error occurred during download: ${error.message}`);
+  }
+};
+
+const deleteVersion = async (versionId) => {
+  if (!confirm("Are you sure you want to delete this version? This action cannot be undone.")) {
+    return;
+  }
+
+  try {
+    const result = await versionApi.deleteVersion(versionId);
+
+    if (result.error) {
+      alert(`Failed to delete version: ${result.error}`);
+      return;
+    }
+
+    // Reload versions
+    await loadVersions();
+    alert('Version deleted successfully');
+
+  } catch (error) {
+    console.error('Delete error:', error);
+    alert(`An error occurred: ${error.message}`);
+  }
+};
+
 onMounted(async () => {
   errorMessage.value = "";
   
@@ -282,6 +702,8 @@ onMounted(async () => {
   const testLoaded = await loadTest();
   if (testLoaded) {
     await loadQuestions();
+    // Also load versions
+    await loadVersions();
   }
 
   isLoading.value = false;
@@ -320,16 +742,90 @@ onMounted(async () => {
                     {{ test.title }}
                   </h1>
                   <p class="mt-1 text-sm text-gray-600">
-                    {{ test.subject }} • Manage Questions
+                    {{ test.subject }}
                   </p>
                 </div>
               </div>
+              <div class="flex items-center space-x-3">
+                <button
+                  v-if="activeTab === 'questions'"
+                  @click="openUploadModal"
+                  class="bg-green-600 text-white hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                    />
+                  </svg>
+                  Upload Document
+                </button>
+                <button
+                  v-if="activeTab === 'questions'"
+                  @click="openQuestionForm"
+                  class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Add Question
+                </button>
+                <button
+                  v-if="activeTab === 'versions'"
+                  @click="openGenerateVersionModal"
+                  :disabled="questions.length === 0"
+                  class="bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Generate Versions
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabs -->
+          <div class="border-t border-gray-200">
+            <nav class="-mb-px flex space-x-8">
               <button
-                @click="openQuestionForm"
-                class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                @click="activeTab = 'questions'"
+                :class="[
+                  activeTab === 'questions'
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200'
+                ]"
               >
                 <svg
-                  class="w-5 h-5 mr-2"
+                  class="w-5 h-5 inline-block mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -338,12 +834,36 @@ onMounted(async () => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Add Question
+                Questions ({{ questions.length }})
               </button>
-            </div>
+              <button
+                @click="activeTab = 'versions'"
+                :class="[
+                  activeTab === 'versions'
+                    ? 'border-purple-500 text-purple-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200'
+                ]"
+              >
+                <svg
+                  class="w-5 h-5 inline-block mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+                Randomized Versions ({{ versions.length }})
+              </button>
+            </nav>
           </div>
         </div>
       </div>
@@ -408,54 +928,199 @@ onMounted(async () => {
         </div>
 
         <div v-if="!isLoading && !errorMessage">
-          <!-- Test Info Card -->
-          <div class="bg-white shadow rounded-lg p-6 mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-2">
-              Test Information
-            </h3>
-            <p class="text-gray-600 mb-4">{{ test.description }}</p>
-            <div class="flex items-center space-x-6 text-sm text-gray-500">
-              <span class="flex items-center">
-                <svg
-                  class="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                {{ questions.length }} questions
-              </span>
-              <span class="flex items-center">
-                <svg
-                  class="w-4 h-4 mr-1"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-                Subject: {{ test.subject }}
-              </span>
+          <!-- Questions Tab Content -->
+          <div v-if="activeTab === 'questions'">
+            <!-- Test Info Card -->
+            <div class="bg-white shadow rounded-lg p-6 mb-8">
+              <h3 class="text-lg font-medium text-gray-900 mb-2">
+                Test Information
+              </h3>
+              <p class="text-gray-600 mb-4">{{ test.description }}</p>
+              <div class="flex items-center space-x-6 text-sm text-gray-500">
+                <span class="flex items-center">
+                  <svg
+                    class="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  {{ questions.length }} questions
+                </span>
+                <span class="flex items-center">
+                  <svg
+                    class="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  </svg>
+                  Subject: {{ test.subject }}
+                </span>
+              </div>
             </div>
+
+            <!-- Questions List -->
+            <QuestionList
+              :questions="questions"
+              @edit-question="editQuestion"
+              @delete-question="handleQuestionDeleted"
+            />
           </div>
 
-          <!-- Questions List -->
-          <QuestionList
-            :questions="questions"
-            @edit-question="editQuestion"
-            @delete-question="handleQuestionDeleted"
-          />
+          <!-- Versions Tab Content -->
+          <div v-if="activeTab === 'versions'">
+            <!-- Empty State -->
+            <div v-if="versions.length === 0" class="text-center py-12">
+              <svg
+                class="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No versions generated</h3>
+              <p class="mt-1 text-sm text-gray-500">
+                Generate randomized versions of your test using the Fisher-Yates algorithm.
+              </p>
+              <div class="mt-6">
+                <button
+                  v-if="questions.length > 0"
+                  @click="openGenerateVersionModal"
+                  class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  Generate Your First Version
+                </button>
+                <p v-else class="text-sm text-gray-500 mt-4">
+                  Add questions to your test first before generating versions.
+                </p>
+              </div>
+            </div>
+
+            <!-- Versions List -->
+            <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div
+                v-for="version in versions"
+                :key="version.id"
+                class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-200"
+              >
+                <div class="p-6">
+                  <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">
+                      {{ version.name }}
+                    </h3>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                      Randomized
+                    </span>
+                  </div>
+                  <div class="space-y-2 text-sm text-gray-500 mb-4">
+                    <div class="flex items-center">
+                      <svg
+                        class="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {{ version.questionCount }} questions
+                    </div>
+                    <div class="flex items-center">
+                      <svg
+                        class="w-4 h-4 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                      </svg>
+                      {{ new Date(version.createdAt).toLocaleDateString() }}
+                    </div>
+                  </div>
+                  <div class="flex space-x-2">
+                    <button
+                      @click="downloadVersion(version.id)"
+                      class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
+                    >
+                      <svg
+                        class="w-4 h-4 mr-1"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                      Download
+                    </button>
+                    <button
+                      @click="deleteVersion(version.id)"
+                      class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -467,6 +1132,359 @@ onMounted(async () => {
         @close="closeQuestionForm"
         @question-saved="handleQuestionSaved"
       />
+
+      <!-- Upload Document Modal -->
+      <div
+        v-if="showUploadModal"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay -->
+          <div
+            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            aria-hidden="true"
+            @click="closeUploadModal"
+          ></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+                <svg
+                  class="h-6 w-6 text-green-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                  />
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-5">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  Upload Document
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-500">
+                    Upload a PDF or Word document to extract questions automatically.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5">
+              <!-- File Upload Area -->
+              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+                <input
+                  type="file"
+                  @change="handleFileSelect"
+                  accept=".pdf,.doc,.docx"
+                  class="hidden"
+                  id="fileInput"
+                />
+                <label for="fileInput" class="cursor-pointer">
+                  <svg
+                    class="mx-auto h-12 w-12 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div class="mt-2">
+                    <span class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                      Click to upload
+                    </span>
+                    <span class="text-sm text-gray-500"> or drag and drop</span>
+                  </div>
+                  <p class="text-xs text-gray-500 mt-1">PDF, DOC, DOCX up to 10MB</p>
+                </label>
+              </div>
+
+              <!-- Selected File Display -->
+              <div v-if="selectedFile" class="mt-4 p-3 bg-gray-50 rounded-md">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <svg
+                      class="h-5 w-5 text-gray-400 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                    <span class="text-sm text-gray-900">{{ selectedFile.name }}</span>
+                  </div>
+                  <button
+                    @click="selectedFile = null"
+                    class="text-red-600 hover:text-red-700"
+                  >
+                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fill-rule="evenodd"
+                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                        clip-rule="evenodd"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Answer Key Input -->
+              <div class="mt-5">
+                <label for="answerKey" class="block text-sm font-medium text-gray-700 mb-2">
+                  Answer Key (Optional)
+                  <span class="text-xs font-normal text-gray-500 ml-1">
+                    - Paste answer key to automatically set correct answers
+                  </span>
+                </label>
+                <textarea
+                  id="answerKey"
+                  v-model="answerKeyText"
+                  rows="6"
+                  placeholder="1. A&#10;2. C&#10;3. A&#10;4. C&#10;5. C&#10;..."
+                  class="block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500 font-mono"
+                  :disabled="isUploadingFile"
+                ></textarea>
+                <p class="mt-1 text-xs text-gray-500">
+                  <svg class="inline w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                  </svg>
+                  Format: "1. A" or "1) A" (one per line). Letters A-H supported.
+                </p>
+              </div>
+            </div>
+
+            <!-- Upload Progress -->
+            <div v-if="isUploadingFile" class="mt-5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Processing...</span>
+                <span class="text-sm font-medium text-gray-700">{{ uploadProgress }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  class="bg-green-600 h-2.5 rounded-full transition-all duration-300"
+                  :style="{ width: uploadProgress + '%' }"
+                ></div>
+              </div>
+              <p class="mt-2 text-xs text-gray-500 text-center">
+                Uploading and adding questions to your test...
+              </p>
+            </div>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+              <button
+                type="button"
+                @click="handleFileUpload"
+                :disabled="!selectedFile || isUploadingFile"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <svg
+                  v-if="isUploadingFile"
+                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {{ isUploadingFile ? 'Processing...' : 'Upload & Extract' }}
+              </button>
+              <button
+                type="button"
+                @click="closeUploadModal"
+                :disabled="isUploadingFile"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generate Versions Modal -->
+      <div
+        v-if="showGenerateVersionModal"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay -->
+          <div
+            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            aria-hidden="true"
+            @click="closeGenerateVersionModal"
+          ></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100">
+                <svg
+                  class="h-6 w-6 text-purple-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  />
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-5">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  Generate Randomized Versions
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-500">
+                    Create randomized test versions using the Fisher-Yates shuffle algorithm.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 space-y-4">
+              <!-- Number of Versions -->
+              <div>
+                <label for="versionCount" class="block text-sm font-medium text-gray-700 mb-1">
+                  Number of Versions
+                </label>
+                <input
+                  type="number"
+                  id="versionCount"
+                  v-model.number="versionCount"
+                  min="1"
+                  max="100"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Generate between 1 and 100 randomized versions
+                </p>
+              </div>
+
+              <!-- Questions per Version -->
+              <div>
+                <label for="questionsPerVersion" class="block text-sm font-medium text-gray-700 mb-1">
+                  Questions per Version
+                </label>
+                <input
+                  type="number"
+                  id="questionsPerVersion"
+                  v-model.number="questionsPerVersion"
+                  :min="1"
+                  :max="questions.length"
+                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
+                />
+                <p class="mt-1 text-xs text-gray-500">
+                  Available questions: {{ questions.length }}
+                </p>
+              </div>
+
+              <!-- Algorithm Info -->
+              <div class="bg-blue-50 rounded-md p-4">
+                <div class="flex">
+                  <svg
+                    class="h-5 w-5 text-blue-400 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  <div class="text-sm text-blue-700">
+                    <p class="font-medium">Fisher-Yates Algorithm</p>
+                    <p class="mt-1 text-xs">
+                      Each version will have questions in a unique randomized order with equal probability distribution.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+              <button
+                type="button"
+                @click="handleGenerateVersions"
+                :disabled="isGeneratingVersions"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <svg
+                  v-if="isGeneratingVersions"
+                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                {{ isGeneratingVersions ? 'Generating...' : 'Generate' }}
+              </button>
+              <button
+                type="button"
+                @click="closeGenerateVersionModal"
+                :disabled="isGeneratingVersions"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
