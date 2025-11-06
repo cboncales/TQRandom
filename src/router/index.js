@@ -20,6 +20,11 @@ const routes = [
     meta: { guestOnly: true },
   },
   {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: () => import('@/views/auth/ResetPasswordView.vue'),
+  },
+  {
     path: '/auth/callback',
     name: 'auth-callback',
     component: () => import('@/views/auth/AuthCallbackView.vue'),

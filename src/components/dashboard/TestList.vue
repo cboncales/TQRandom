@@ -81,7 +81,7 @@ const getStatusColor = (status) => {
             <div class="mt-2 flex items-center text-sm text-gray-500 space-x-4">
               <span class="flex items-center">
                 <svg
-                  class="flex-shrink-0 mr-1.5 h-4 w-4"
+                  class="shrink-0 mr-1.5 h-4 w-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -97,7 +97,7 @@ const getStatusColor = (status) => {
               </span>
               <span class="flex items-center">
                 <svg
-                  class="flex-shrink-0 mr-1.5 h-4 w-4"
+                  class="shrink-0 mr-1.5 h-4 w-4"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

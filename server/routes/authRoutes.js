@@ -7,6 +7,7 @@ import {
   getCurrentUser,
   refreshToken,
   resetPasswordRequest,
+  confirmPasswordReset,
   updatePassword,
   signInWithGoogle,
   handleOAuthCallback,
@@ -19,6 +20,7 @@ router.post('/register', register);
 router.post('/login', login);
 router.post('/refresh', refreshToken);
 router.post('/reset-password-request', resetPasswordRequest);
+router.post('/reset-password-confirm', confirmPasswordReset);
 router.get('/google', signInWithGoogle);
 router.get('/callback', handleOAuthCallback);
 

@@ -8,42 +8,61 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 // Token storage keys
 const TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
+const REMEMBER_ME_KEY = 'remember_me';
 
 /**
- * Get the auth token from localStorage
+ * Get the appropriate storage based on remember me preference
+ */
+function getStorage() {
+  const rememberMe = localStorage.getItem(REMEMBER_ME_KEY) === 'true';
+  return rememberMe ? localStorage : sessionStorage;
+}
+
+/**
+ * Get the auth token from storage
  */
 function getAuthToken() {
-  return localStorage.getItem(TOKEN_KEY);
+  // Check both storages (for backward compatibility)
+  return localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
 }
 
 /**
- * Set the auth token in localStorage
+ * Set the auth token in storage
  */
-export function setAuthToken(token) {
-  localStorage.setItem(TOKEN_KEY, token);
+export function setAuthToken(token, rememberMe = true) {
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem(TOKEN_KEY, token);
+  // Store remember me preference
+  localStorage.setItem(REMEMBER_ME_KEY, rememberMe.toString());
 }
 
 /**
- * Get the refresh token from localStorage
+ * Get the refresh token from storage
  */
 function getRefreshToken() {
-  return localStorage.getItem(REFRESH_TOKEN_KEY);
+  return localStorage.getItem(REFRESH_TOKEN_KEY) || sessionStorage.getItem(REFRESH_TOKEN_KEY);
 }
 
 /**
- * Set the refresh token in localStorage
+ * Set the refresh token in storage
  */
-export function setRefreshToken(token) {
-  localStorage.setItem(REFRESH_TOKEN_KEY, token);
+export function setRefreshToken(token, rememberMe = true) {
+  const storage = rememberMe ? localStorage : sessionStorage;
+  storage.setItem(REFRESH_TOKEN_KEY, token);
 }
 
 /**
  * Clear all auth tokens
  */
 export function clearAuthTokens() {
+  // Clear from both storages
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
   localStorage.removeItem('user');
+  localStorage.removeItem(REMEMBER_ME_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+  sessionStorage.removeItem('user');
 }
 
 /**
@@ -176,6 +195,16 @@ export const authApi = {
     return apiRequest('/api/auth/reset-password-request', {
       method: 'POST',
       body: JSON.stringify({ email }),
+    });
+  },
+
+  /**
+   * Confirm password reset (with token from email link)
+   */
+  async confirmPasswordReset(accessToken, newPassword) {
+    return apiRequest('/api/auth/reset-password-confirm', {
+      method: 'POST',
+      body: JSON.stringify({ access_token: accessToken, new_password: newPassword }),
     });
   },
 

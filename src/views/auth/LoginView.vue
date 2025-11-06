@@ -34,7 +34,7 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
-    const result = await authStore.login(email.value.trim(), password.value);
+    const result = await authStore.login(email.value.trim(), password.value, rememberMe.value);
 
     if (result.error) {
       errorMessage.value = result.error;
@@ -155,7 +155,7 @@ const isValidEmail = (email) => {
           class="bg-red-50 border border-red-200 rounded-md p-4"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-red-400"
                 fill="currentColor"
@@ -180,7 +180,7 @@ const isValidEmail = (email) => {
           class="bg-green-50 border border-green-200 rounded-md p-4"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-green-400"
                 fill="currentColor"

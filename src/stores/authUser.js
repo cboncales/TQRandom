@@ -34,7 +34,7 @@ export const useAuthUserStore = defineStore("authUser", () => {
   /**
    * Login user
    */
-  async function login(email, password) {
+  async function login(email, password, rememberMe = true) {
     try {
       isLoading.value = true;
       const result = await authApi.login(email, password);
@@ -43,13 +43,14 @@ export const useAuthUserStore = defineStore("authUser", () => {
         return { error: result.error };
       }
 
-      // Store tokens
-      setAuthToken(result.data.access_token);
-      setRefreshToken(result.data.refresh_token);
+      // Store tokens (with remember me preference)
+      setAuthToken(result.data.access_token, rememberMe);
+      setRefreshToken(result.data.refresh_token, rememberMe);
       
       // Store user data
       userData.value = result.data.user;
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('user', JSON.stringify(result.data.user));
 
       return { success: true };
     } catch (error) {
@@ -103,8 +104,8 @@ export const useAuthUserStore = defineStore("authUser", () => {
    */
   async function getUserInformation() {
     try {
-      // First check if we have cached user data
-      const cachedUser = localStorage.getItem('user');
+      // First check if we have cached user data (check both storages)
+      const cachedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
       if (cachedUser && !userData.value) {
         userData.value = JSON.parse(cachedUser);
       }
@@ -122,7 +123,10 @@ export const useAuthUserStore = defineStore("authUser", () => {
       }
 
       userData.value = result.data.user;
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      // Store in the appropriate storage based on remember me
+      const rememberMe = localStorage.getItem('remember_me') === 'true';
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem('user', JSON.stringify(result.data.user));
 
       return { data: result.data.user };
     } catch (error) {
@@ -265,9 +269,9 @@ export const useAuthUserStore = defineStore("authUser", () => {
         return { error: result.error };
       }
 
-      // Store tokens
-      setAuthToken(result.data.access_token);
-      setRefreshToken(result.data.refresh_token);
+      // Store tokens (OAuth always uses remember me = true)
+      setAuthToken(result.data.access_token, true);
+      setRefreshToken(result.data.refresh_token, true);
       
       // Store user data
       userData.value = result.data.user;
