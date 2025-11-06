@@ -63,6 +63,16 @@ const getCorrectAnswers = (options) => {
                   {{ question.question }}
                 </h4>
 
+                <!-- Question Image -->
+                <div v-if="question.imageUrl" class="mb-4">
+                  <img 
+                    :src="question.imageUrl" 
+                    alt="Question image"
+                    class="max-w-md h-auto rounded-lg shadow-md border border-gray-200"
+                    @error="(e) => e.target.style.display='none'"
+                  />
+                </div>
+
                 <!-- Question Type Badge -->
                 <span
                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mb-3"
@@ -79,7 +89,7 @@ const getCorrectAnswers = (options) => {
                     <div
                       v-for="option in question.options"
                       :key="option.id"
-                      class="flex items-center p-2 rounded border"
+                      class="flex items-start p-2 rounded border"
                       :class="
                         option.isCorrect
                           ? 'bg-green-50 border-green-200'
@@ -87,7 +97,7 @@ const getCorrectAnswers = (options) => {
                       "
                     >
                       <span
-                        class="flex-shrink-0 h-4 w-4 rounded-full mr-3 flex items-center justify-center"
+                        class="flex-shrink-0 h-4 w-4 rounded-full mr-3 mt-0.5 flex items-center justify-center"
                         :class="
                           option.isCorrect ? 'bg-green-500' : 'bg-gray-300'
                         "
@@ -105,16 +115,26 @@ const getCorrectAnswers = (options) => {
                           />
                         </svg>
                       </span>
-                      <span
-                        class="text-sm"
-                        :class="
-                          option.isCorrect
-                            ? 'text-green-800 font-medium'
-                            : 'text-gray-700'
-                        "
-                      >
-                        {{ option.text }}
-                      </span>
+                      <div class="flex-1">
+                        <span
+                          class="text-sm"
+                          :class="
+                            option.isCorrect
+                              ? 'text-green-800 font-medium'
+                              : 'text-gray-700'
+                          "
+                        >
+                          {{ option.text }}
+                        </span>
+                        <!-- Choice Image -->
+                        <img 
+                          v-if="option.imageUrl" 
+                          :src="option.imageUrl" 
+                          alt="Choice image"
+                          class="mt-2 max-w-xs h-auto rounded-md shadow-sm border border-gray-200"
+                          @error="(e) => e.target.style.display='none'"
+                        />
+                      </div>
                     </div>
                   </div>
 

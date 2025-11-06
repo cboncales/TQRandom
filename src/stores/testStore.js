@@ -174,9 +174,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Create a new question with answer choices
    */
-  async function createQuestion(testId, questionText, answerChoices) {
+  async function createQuestion(testId, questionText, answerChoices, questionImageUrl = null) {
     try {
-      const result = await questionApi.createQuestion(testId, questionText, answerChoices);
+      const result = await questionApi.createQuestion(testId, questionText, answerChoices, questionImageUrl);
       
       if (result.error) {
         return { error: result.error };

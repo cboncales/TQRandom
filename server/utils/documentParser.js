@@ -1,105 +1,217 @@
-import pdf from 'pdf-parse/lib/pdf-parse.js';
+import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import fs from 'fs/promises';
+import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
 /**
- * Extract text from PDF file
- * @param {string} filePath - Path to the PDF file
- * @returns {Promise<string>} - Extracted text
+ * Extract raw text from a PDF file.
+ * @param {string} filePath - The path to the PDF file.
+ * @returns {Promise<string>} The extracted text.
  */
-async function extractTextFromPDF(filePath) {
+async function extractTextFromPdf(filePath) {
+  const dataBuffer = await fs.readFile(filePath);
+  const data = await pdf(dataBuffer);
+  return data.text;
+}
+
+/**
+ * Extract images from a PDF file using pdf.js
+ * @param {string} filePath - The path to the PDF file
+ * @returns {Promise<Array<{buffer: Buffer, name: string}>>} Array of image buffers
+ */
+async function extractImagesFromPdf(filePath) {
   try {
     const dataBuffer = await fs.readFile(filePath);
-    const data = await pdf(dataBuffer);
-    return data.text;
+    const loadingTask = pdfjsLib.getDocument({ data: dataBuffer });
+    const pdfDocument = await loadingTask.promise;
+    
+    const images = [];
+    
+    // Iterate through all pages
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+      const page = await pdfDocument.getPage(pageNum);
+      const operatorList = await page.getOperatorList();
+      
+      // Find image operations
+      for (let i = 0; i < operatorList.fnArray.length; i++) {
+        if (operatorList.fnArray[i] === pdfjsLib.OPS.paintImageXObject ||
+            operatorList.fnArray[i] === pdfjsLib.OPS.paintInlineImageXObject) {
+          
+          try {
+            const imageName = operatorList.argsArray[i][0];
+            const image = await page.objs.get(imageName);
+            
+            if (image && image.data) {
+              // Convert image data to buffer
+              const imageBuffer = Buffer.from(image.data);
+              images.push({
+                buffer: imageBuffer,
+                name: `pdf_page${pageNum}_img${images.length}.png`,
+                page: pageNum,
+                width: image.width,
+                height: image.height
+              });
+            }
+          } catch (imgError) {
+            console.warn(`Could not extract image from page ${pageNum}:`, imgError.message);
+          }
+        }
+      }
+    }
+    
+    return images;
   } catch (error) {
-    console.error('Error extracting text from PDF:', error);
-    throw new Error('Failed to extract text from PDF');
+    console.error('Error extracting images from PDF:', error);
+    return []; // Return empty array if extraction fails
   }
 }
 
 /**
- * Extract text from DOCX file
- * @param {string} filePath - Path to the DOCX file
- * @returns {Promise<string>} - Extracted text
+ * Extract raw text from a DOCX file.
+ * @param {string} filePath - The path to the DOCX file.
+ * @returns {Promise<string>} The extracted text.
  */
-async function extractTextFromDOCX(filePath) {
+async function extractTextFromDocx(filePath) {
+  const { value } = await mammoth.extractRawText({ path: filePath });
+  return value;
+}
+
+/**
+ * Extract images from a DOCX file
+ * @param {string} filePath - The path to the DOCX file
+ * @returns {Promise<Array<{buffer: Buffer, name: string}>>} Array of image buffers
+ */
+async function extractImagesFromDocx(filePath) {
   try {
-    const dataBuffer = await fs.readFile(filePath);
-    const result = await mammoth.extractRawText({ buffer: dataBuffer });
-    return result.value;
+    const images = [];
+    let imageCount = 0;
+
+    const result = await mammoth.convertToHtml(
+      { path: filePath },
+      {
+        convertImage: mammoth.images.imgElement(async (image) => {
+          const buffer = await image.read();
+          const contentType = image.contentType || 'image/png';
+          const extension = contentType.split('/')[1] || 'png';
+          
+          images.push({
+            buffer: buffer,
+            name: `docx_img${imageCount++}.${extension}`,
+            contentType: contentType
+          });
+
+          // Return a placeholder for HTML conversion
+          return { src: `IMAGE_${imageCount - 1}` };
+        })
+      }
+    );
+
+    return images;
   } catch (error) {
-    console.error('Error extracting text from DOCX:', error);
-    throw new Error('Failed to extract text from DOCX');
+    console.error('Error extracting images from DOCX:', error);
+    return [];
   }
 }
 
 /**
- * Parse extracted text into structured question/answer data
- * @param {string} text - Raw text extracted from document
- * @returns {Array<Object>} - Array of question objects
+ * Parses raw text into structured question and answer data.
+ * Assumes questions start with a number (e.g., "1.", "1)")
+ * Assumes answer choices start with a letter (A-H) (e.g., "A.", "A)")
+ *
+ * Now also handles [IMAGE] markers for embedded images
+ *
+ * @param {string} rawText - The raw text extracted from the document.
+ * @param {Array} extractedImages - Array of extracted images
+ * @returns {Array<Object>} An array of question objects.
  */
-function parseQuestionsFromText(text) {
-  const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-  
+function parseDocumentText(rawText, extractedImages = []) {
+  const lines = rawText.split('\n');
   const questions = [];
   let currentQuestion = null;
-  let currentQuestionText = '';
-  let collectingQuestion = false;
+  let questionNumber = 0;
+  let imageIndex = 0;
 
-  // Regex patterns
+  // Regex for question lines: starts with number, then dot or parenthesis, then text
   const questionPattern = /^(\d+)[\.\)]\s*(.+)$/;
-  const choicePattern = /^([A-H])[\.\)]\s*(.+)$/;
+  // Regex for answer choice lines: starts with letter (A-H), then dot or parenthesis, then text
+  const answerChoicePattern = /^[A-H][\.\)]\s*(.+)$/i;
+  // Regex for image markers
+  const imagePattern = /\[IMAGE\]|\[IMG\]|IMAGE_(\d+)/i;
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) {
+      continue; // Skip blank lines
+    }
 
-    // Check if line is a question
-    const questionMatch = line.match(questionPattern);
+    const questionMatch = trimmedLine.match(questionPattern);
+    const answerChoiceMatch = trimmedLine.match(answerChoicePattern);
+    const imageMatch = trimmedLine.match(imagePattern);
+
     if (questionMatch) {
-      // Save previous question if exists
-      if (currentQuestion && currentQuestionText) {
-        currentQuestion.question_text = currentQuestionText.trim();
-        if (currentQuestion.answer_choices.length > 0) {
+      // New question found
+      questionNumber = parseInt(questionMatch[1]);
+      const text = questionMatch[2].trim();
+
+      // If there was a previous question, push it to the array
+      if (currentQuestion) {
+        // Validate answer choices count
+        if (currentQuestion.answer_choices.length < 2 || currentQuestion.answer_choices.length > 8) {
+          console.warn(`Skipping question ${currentQuestion.question_number} due to invalid number of answer choices (${currentQuestion.answer_choices.length}). Must be between 2 and 8.`);
+        } else {
           questions.push(currentQuestion);
         }
       }
 
-      // Start new question
       currentQuestion = {
-        question_text: '',
-        answer_choices: []
+        question_number: questionNumber,
+        question_text: text,
+        question_image: null, // Will be set if image marker found
+        answer_choices: [],
       };
-      currentQuestionText = questionMatch[2]; // Get question text after number
-      collectingQuestion = true;
-      continue;
-    }
-
-    // Check if line is an answer choice
-    const choiceMatch = line.match(choicePattern);
-    if (choiceMatch && currentQuestion) {
-      // Question text is complete, now collecting choices
-      if (collectingQuestion) {
-        currentQuestion.question_text = currentQuestionText.trim();
-        collectingQuestion = false;
+    } else if (imageMatch && currentQuestion) {
+      // Image marker found
+      if (currentQuestion.answer_choices.length === 0) {
+        // Image belongs to question
+        if (extractedImages[imageIndex]) {
+          currentQuestion.question_image = extractedImages[imageIndex];
+          imageIndex++;
+        }
+      } else {
+        // Image belongs to last answer choice
+        const lastChoiceIndex = currentQuestion.answer_choices.length - 1;
+        if (extractedImages[imageIndex]) {
+          currentQuestion.answer_choices[lastChoiceIndex].image = extractedImages[imageIndex];
+          imageIndex++;
+        }
       }
-      currentQuestion.answer_choices.push(choiceMatch[2].trim());
-      continue;
-    }
-
-    // If we're still collecting question text (multi-line question)
-    if (collectingQuestion && currentQuestion) {
-      // Check if this line is not a choice or new question
-      if (!line.match(/^[A-H][\.\)]/) && !line.match(/^\d+[\.\)]/)) {
-        currentQuestionText += ' ' + line;
+    } else if (answerChoiceMatch && currentQuestion) {
+      // Answer choice for the current question
+      const choiceText = answerChoiceMatch[1].trim();
+      currentQuestion.answer_choices.push({
+        text: choiceText,
+        image: null // Will be set if image marker found next
+      });
+    } else if (currentQuestion) {
+      // Multi-line question or answer choice (append to previous)
+      // This logic assumes multi-line content belongs to the most recent element (question or last choice)
+      if (currentQuestion.answer_choices.length > 0) {
+        // Append to the last answer choice
+        const lastChoiceIndex = currentQuestion.answer_choices.length - 1;
+        currentQuestion.answer_choices[lastChoiceIndex].text += ' ' + trimmedLine;
+      } else {
+        // Append to the question text
+        currentQuestion.question_text += ' ' + trimmedLine;
       }
     }
   }
 
-  // Don't forget to add the last question
-  if (currentQuestion && currentQuestionText) {
-    currentQuestion.question_text = currentQuestionText.trim();
-    if (currentQuestion.answer_choices.length > 0) {
+  // Add the last question if it exists
+  if (currentQuestion) {
+    // Validate answer choices count for the last question
+    if (currentQuestion.answer_choices.length < 2 || currentQuestion.answer_choices.length > 8) {
+      console.warn(`Skipping question ${currentQuestion.question_number} due to invalid number of answer choices (${currentQuestion.answer_choices.length}). Must be between 2 and 8.`);
+    } else {
       questions.push(currentQuestion);
     }
   }
@@ -107,67 +219,10 @@ function parseQuestionsFromText(text) {
   return questions;
 }
 
-/**
- * Main function to parse document and extract questions
- * @param {string} filePath - Path to the document file
- * @param {string} fileType - File extension (pdf, docx, doc)
- * @returns {Promise<Array<Object>>} - Array of parsed questions
- */
-export async function parseDocument(filePath, fileType) {
-  let text = '';
-
-  // Extract text based on file type
-  if (fileType === 'pdf') {
-    text = await extractTextFromPDF(filePath);
-  } else if (fileType === 'docx' || fileType === 'doc') {
-    text = await extractTextFromDOCX(filePath);
-  } else {
-    throw new Error(`Unsupported file type: ${fileType}`);
-  }
-
-  // Parse the extracted text into structured data
-  const questions = parseQuestionsFromText(text);
-
-  return questions;
-}
-
-/**
- * Validate parsed questions
- * @param {Array<Object>} questions - Array of question objects
- * @returns {Object} - Validation result with isValid and errors
- */
-export function validateParsedQuestions(questions) {
-  const errors = [];
-
-  if (!Array.isArray(questions) || questions.length === 0) {
-    return {
-      isValid: false,
-      errors: ['No questions found in the document']
-    };
-  }
-
-  questions.forEach((q, index) => {
-    if (!q.question_text || q.question_text.trim().length === 0) {
-      errors.push(`Question ${index + 1}: Missing question text`);
-    }
-
-    if (!Array.isArray(q.answer_choices) || q.answer_choices.length < 2) {
-      errors.push(`Question ${index + 1}: Must have at least 2 answer choices`);
-    }
-
-    if (q.answer_choices.length > 8) {
-      errors.push(`Question ${index + 1}: Too many answer choices (max 8)`);
-    }
-  });
-
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}
-
-export default {
-  parseDocument,
-  validateParsedQuestions
+export {
+  extractTextFromPdf,
+  extractTextFromDocx,
+  extractImagesFromPdf,
+  extractImagesFromDocx,
+  parseDocumentText,
 };
-

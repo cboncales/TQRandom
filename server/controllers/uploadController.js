@@ -1,91 +1,91 @@
-import { parseDocument, validateParsedQuestions } from '../utils/documentParser.js';
+import { 
+  extractTextFromPdf, 
+  extractTextFromDocx, 
+  extractImagesFromPdf,
+  extractImagesFromDocx,
+  parseDocumentText 
+} from '../utils/documentParser.js';
+import { uploadMultipleImages } from '../utils/storageHelper.js';
 import fs from 'fs/promises';
 import path from 'path';
 
 /**
- * Upload and parse document (PDF or DOCX)
- * Extracts questions and answer choices
+ * Handles document upload, extracts text and images, and parses it into structured questions.
  */
-export async function uploadDocument(req, res) {
+async function uploadDocument(req, res) {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
   try {
-    // Check if file was uploaded
-    if (!req.file) {
-      return res.status(400).json({ error: 'No file uploaded' });
-    }
+    const filePath = req.file.path;
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+    const userId = req.user?.id || 'anonymous';
+    
+    let rawText = '';
+    let extractedImages = [];
 
-    const file = req.file;
-    const filePath = file.path;
-    const fileExtension = path.extname(file.originalname).toLowerCase().replace('.', '');
-
-    console.log('Processing uploaded file:', file.originalname);
-    console.log('File path:', filePath);
-    console.log('File type:', fileExtension);
-
-    // Validate file type
-    if (!['pdf', 'doc', 'docx'].includes(fileExtension)) {
-      // Clean up uploaded file
+    // Step 1: Extract text and images based on file type
+    if (fileExtension === '.pdf') {
+      rawText = await extractTextFromPdf(filePath);
+      extractedImages = await extractImagesFromPdf(filePath);
+      console.log(`Extracted ${extractedImages.length} images from PDF`);
+    } else if (fileExtension === '.docx' || fileExtension === '.doc') {
+      rawText = await extractTextFromDocx(filePath);
+      extractedImages = await extractImagesFromDocx(filePath);
+      console.log(`Extracted ${extractedImages.length} images from DOCX`);
+    } else {
       await fs.unlink(filePath);
-      return res.status(400).json({ 
-        error: 'Invalid file type. Only PDF, DOC, and DOCX files are supported.' 
-      });
+      return res.status(400).json({ error: 'Unsupported file type. Only PDF and DOCX are allowed.' });
     }
 
-    // Parse the document
-    let questions;
-    try {
-      questions = await parseDocument(filePath, fileExtension);
-      console.log(`Extracted ${questions.length} questions from document`);
-    } catch (parseError) {
-      console.error('Error parsing document:', parseError);
-      // Clean up uploaded file
-      await fs.unlink(filePath);
-      return res.status(500).json({ 
-        error: 'Failed to parse document. Please ensure the document is properly formatted.' 
-      });
+    // Step 2: Upload images to Supabase Storage
+    let uploadedImages = [];
+    if (extractedImages.length > 0) {
+      console.log(`Uploading ${extractedImages.length} images to storage...`);
+      const uploadResults = await uploadMultipleImages(extractedImages, userId);
+      
+      // Filter successful uploads
+      uploadedImages = uploadResults.map((result, index) => {
+        if (result.error) {
+          console.warn(`Failed to upload image ${index}:`, result.error);
+          return null;
+        }
+        return result;
+      }).filter(img => img !== null);
+
+      console.log(`Successfully uploaded ${uploadedImages.length} images`);
     }
 
-    // Validate parsed questions
-    const validation = validateParsedQuestions(questions);
-    if (!validation.isValid) {
-      console.warn('Validation errors:', validation.errors);
-      // Clean up uploaded file
-      await fs.unlink(filePath);
-      return res.status(400).json({ 
-        error: 'Document validation failed',
-        details: validation.errors
-      });
-    }
+    // Step 3: Parse text into structured questions
+    const parsedQuestions = parseDocumentText(rawText, uploadedImages);
 
-    // Clean up uploaded file after successful parsing
+    // Clean up the uploaded file after processing
     await fs.unlink(filePath);
 
-    // Return parsed questions
     res.json({
-      success: true,
-      data: questions,
-      count: questions.length
+      message: 'Document processed successfully',
+      data: parsedQuestions,
+      stats: {
+        total_questions: parsedQuestions.length,
+        total_images: uploadedImages.length,
+        images_extracted: extractedImages.length
+      }
     });
 
   } catch (error) {
-    console.error('Error in uploadDocument:', error);
-    
-    // Try to clean up file if it exists
-    if (req.file?.path) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error deleting file:', unlinkError);
-      }
+    console.error('Error processing document:', error);
+    // Ensure file is deleted even if parsing fails
+    if (req.file && req.file.path) {
+      await fs.unlink(req.file.path).catch(e => console.error("Error deleting temp file:", e));
     }
-
     res.status(500).json({ 
-      error: 'Failed to process document upload',
-      message: error.message 
+      error: 'Failed to process document', 
+      details: error.message 
     });
   }
 }
 
-export default {
-  uploadDocument
+export {
+  uploadDocument,
 };
-

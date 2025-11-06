@@ -110,11 +110,12 @@ const handleQuestionSaved = async (questionData) => {
 
   try {
     if (editingQuestion.value) {
-      // Update existing question
+      // Update existing question (with image URL)
       const result = await testStore.updateQuestion(
         editingQuestion.value.id,
         questionData.question,
-        questionData.options.filter((opt) => opt.text.trim())
+        questionData.options.filter((opt) => opt.text.trim()),
+        questionData.imageUrl // Pass question image URL
       );
 
       if (result.error) {
@@ -149,11 +150,12 @@ const handleQuestionSaved = async (questionData) => {
         closeQuestionForm();
       }
     } else {
-      // Add new question
+      // Add new question (with image URL)
       const result = await testStore.createQuestion(
         testId,
         questionData.question,
-        questionData.options.filter((opt) => opt.text.trim())
+        questionData.options.filter((opt) => opt.text.trim()),
+        questionData.imageUrl // Pass question image URL
       );
 
       if (result.error) {
@@ -263,10 +265,12 @@ const loadQuestions = async () => {
     questions.value = result.data.map((question) => ({
       id: question.id,
       question: question.text,
+      imageUrl: question.image_url || null, // NEW: Include question image
       type: "multiple-choice",
       options: question.answer_choices.map((choice) => ({
         id: choice.id,
         text: choice.text,
+        imageUrl: choice.image_url || null, // NEW: Include choice image
         isCorrect: correctAnswerMap[question.id] === choice.id,
       })),
       paraphrases: [], // Not implemented in database yet
@@ -367,13 +371,21 @@ const handleFileUpload = async () => {
       const questionNumber = i + 1;
       
       // Convert answer_choices array to the format expected by createQuestion
-      const answerChoices = parsed.answer_choices.map(text => ({ text }));
+      // Now includes image URLs if present
+      const answerChoices = parsed.answer_choices.map(choice => ({
+        text: typeof choice === 'string' ? choice : choice.text,
+        imageUrl: typeof choice === 'object' ? choice.image?.url : null
+      }));
 
-      // Create the question
+      // Extract question image URL if present
+      const questionImageUrl = parsed.question_image?.url || null;
+
+      // Create the question (with optional image)
       const createResult = await testStore.createQuestion(
         testId,
         parsed.question_text,
-        answerChoices
+        answerChoices,
+        questionImageUrl
       );
 
       if (createResult.error) {

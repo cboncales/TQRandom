@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch } from "vue";
+import { imageApi } from "@/services/api";
 
 const props = defineProps({
   isOpen: {
@@ -19,14 +20,17 @@ const props = defineProps({
 const emit = defineEmits(["close", "question-saved"]);
 
 const errorMessage = ref("");
+const isUploadingImage = ref(false);
 
 // Form data
 const questionText = ref("");
+const questionImageUrl = ref(null);
+const questionImageFile = ref(null);
 const options = ref([
-  { id: 1, text: "", isCorrect: false },
-  { id: 2, text: "", isCorrect: false },
-  { id: 3, text: "", isCorrect: false },
-  { id: 4, text: "", isCorrect: false },
+  { id: 1, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+  { id: 2, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+  { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+  { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
 ]);
 const paraphrases = ref([]);
 const newParaphrase = ref("");
@@ -34,11 +38,13 @@ const newParaphrase = ref("");
 // Reset form function
 const resetForm = () => {
   questionText.value = "";
+  questionImageUrl.value = null;
+  questionImageFile.value = null;
   options.value = [
-    { id: 1, text: "", isCorrect: false },
-    { id: 2, text: "", isCorrect: false },
-    { id: 3, text: "", isCorrect: false },
-    { id: 4, text: "", isCorrect: false },
+    { id: 1, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+    { id: 2, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+    { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+    { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
   ];
   paraphrases.value = [];
   newParaphrase.value = "";
@@ -51,7 +57,12 @@ watch(
   (newQuestion) => {
     if (newQuestion) {
       questionText.value = newQuestion.question;
-      options.value = [...newQuestion.options];
+      questionImageUrl.value = newQuestion.imageUrl || null;
+      options.value = newQuestion.options.map(opt => ({
+        ...opt,
+        imageUrl: opt.imageUrl || null,
+        imageFile: null
+      }));
       paraphrases.value = [...(newQuestion.paraphrases || [])];
     } else {
       resetForm();
@@ -77,6 +88,8 @@ const addOption = () => {
     id: newId,
     text: "",
     isCorrect: false,
+    imageUrl: null,
+    imageFile: null,
   });
 };
 
@@ -104,7 +117,60 @@ const removeParaphrase = (index) => {
   paraphrases.value.splice(index, 1);
 };
 
-const handleSubmit = () => {
+// Image handling functions
+const handleQuestionImageUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    questionImageFile.value = file;
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      questionImageUrl.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeQuestionImage = () => {
+  questionImageUrl.value = null;
+  questionImageFile.value = null;
+};
+
+const handleOptionImageUpload = (event, optionId) => {
+  const file = event.target.files[0];
+  if (file) {
+    const option = options.value.find(o => o.id === optionId);
+    if (option) {
+      option.imageFile = file;
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        option.imageUrl = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+};
+
+const removeOptionImage = (optionId) => {
+  const option = options.value.find(o => o.id === optionId);
+  if (option) {
+    option.imageUrl = null;
+    option.imageFile = null;
+  }
+};
+
+const uploadImageToServer = async (file) => {
+  if (!file) return null;
+  
+  const result = await imageApi.uploadImage(file);
+  if (result.error) {
+    throw new Error(result.error);
+  }
+  return result.data.imageUrl;
+};
+
+const handleSubmit = async () => {
   // Clear previous errors
   errorMessage.value = "";
 
@@ -126,15 +192,52 @@ const handleSubmit = () => {
     return;
   }
 
-  // Prepare question data
-  const questionData = {
-    question: questionText.value.trim(),
-    type: "multiple-choice",
-    options: options.value.filter((opt) => opt.text.trim()),
-    paraphrases: [...paraphrases.value],
-  };
+  try {
+    isUploadingImage.value = true;
+    
+    // Upload question image if new file selected
+    let uploadedQuestionImageUrl = questionImageUrl.value;
+    if (questionImageFile.value) {
+      uploadedQuestionImageUrl = await uploadImageToServer(questionImageFile.value);
+    }
 
-  emit("question-saved", questionData);
+    // Upload option images if new files selected
+    const processedOptions = await Promise.all(
+      options.value
+        .filter((opt) => opt.text.trim())
+        .map(async (opt) => {
+          let uploadedImageUrl = opt.imageUrl;
+          
+          // Only upload if there's a new file (not just an existing URL)
+          if (opt.imageFile) {
+            uploadedImageUrl = await uploadImageToServer(opt.imageFile);
+          }
+          
+          return {
+            id: opt.id,
+            text: opt.text,
+            isCorrect: opt.isCorrect,
+            imageUrl: uploadedImageUrl
+          };
+        })
+    );
+
+    // Prepare question data
+    const questionData = {
+      question: questionText.value.trim(),
+      imageUrl: uploadedQuestionImageUrl,
+      type: "multiple-choice",
+      options: processedOptions,
+      paraphrases: [...paraphrases.value],
+    };
+
+    emit("question-saved", questionData);
+  } catch (error) {
+    console.error('Error uploading images:', error);
+    errorMessage.value = `Failed to upload images: ${error.message}`;
+  } finally {
+    isUploadingImage.value = false;
+  }
 };
 
 const closeModal = () => {
@@ -230,6 +333,39 @@ const hasCorrectAnswer = () => {
           />
         </div>
 
+        <!-- Question Image Upload -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Question Image (Optional)
+          </label>
+          <div v-if="questionImageUrl" class="mb-3">
+            <div class="relative inline-block">
+              <img 
+                :src="questionImageUrl" 
+                alt="Question preview"
+                class="max-w-md h-auto rounded-lg border border-gray-300"
+              />
+              <button
+                type="button"
+                @click="removeQuestionImage"
+                class="absolute top-2 right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            @change="handleQuestionImageUpload"
+            :disabled="props.isLoading || isUploadingImage"
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+          />
+          <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+        </div>
+
         <!-- Multiple Choice Options -->
         <div>
           <div class="flex justify-between items-center mb-4">
@@ -256,56 +392,58 @@ const hasCorrectAnswer = () => {
             </button>
           </div>
 
-          <div class="space-y-3">
+          <div class="space-y-4">
             <div
               v-for="(option, index) in options"
               :key="option.id"
-              class="flex items-center space-x-3 p-3 border rounded-lg"
+              class="p-3 border rounded-lg"
               :class="
                 option.isCorrect
                   ? 'bg-green-50 border-green-200'
                   : 'bg-gray-50 border-gray-200'
               "
             >
-              <!-- Option Letter -->
-              <span
-                class="shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium"
-              >
-                {{ String.fromCharCode(65 + index) }}
-              </span>
-
-              <!-- Option Input -->
-              <input
-                v-model="option.text"
-                type="text"
-                class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                :placeholder="`Option ${String.fromCharCode(65 + index)}`"
-              />
-
-              <!-- Correct Answer Checkbox -->
-              <label class="flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  :checked="option.isCorrect"
-                  @change="toggleCorrectAnswer(option.id)"
-                  class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                />
-                <span class="ml-2 text-sm text-gray-700">Correct</span>
-              </label>
-
-              <!-- Remove Button -->
-              <button
-                v-if="options.length > 2"
-                type="button"
-                @click="removeOption(option.id)"
-                class="text-red-600 hover:text-red-800"
-              >
-                <svg
-                  class="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <!-- Option Header with controls -->
+              <div class="flex items-center space-x-3 mb-2">
+                <!-- Option Letter -->
+                <span
+                  class="shrink-0 h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium"
                 >
+                  {{ String.fromCharCode(65 + index) }}
+                </span>
+
+                <!-- Option Input -->
+                <input
+                  v-model="option.text"
+                  type="text"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  :placeholder="`Option ${String.fromCharCode(65 + index)}`"
+                />
+
+                <!-- Correct Answer Checkbox -->
+                <label class="flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    :checked="option.isCorrect"
+                    @change="toggleCorrectAnswer(option.id)"
+                    class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                  />
+                  <span class="ml-2 text-sm text-gray-700">Correct</span>
+                </label>
+
+                <!-- Remove Button -->
+                <button
+                  v-if="options.length > 2"
+                  type="button"
+                  @click="removeOption(option.id)"
+                  class="text-red-600 hover:text-red-800"
+                >
+                  <svg
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                   <path
                     stroke-linecap="round"
                     stroke-linejoin="round"
@@ -314,6 +452,36 @@ const hasCorrectAnswer = () => {
                   />
                 </svg>
               </button>
+              </div>
+
+              <!-- Option Image Upload -->
+              <div class="ml-11 mt-2">
+                <div v-if="option.imageUrl" class="mb-2">
+                  <div class="relative inline-block">
+                    <img 
+                      :src="option.imageUrl" 
+                      alt="Option preview"
+                      class="max-w-xs h-auto rounded-md border border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      @click="removeOptionImage(option.id)"
+                      class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                    >
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  @change="(e) => handleOptionImageUpload(e, option.id)"
+                  :disabled="props.isLoading || isUploadingImage"
+                  class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                />
+              </div>
             </div>
           </div>
 
@@ -398,10 +566,10 @@ const hasCorrectAnswer = () => {
           </button>
           <button
             type="submit"
-            :disabled="props.isLoading"
+            :disabled="props.isLoading || isUploadingImage"
             class="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
           >
-            <span v-if="props.isLoading" class="w-4 h-4 mr-2 animate-spin">
+            <span v-if="props.isLoading || isUploadingImage" class="w-4 h-4 mr-2 animate-spin">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
                 <circle
                   class="opacity-25"
@@ -433,7 +601,9 @@ const hasCorrectAnswer = () => {
               />
             </svg>
             {{
-              props.isLoading
+              isUploadingImage
+                ? "Uploading images..."
+                : props.isLoading
                 ? editingQuestion
                   ? "Updating..."
                   : "Saving..."

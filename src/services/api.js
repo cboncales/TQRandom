@@ -298,10 +298,10 @@ export const questionApi = {
   /**
    * Create a new question with answer choices
    */
-  async createQuestion(testId, questionText, answerChoices) {
+  async createQuestion(testId, questionText, answerChoices, questionImageUrl = null) {
     return apiRequest('/api/questions', {
       method: 'POST',
-      body: JSON.stringify({ testId, questionText, answerChoices }),
+      body: JSON.stringify({ testId, questionText, answerChoices, questionImageUrl }),
     });
   },
 
@@ -485,6 +485,54 @@ export const userApi = {
   },
 };
 
+// ============================================
+// IMAGE ENDPOINTS
+// ============================================
+
+export const imageApi = {
+  /**
+   * Upload a single image
+   */
+  async uploadImage(file) {
+    const token = getAuthToken();
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/images/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      });
+
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      if (!response.ok) {
+        return {
+          error: data.error || data.message || `HTTP error! status: ${response.status}`,
+          status: response.status,
+        };
+      }
+
+      return { data, status: response.status };
+    } catch (error) {
+      console.error('Image upload error:', error);
+      return {
+        error: error.message || 'Network error occurred',
+      };
+    }
+  },
+};
+
 export default {
   authApi,
   testApi,
@@ -493,5 +541,6 @@ export default {
   uploadApi,
   versionApi,
   userApi,
+  imageApi,
 };
 

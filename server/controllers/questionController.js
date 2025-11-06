@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase.js';
  */
 async function createQuestion(req, res) {
   try {
-    const { testId, questionText, answerChoices } = req.body;
+    const { testId, questionText, questionImageUrl, answerChoices } = req.body;
     const userId = req.user.id;
 
     if (!testId || !questionText || !questionText.trim()) {
@@ -24,13 +24,14 @@ async function createQuestion(req, res) {
       return res.status(404).json({ error: 'Test not found or access denied' });
     }
 
-    // Create the question
+    // Create the question (with optional image URL)
     const { data: questionData, error: questionError } = await supabase
       .from('questions')
       .insert([
         {
           test_id: testId,
           text: questionText.trim(),
+          image_url: questionImageUrl || null,
         },
       ])
       .select()
@@ -41,11 +42,12 @@ async function createQuestion(req, res) {
       return res.status(500).json({ error: questionError.message });
     }
 
-    // Create answer choices if provided
+    // Create answer choices if provided (with optional image URLs)
     if (answerChoices && answerChoices.length > 0) {
       const choicesData = answerChoices.map((choice) => ({
         question_id: questionData.id,
         text: choice.text.trim(),
+        image_url: choice.imageUrl || null,
       }));
 
       const { error: choicesError } = await supabase
