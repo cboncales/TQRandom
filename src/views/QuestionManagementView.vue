@@ -7,6 +7,7 @@ import { useRoute, useRouter } from "vue-router";
 import { useTestStore } from "@/stores/testStore";
 import { uploadApi, versionApi } from "@/services/api";
 import { jsPDF } from "jspdf";
+import JSZip from "jszip";
 
 const route = useRoute();
 const router = useRouter();
@@ -32,6 +33,8 @@ const versionCount = ref(1);
 const questionsPerVersion = ref(50);
 const isGeneratingVersions = ref(false);
 const isLoadingVersions = ref(false);
+const isDownloadingAll = ref(false);
+const downloadProgress = ref({ current: 0, total: 0 });
 
 // File upload
 const showUploadModal = ref(false);
@@ -525,31 +528,21 @@ const handleGenerateVersions = async () => {
   }
 };
 
-const downloadVersion = async (versionId) => {
-  try {
-    // Get version data
-    const result = await versionApi.getVersion(versionId);
+// Helper function to generate PDF for a version
+const generateVersionPDF = (versionData) => {
+  // Create PDF
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'letter' // 8.5" x 11"
+  });
 
-    if (result.error) {
-      alert(`Failed to download version: ${result.error}`);
-      return;
-    }
-
-    const versionData = result.data.data;
-    
-    // Create PDF
-    const doc = new jsPDF({
-      orientation: 'portrait',
-      unit: 'mm',
-      format: 'letter' // 8.5" x 11"
-    });
-
-    // Page settings
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const contentWidth = pageWidth - (2 * margin);
-    let yPosition = margin;
+  // Page settings
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 20;
+  const contentWidth = pageWidth - (2 * margin);
+  let yPosition = margin;
 
     // Helper function to add new page if needed
     const checkPageBreak = (neededSpace) => {
@@ -647,20 +640,36 @@ const downloadVersion = async (versionId) => {
       }
     });
 
-    // Footer on all pages
-    const totalPages = doc.internal.pages.length - 1; // -1 because first element is null
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
-      doc.text(
-        `Page ${i} of ${totalPages}`,
-        pageWidth / 2,
-        pageHeight - 10,
-        { align: 'center' }
-      );
+  // Footer on all pages
+  const totalPages = doc.internal.pages.length - 1; // -1 because first element is null
+  for (let i = 1; i <= totalPages; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      `Page ${i} of ${totalPages}`,
+      pageWidth / 2,
+      pageHeight - 10,
+      { align: 'center' }
+    );
+  }
+
+  return doc;
+};
+
+const downloadVersion = async (versionId) => {
+  try {
+    // Get version data
+    const result = await versionApi.getVersion(versionId);
+
+    if (result.error) {
+      alert(`Failed to download version: ${result.error}`);
+      return;
     }
 
+    const versionData = result.data.data;
+    const doc = generateVersionPDF(versionData);
+    
     // Download PDF
     const filename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}.pdf`;
     doc.save(filename);
@@ -668,6 +677,83 @@ const downloadVersion = async (versionId) => {
   } catch (error) {
     console.error('Download error:', error);
     alert(`An error occurred during download: ${error.message}`);
+  }
+};
+
+const downloadAllVersions = async () => {
+  if (versions.value.length === 0) {
+    alert('No versions available to download.');
+    return;
+  }
+
+  if (!confirm(`This will download all ${versions.value.length} versions as a ZIP file. Continue?`)) {
+    return;
+  }
+
+  isDownloadingAll.value = true;
+  downloadProgress.value = { current: 0, total: versions.value.length };
+
+  try {
+    const zip = new JSZip();
+    const testTitle = test.value?.title || 'Test';
+    const folderName = testTitle.replace(/[^a-z0-9]/gi, '_');
+
+    // Fetch and generate PDFs for all versions
+    for (let i = 0; i < versions.value.length; i++) {
+      const version = versions.value[i];
+      downloadProgress.value.current = i + 1;
+
+      try {
+        // Get version data
+        const result = await versionApi.getVersion(version.id);
+
+        if (result.error) {
+          console.error(`Failed to fetch version ${version.version_number}:`, result.error);
+          continue; // Skip this version and continue with others
+        }
+
+        const versionData = result.data.data;
+        
+        // Generate PDF
+        const doc = generateVersionPDF(versionData);
+        
+        // Get PDF as blob
+        const pdfBlob = doc.output('blob');
+        
+        // Add to ZIP with descriptive filename
+        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.pdf`;
+        zip.file(filename, pdfBlob);
+
+      } catch (error) {
+        console.error(`Error generating PDF for version ${version.version_number}:`, error);
+        // Continue with other versions even if one fails
+      }
+    }
+
+    // Generate ZIP file
+    const zipBlob = await zip.generateAsync({ 
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    // Download ZIP file
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(zipBlob);
+    downloadLink.download = `${folderName}_All_Versions_${new Date().toISOString().split('T')[0]}.zip`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(downloadLink.href);
+
+    alert(`Successfully downloaded ${downloadProgress.value.current} versions!`);
+
+  } catch (error) {
+    console.error('Download all error:', error);
+    alert(`An error occurred while creating ZIP file: ${error.message}`);
+  } finally {
+    isDownloadingAll.value = false;
+    downloadProgress.value = { current: 0, total: 0 };
   }
 };
 
@@ -799,27 +885,58 @@ onMounted(async () => {
                   </svg>
                   Add Question
                 </button>
-                <button
-                  v-if="activeTab === 'versions'"
-                  @click="openGenerateVersionModal"
-                  :disabled="questions.length === 0"
-                  class="bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
-                >
-                  <svg
-                    class="w-5 h-5 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                <div v-if="activeTab === 'versions'" class="flex space-x-2">
+                  <button
+                    @click="downloadAllVersions"
+                    :disabled="versions.length === 0 || isDownloadingAll"
+                    class="bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                   >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  Generate Versions
-                </button>
+                    <svg
+                      v-if="isDownloadingAll"
+                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <svg
+                      v-else
+                      class="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                      />
+                    </svg>
+                    {{ isDownloadingAll ? `Downloading ${downloadProgress.current}/${downloadProgress.total}...` : 'Download All' }}
+                  </button>
+                  <button
+                    @click="openGenerateVersionModal"
+                    :disabled="questions.length === 0"
+                    class="bg-purple-600 text-white hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  >
+                    <svg
+                      class="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    Generate Versions
+                  </button>
+                </div>
               </div>
             </div>
           </div>

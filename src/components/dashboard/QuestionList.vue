@@ -54,7 +54,7 @@ const getCorrectAnswers = (options) => {
             <!-- Question Number and Text -->
             <div class="flex items-start">
               <span
-                class="flex-shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mr-3"
+                class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mr-3"
               >
                 {{ index + 1 }}
               </span>
@@ -97,7 +97,7 @@ const getCorrectAnswers = (options) => {
                       "
                     >
                       <span
-                        class="flex-shrink-0 h-4 w-4 rounded-full mr-3 mt-0.5 flex items-center justify-center"
+                        class="shrink-0 h-4 w-4 rounded-full mr-3 mt-0.5 flex items-center justify-center"
                         :class="
                           option.isCorrect ? 'bg-green-500' : 'bg-gray-300'
                         "
