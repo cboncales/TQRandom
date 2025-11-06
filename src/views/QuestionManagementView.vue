@@ -40,6 +40,7 @@ const showDownloadFormatModal = ref(false);
 const selectedDownloadFormat = ref('pdf'); // 'pdf' or 'docx'
 const downloadType = ref('all'); // 'all' or 'single'
 const selectedVersionId = ref(null);
+const showDeleteVersionConfirm = ref(null);
 
 // File upload
 const showUploadModal = ref(false);
@@ -877,26 +878,33 @@ const downloadAllVersions = async (format = 'pdf') => {
   }
 };
 
-const deleteVersion = async (versionId) => {
-  if (!confirm("Are you sure you want to delete this version? This action cannot be undone.")) {
-    return;
-  }
+const confirmDeleteVersion = (versionId) => {
+  showDeleteVersionConfirm.value = versionId;
+};
 
+const cancelDeleteVersion = () => {
+  showDeleteVersionConfirm.value = null;
+};
+
+const deleteVersion = async (versionId) => {
   try {
     const result = await versionApi.deleteVersion(versionId);
 
     if (result.error) {
       alert(`Failed to delete version: ${result.error}`);
+      showDeleteVersionConfirm.value = null;
       return;
     }
 
     // Reload versions
     await loadVersions();
+    showDeleteVersionConfirm.value = null;
     alert('Version deleted successfully');
 
   } catch (error) {
     console.error('Delete error:', error);
     alert(`An error occurred: ${error.message}`);
+    showDeleteVersionConfirm.value = null;
   }
 };
 
@@ -1348,7 +1356,7 @@ onMounted(async () => {
                       Download
                     </button>
                     <button
-                      @click="deleteVersion(version.id)"
+                      @click="confirmDeleteVersion(version.id)"
                       class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200"
                     >
                       <svg
@@ -1866,6 +1874,57 @@ onMounted(async () => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Version Confirmation Modal -->
+    <div
+      v-if="showDeleteVersionConfirm"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      @click="cancelDeleteVersion"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+        @click.stop
+      >
+        <div class="mt-3 text-center">
+          <div
+            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
+          >
+            <svg
+              class="h-6 w-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mt-2">Delete Test Version</h3>
+          <p class="mt-2 text-sm text-gray-500">
+            Are you sure you want to delete this randomized version? This action cannot be
+            undone.
+          </p>
+          <div class="mt-4 flex justify-center space-x-3">
+            <button
+              @click="deleteVersion(showDeleteVersionConfirm)"
+              class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Delete
+            </button>
+            <button
+              @click="cancelDeleteVersion"
+              class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Cancel
+            </button>
           </div>
         </div>
       </div>
