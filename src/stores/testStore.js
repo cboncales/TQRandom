@@ -1,6 +1,6 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
-import { testApi, questionApi, answerApi } from "@/services/api";
+import { testApi, questionApi, answerApi, versionApi } from "@/services/api";
 
 export const useTestStore = defineStore("testStore", () => {
   // ============================================
@@ -12,6 +12,8 @@ export const useTestStore = defineStore("testStore", () => {
   const questionsCache = ref({}); // { testId: { data, timestamp } }
   const singleTestCache = ref({}); // { testId: { data, timestamp } }
   const answersCache = ref({}); // { testId: { data, timestamp } }
+  const versionsCache = ref({}); // { testId: { data, timestamp } }
+  const singleVersionCache = ref({}); // { versionId: { data, timestamp } }
   
   const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
   
@@ -32,6 +34,8 @@ export const useTestStore = defineStore("testStore", () => {
     questionsCache.value = {};
     singleTestCache.value = {};
     answersCache.value = {};
+    versionsCache.value = {};
+    singleVersionCache.value = {};
   }
   
   /**
@@ -42,6 +46,7 @@ export const useTestStore = defineStore("testStore", () => {
       delete questionsCache.value[testId];
       delete singleTestCache.value[testId];
       delete answersCache.value[testId];
+      delete versionsCache.value[testId];
     }
     testsCache.value = null;
     testsCacheTime.value = null;
@@ -327,6 +332,109 @@ export const useTestStore = defineStore("testStore", () => {
     }
   }
 
+  // ============================================
+  // VERSION MANAGEMENT
+  // ============================================
+
+  /**
+   * Get all versions for a test (with caching)
+   */
+  async function getTestVersions(testId, forceRefresh = false) {
+    try {
+      // Check cache
+      const cached = versionsCache.value[testId];
+      if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
+        return { data: cached.data };
+      }
+
+      const result = await versionApi.getTestVersions(testId);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      // Update cache
+      versionsCache.value[testId] = {
+        data: result.data.data,
+        timestamp: Date.now(),
+      };
+
+      return { data: result.data.data };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Get single version details (with caching)
+   */
+  async function getVersion(versionId, forceRefresh = false) {
+    try {
+      // Check cache
+      const cached = singleVersionCache.value[versionId];
+      if (!forceRefresh && cached && isCacheValid(cached.timestamp)) {
+        return { data: cached.data };
+      }
+
+      const result = await versionApi.getVersion(versionId);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      // Update cache
+      singleVersionCache.value[versionId] = {
+        data: result.data.data,
+        timestamp: Date.now(),
+      };
+
+      return { data: result.data.data };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Generate versions for a test
+   */
+  async function generateVersions(testId, versionCount, questionsPerVersion) {
+    try {
+      const result = await versionApi.generateVersions(testId, versionCount, questionsPerVersion);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      // Invalidate versions cache for this test
+      delete versionsCache.value[testId];
+
+      return { data: result.data.data };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  /**
+   * Delete a version
+   */
+  async function deleteVersion(versionId, testId) {
+    try {
+      const result = await versionApi.deleteVersion(versionId);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      // Invalidate caches
+      delete versionsCache.value[testId];
+      delete singleVersionCache.value[versionId];
+
+      return { data: result.data };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
   return {
     // Test management
     createTest,
@@ -342,6 +450,11 @@ export const useTestStore = defineStore("testStore", () => {
     // Answer management
     storeCorrectAnswer,
     getCorrectAnswersForTest,
+    // Version management
+    getTestVersions,
+    getVersion,
+    generateVersions,
+    deleteVersion,
     // Cache management
     clearCache,
     clearTestCache,

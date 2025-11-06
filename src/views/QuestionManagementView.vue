@@ -5,7 +5,7 @@ import QuestionList from "@/components/dashboard/QuestionList.vue";
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTestStore } from "@/stores/testStore";
-import { uploadApi, versionApi } from "@/services/api";
+import { uploadApi } from "@/services/api";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
 import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
@@ -39,8 +39,9 @@ const downloadProgress = ref({ current: 0, total: 0 });
 const showDownloadFormatModal = ref(false);
 const selectedDownloadFormat = ref('pdf'); // 'pdf' or 'docx'
 const downloadType = ref('all'); // 'all' or 'single'
-const selectedVersionId = ref(null);
+const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
+const selectedVersions = ref([]); // For multiple version card selections
 
 // File upload
 const showUploadModal = ref(false);
@@ -458,10 +459,12 @@ const handleFileUpload = async () => {
   }
 };
 
-const loadVersions = async () => {
+const loadVersions = async (forceRefresh = false) => {
   try {
     isLoadingVersions.value = true;
-    const result = await versionApi.getTestVersions(testId);
+    
+    // Use cached version from testStore
+    const result = await testStore.getTestVersions(testId, forceRefresh);
 
     if (result.error) {
       console.error('Error loading versions:', result.error);
@@ -469,7 +472,7 @@ const loadVersions = async () => {
     }
 
     // Format versions for UI
-    versions.value = result.data.data.map(v => ({
+    versions.value = result.data.map(v => ({
       id: v.id,
       name: `Version ${v.version_number}`,
       createdAt: v.created_at,
@@ -507,7 +510,8 @@ const handleGenerateVersions = async () => {
   isGeneratingVersions.value = true;
 
   try {
-    const result = await versionApi.generateVersions(
+    // Use testStore to generate versions
+    const result = await testStore.generateVersions(
       testId,
       versionCount.value,
       questionsPerVersion.value
@@ -740,10 +744,28 @@ const generateVersionPDF = (versionData) => {
   return doc;
 };
 
+// Version card selection (multi-select)
+const toggleVersionSelection = (version) => {
+  const index = selectedVersions.value.findIndex(v => v.id === version.id);
+  
+  if (index > -1) {
+    // Already selected, remove it
+    selectedVersions.value.splice(index, 1);
+  } else {
+    // Not selected, add it
+    selectedVersions.value.push(version);
+  }
+};
+
+// Check if a version is selected
+const isVersionSelected = (versionId) => {
+  return selectedVersions.value.some(v => v.id === versionId);
+};
+
 // Open format selection modal
 const openDownloadFormatModal = (type, versionId = null) => {
   downloadType.value = type;
-  selectedVersionId.value = versionId;
+  downloadingVersionId.value = versionId;
   selectedDownloadFormat.value = 'pdf'; // Default to PDF
   showDownloadFormatModal.value = true;
 };
@@ -751,29 +773,31 @@ const openDownloadFormatModal = (type, versionId = null) => {
 const closeDownloadFormatModal = () => {
   showDownloadFormatModal.value = false;
   downloadType.value = 'all';
-  selectedVersionId.value = null;
+  downloadingVersionId.value = null;
 };
 
 const confirmDownload = async () => {
   if (downloadType.value === 'all') {
     await downloadAllVersions(selectedDownloadFormat.value);
-  } else if (downloadType.value === 'single' && selectedVersionId.value) {
-    await downloadVersion(selectedVersionId.value, selectedDownloadFormat.value);
+  } else if (downloadType.value === 'selected') {
+    await downloadSelectedVersionsZip(selectedDownloadFormat.value);
+  } else if (downloadType.value === 'single' && downloadingVersionId.value) {
+    await downloadVersion(downloadingVersionId.value, selectedDownloadFormat.value);
   }
   closeDownloadFormatModal();
 };
 
 const downloadVersion = async (versionId, format = 'pdf') => {
   try {
-    // Get version data
-    const result = await versionApi.getVersion(versionId);
+    // Get version data from cache
+    const result = await testStore.getVersion(versionId);
 
     if (result.error) {
       alert(`Failed to download version: ${result.error}`);
       return;
     }
 
-    const versionData = result.data.data;
+    const versionData = result.data;
     const baseFilename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}`;
     
     if (format === 'pdf') {
@@ -822,15 +846,15 @@ const downloadAllVersions = async (format = 'pdf') => {
       downloadProgress.value.current = i + 1;
 
       try {
-        // Get version data
-        const result = await versionApi.getVersion(version.id);
+        // Get version data from cache
+        const result = await testStore.getVersion(version.id);
 
         if (result.error) {
           console.error(`Failed to fetch version ${version.version_number}:`, result.error);
           continue; // Skip this version and continue with others
         }
 
-        const versionData = result.data.data;
+        const versionData = result.data;
         let fileBlob;
         
         // Generate file based on format
@@ -888,7 +912,8 @@ const cancelDeleteVersion = () => {
 
 const deleteVersion = async (versionId) => {
   try {
-    const result = await versionApi.deleteVersion(versionId);
+    // Use testStore to delete version
+    const result = await testStore.deleteVersion(versionId, testId);
 
     if (result.error) {
       alert(`Failed to delete version: ${result.error}`);
@@ -896,8 +921,11 @@ const deleteVersion = async (versionId) => {
       return;
     }
 
-    // Reload versions
-    await loadVersions();
+    // Remove from selected versions if it's in there
+    selectedVersions.value = selectedVersions.value.filter(v => v.id !== versionId);
+
+    // Reload versions (force refresh to get updated list)
+    await loadVersions(true);
     showDeleteVersionConfirm.value = null;
     alert('Version deleted successfully');
 
@@ -905,6 +933,150 @@ const deleteVersion = async (versionId) => {
     console.error('Delete error:', error);
     alert(`An error occurred: ${error.message}`);
     showDeleteVersionConfirm.value = null;
+  }
+};
+
+// Download all selected versions
+const downloadSelectedVersions = async () => {
+  if (selectedVersions.value.length === 0) {
+    return;
+  }
+
+  // For single version, just download it directly
+  if (selectedVersions.value.length === 1) {
+    openDownloadFormatModal('single', selectedVersions.value[0].id);
+    return;
+  }
+
+  // For multiple versions, create a ZIP
+  if (!confirm(`This will download ${selectedVersions.value.length} versions as a ZIP file. Continue?`)) {
+    return;
+  }
+
+  // Open format modal for selected versions
+  downloadType.value = 'selected';
+  showDownloadFormatModal.value = true;
+};
+
+// Confirm and execute the selected versions download
+const downloadSelectedVersionsZip = async (format = 'pdf') => {
+  if (selectedVersions.value.length === 0) {
+    return;
+  }
+
+  isDownloadingAll.value = true;
+  downloadProgress.value = { current: 0, total: selectedVersions.value.length };
+
+  try {
+    const zip = new JSZip();
+    const testTitle = test.value?.title || 'Test';
+    const folderName = testTitle.replace(/[^a-z0-9]/gi, '_');
+    const fileExtension = format === 'pdf' ? 'pdf' : 'docx';
+
+    // Fetch and generate files for selected versions
+    for (let i = 0; i < selectedVersions.value.length; i++) {
+      const version = selectedVersions.value[i];
+      downloadProgress.value.current = i + 1;
+
+      try {
+        // Get version data from cache
+        const result = await testStore.getVersion(version.id);
+
+        if (result.error) {
+          console.error(`Failed to fetch version ${version.versionNumber}:`, result.error);
+          continue;
+        }
+
+        const versionData = result.data;
+        let fileBlob;
+        
+        // Generate file based on format
+        if (format === 'pdf') {
+          const doc = generateVersionPDF(versionData);
+          fileBlob = doc.output('blob');
+        } else if (format === 'docx') {
+          fileBlob = await generateVersionWord(versionData);
+        }
+        
+        // Add to ZIP with descriptive filename
+        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.${fileExtension}`;
+        zip.file(filename, fileBlob);
+
+      } catch (error) {
+        console.error(`Error generating file for version ${version.versionNumber}:`, error);
+      }
+    }
+
+    // Generate ZIP file
+    const zipBlob = await zip.generateAsync({ 
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    // Download ZIP file
+    const downloadLink = document.createElement('a');
+    downloadLink.href = URL.createObjectURL(zipBlob);
+    downloadLink.download = `${folderName}_Selected_${selectedVersions.value.length}_Versions_${new Date().toISOString().split('T')[0]}.zip`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+    URL.revokeObjectURL(downloadLink.href);
+
+    alert(`Successfully downloaded ${downloadProgress.value.current} versions!`);
+
+  } catch (error) {
+    console.error('Download error:', error);
+    alert(`An error occurred while creating ZIP file: ${error.message}`);
+  } finally {
+    isDownloadingAll.value = false;
+    downloadProgress.value = { current: 0, total: 0 };
+  }
+};
+
+// Delete all selected versions
+const deleteSelectedVersions = async () => {
+  if (selectedVersions.value.length === 0) {
+    return;
+  }
+
+  const versionCount = selectedVersions.value.length;
+  const versionText = versionCount === 1 ? 'version' : 'versions';
+  
+  if (!confirm(`Are you sure you want to delete ${versionCount} ${versionText}? This action cannot be undone.`)) {
+    return;
+  }
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (const version of selectedVersions.value) {
+    try {
+      const result = await testStore.deleteVersion(version.id, testId);
+      
+      if (result.error) {
+        console.error(`Failed to delete ${version.name}:`, result.error);
+        failCount++;
+      } else {
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`Error deleting ${version.name}:`, error);
+      failCount++;
+    }
+  }
+
+  // Clear selection
+  selectedVersions.value = [];
+
+  // Reload versions
+  await loadVersions(true);
+
+  // Show result
+  if (failCount === 0) {
+    alert(`Successfully deleted ${successCount} ${versionText}!`);
+  } else {
+    alert(`Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`);
   }
 };
 
@@ -1290,7 +1462,13 @@ onMounted(async () => {
               <div
                 v-for="version in versions"
                 :key="version.id"
-                class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-200"
+                @click="toggleVersionSelection(version)"
+                class="bg-white overflow-hidden shadow rounded-lg transition-all duration-200 cursor-pointer"
+                :class="[
+                  isVersionSelected(version.id)
+                    ? 'ring-4 ring-blue-500 shadow-xl scale-[1.02]'
+                    : 'hover:shadow-lg'
+                ]"
               >
                 <div class="p-6">
                   <div class="flex items-center justify-between mb-4">
@@ -1335,9 +1513,10 @@ onMounted(async () => {
                       {{ new Date(version.createdAt).toLocaleDateString() }}
                     </div>
                   </div>
-                  <div class="flex space-x-2">
+                  <!-- Show buttons when no versions are selected -->
+                  <div v-if="selectedVersions.length === 0" class="flex space-x-2">
                     <button
-                      @click="openDownloadFormatModal('single', version.id)"
+                      @click.stop="openDownloadFormatModal('single', version.id)"
                       class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
                     >
                       <svg
@@ -1356,7 +1535,7 @@ onMounted(async () => {
                       Download
                     </button>
                     <button
-                      @click="confirmDeleteVersion(version.id)"
+                      @click.stop="confirmDeleteVersion(version.id)"
                       class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200"
                     >
                       <svg
@@ -1374,14 +1553,93 @@ onMounted(async () => {
                       </svg>
                     </button>
                   </div>
+                  
+                  <!-- Show "Selected" badge when THIS card is selected -->
+                  <div v-else-if="isVersionSelected(version.id)" class="flex items-center justify-center py-2">
+                    <div class="flex items-center text-blue-600 font-medium text-sm">
+                      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                      </svg>
+                      Selected
+                    </div>
+                  </div>
                 </div>
               </div>
+              </div>
+            </div>
+
+            <!-- Floating Action Buttons (shown when versions are selected) -->
+            <div
+              v-if="selectedVersions.length > 0"
+              class="fixed bottom-8 right-8 flex flex-col space-y-3 z-40 animate-fade-in"
+            >
+              <!-- Download Button (for all selected) -->
+              <button
+                @click.stop="downloadSelectedVersions"
+                class="group flex items-center bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+              >
+                <svg
+                  class="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+                Download {{ selectedVersions.length }} version{{ selectedVersions.length > 1 ? 's' : '' }}
+              </button>
+              
+              <!-- Delete Button (for all selected) -->
+              <button
+                @click.stop="deleteSelectedVersions"
+                class="group flex items-center bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+              >
+                <svg
+                  class="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                  />
+                </svg>
+                Delete {{ selectedVersions.length }} version{{ selectedVersions.length > 1 ? 's' : '' }}
+              </button>
+
+              <!-- Cancel/Deselect All Button -->
+              <button
+                @click.stop="selectedVersions = []"
+                class="flex items-center justify-center bg-gray-600 text-white hover:bg-gray-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+              >
+                <svg
+                  class="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+                Clear Selection
+              </button>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Question Form Modal -->
+        <!-- Question Form Modal -->
       <QuestionForm
         :is-open="showQuestionForm"
         :editing-question="editingQuestion"
@@ -1632,7 +1890,10 @@ onMounted(async () => {
                 </h3>
                 <div class="mt-2">
                   <p class="text-sm text-gray-500">
-                    Choose the file format for downloading {{ downloadType === 'all' ? 'all versions' : 'this version' }}.
+                    Choose the file format for downloading 
+                    <template v-if="downloadType === 'all'">all versions</template>
+                    <template v-else-if="downloadType === 'selected'">{{ selectedVersions.length }} selected version{{ selectedVersions.length > 1 ? 's' : '' }}</template>
+                    <template v-else>this version</template>.
                   </p>
                 </div>
                 <div class="mt-6 space-y-3">
@@ -1933,5 +2194,18 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-/* Additional styles if needed */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
 </style>
