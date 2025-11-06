@@ -8,6 +8,7 @@ import { useTestStore } from "@/stores/testStore";
 import { uploadApi, versionApi } from "@/services/api";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
 
 const route = useRoute();
 const router = useRouter();
@@ -35,6 +36,10 @@ const isGeneratingVersions = ref(false);
 const isLoadingVersions = ref(false);
 const isDownloadingAll = ref(false);
 const downloadProgress = ref({ current: 0, total: 0 });
+const showDownloadFormatModal = ref(false);
+const selectedDownloadFormat = ref('pdf'); // 'pdf' or 'docx'
+const downloadType = ref('all'); // 'all' or 'single'
+const selectedVersionId = ref(null);
 
 // File upload
 const showUploadModal = ref(false);
@@ -528,6 +533,83 @@ const handleGenerateVersions = async () => {
   }
 };
 
+// Helper function to generate Word document for a version
+const generateVersionWord = async (versionData) => {
+  const doc = new Document({
+    sections: [{
+      properties: {},
+      children: [
+        // Header
+        new Paragraph({
+          text: versionData.test_title,
+          heading: HeadingLevel.HEADING_1,
+          alignment: AlignmentType.LEFT,
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Version ${versionData.version_number}`,
+              bold: true,
+              size: 24,
+            }),
+          ],
+          spacing: { after: 200 },
+        }),
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `Generated: ${new Date(versionData.created_at).toLocaleString()}`,
+              size: 18,
+              color: "666666",
+            }),
+          ],
+          spacing: { after: 400 },
+        }),
+        
+        // Questions
+        ...versionData.questions.flatMap((q, qIndex) => {
+          const questionParagraphs = [
+            // Question text
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `${q.question_number}. `,
+                  bold: true,
+                  size: 22,
+                }),
+                new TextRun({
+                  text: q.question_text,
+                  size: 22,
+                }),
+              ],
+              spacing: { before: 200, after: 100 },
+            }),
+          ];
+
+          // Answer choices
+          const choiceParagraphs = q.answer_choices.map((choice, choiceIndex) => {
+            const letter = String.fromCharCode(65 + choiceIndex);
+            return new Paragraph({
+              children: [
+                new TextRun({
+                  text: `     ${letter}. ${choice.text}`,
+                  size: 20,
+                }),
+              ],
+              spacing: { after: 80 },
+              indent: { left: 720 },
+            });
+          });
+
+          return [...questionParagraphs, ...choiceParagraphs];
+        }),
+      ],
+    }],
+  });
+
+  return await Packer.toBlob(doc);
+};
+
 // Helper function to generate PDF for a version
 const generateVersionPDF = (versionData) => {
   // Create PDF
@@ -657,7 +739,30 @@ const generateVersionPDF = (versionData) => {
   return doc;
 };
 
-const downloadVersion = async (versionId) => {
+// Open format selection modal
+const openDownloadFormatModal = (type, versionId = null) => {
+  downloadType.value = type;
+  selectedVersionId.value = versionId;
+  selectedDownloadFormat.value = 'pdf'; // Default to PDF
+  showDownloadFormatModal.value = true;
+};
+
+const closeDownloadFormatModal = () => {
+  showDownloadFormatModal.value = false;
+  downloadType.value = 'all';
+  selectedVersionId.value = null;
+};
+
+const confirmDownload = async () => {
+  if (downloadType.value === 'all') {
+    await downloadAllVersions(selectedDownloadFormat.value);
+  } else if (downloadType.value === 'single' && selectedVersionId.value) {
+    await downloadVersion(selectedVersionId.value, selectedDownloadFormat.value);
+  }
+  closeDownloadFormatModal();
+};
+
+const downloadVersion = async (versionId, format = 'pdf') => {
   try {
     // Get version data
     const result = await versionApi.getVersion(versionId);
@@ -668,11 +773,21 @@ const downloadVersion = async (versionId) => {
     }
 
     const versionData = result.data.data;
-    const doc = generateVersionPDF(versionData);
+    const baseFilename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}`;
     
-    // Download PDF
-    const filename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}.pdf`;
-    doc.save(filename);
+    if (format === 'pdf') {
+      const doc = generateVersionPDF(versionData);
+      doc.save(`${baseFilename}.pdf`);
+    } else if (format === 'docx') {
+      const blob = await generateVersionWord(versionData);
+      const downloadLink = document.createElement('a');
+      downloadLink.href = URL.createObjectURL(blob);
+      downloadLink.download = `${baseFilename}.docx`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      URL.revokeObjectURL(downloadLink.href);
+    }
 
   } catch (error) {
     console.error('Download error:', error);
@@ -680,13 +795,14 @@ const downloadVersion = async (versionId) => {
   }
 };
 
-const downloadAllVersions = async () => {
+const downloadAllVersions = async (format = 'pdf') => {
   if (versions.value.length === 0) {
     alert('No versions available to download.');
     return;
   }
 
-  if (!confirm(`This will download all ${versions.value.length} versions as a ZIP file. Continue?`)) {
+  const formatName = format === 'pdf' ? 'PDF' : 'Word';
+  if (!confirm(`This will download all ${versions.value.length} versions as ${formatName} files in a ZIP. Continue?`)) {
     return;
   }
 
@@ -697,8 +813,9 @@ const downloadAllVersions = async () => {
     const zip = new JSZip();
     const testTitle = test.value?.title || 'Test';
     const folderName = testTitle.replace(/[^a-z0-9]/gi, '_');
+    const fileExtension = format === 'pdf' ? 'pdf' : 'docx';
 
-    // Fetch and generate PDFs for all versions
+    // Fetch and generate files for all versions
     for (let i = 0; i < versions.value.length; i++) {
       const version = versions.value[i];
       downloadProgress.value.current = i + 1;
@@ -713,19 +830,22 @@ const downloadAllVersions = async () => {
         }
 
         const versionData = result.data.data;
+        let fileBlob;
         
-        // Generate PDF
-        const doc = generateVersionPDF(versionData);
-        
-        // Get PDF as blob
-        const pdfBlob = doc.output('blob');
+        // Generate file based on format
+        if (format === 'pdf') {
+          const doc = generateVersionPDF(versionData);
+          fileBlob = doc.output('blob');
+        } else if (format === 'docx') {
+          fileBlob = await generateVersionWord(versionData);
+        }
         
         // Add to ZIP with descriptive filename
-        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.pdf`;
-        zip.file(filename, pdfBlob);
+        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.${fileExtension}`;
+        zip.file(filename, fileBlob);
 
       } catch (error) {
-        console.error(`Error generating PDF for version ${version.version_number}:`, error);
+        console.error(`Error generating ${formatName} for version ${version.version_number}:`, error);
         // Continue with other versions even if one fails
       }
     }
@@ -887,7 +1007,7 @@ onMounted(async () => {
                 </button>
                 <div v-if="activeTab === 'versions'" class="flex space-x-2">
                   <button
-                    @click="downloadAllVersions"
+                    @click="openDownloadFormatModal('all')"
                     :disabled="versions.length === 0 || isDownloadingAll"
                     class="bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                   >
@@ -1209,7 +1329,7 @@ onMounted(async () => {
                   </div>
                   <div class="flex space-x-2">
                     <button
-                      @click="downloadVersion(version.id)"
+                      @click="openDownloadFormatModal('single', version.id)"
                       class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
                     >
                       <svg
@@ -1453,6 +1573,141 @@ onMounted(async () => {
                 type="button"
                 @click="closeUploadModal"
                 :disabled="isUploadingFile"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Download Format Selection Modal -->
+      <div
+        v-if="showDownloadFormatModal"
+        class="fixed inset-0 z-50 overflow-y-auto"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay -->
+          <div
+            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            aria-hidden="true"
+            @click="closeDownloadFormatModal"
+          ></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+                <svg
+                  class="h-6 w-6 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                  />
+                </svg>
+              </div>
+              <div class="mt-3 text-center sm:mt-5">
+                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                  Select Download Format
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-500">
+                    Choose the file format for downloading {{ downloadType === 'all' ? 'all versions' : 'this version' }}.
+                  </p>
+                </div>
+                <div class="mt-6 space-y-3">
+                  <!-- PDF Option -->
+                  <label
+                    class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
+                    :class="selectedDownloadFormat === 'pdf' ? 'border-blue-600 ring-2 ring-blue-600' : ''"
+                  >
+                    <input
+                      type="radio"
+                      name="download-format"
+                      value="pdf"
+                      v-model="selectedDownloadFormat"
+                      class="sr-only"
+                    />
+                    <div class="flex flex-1 items-center">
+                      <div class="flex items-center">
+                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <div class="ml-3 text-left">
+                          <span class="block text-sm font-medium text-gray-900">PDF Format</span>
+                          <span class="block text-xs text-gray-500">Portable Document Format - Universal compatibility</span>
+                        </div>
+                      </div>
+                    </div>
+                    <svg v-if="selectedDownloadFormat === 'pdf'" class="h-5 w-5 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </label>
+
+                  <!-- Word Option -->
+                  <label
+                    class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
+                    :class="selectedDownloadFormat === 'docx' ? 'border-blue-600 ring-2 ring-blue-600' : ''"
+                  >
+                    <input
+                      type="radio"
+                      name="download-format"
+                      value="docx"
+                      v-model="selectedDownloadFormat"
+                      class="sr-only"
+                    />
+                    <div class="flex flex-1 items-center">
+                      <div class="flex items-center">
+                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div class="ml-3 text-left">
+                          <span class="block text-sm font-medium text-gray-900">Word Format (DOCX)</span>
+                          <span class="block text-xs text-gray-500">Editable document - Microsoft Word compatible</span>
+                        </div>
+                      </div>
+                    </div>
+                    <svg v-if="selectedDownloadFormat === 'docx'" class="h-5 w-5 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    </svg>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+              <button
+                type="button"
+                @click="confirmDownload"
+                :disabled="isDownloadingAll"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                <svg
+                  v-if="isDownloadingAll"
+                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                {{ isDownloadingAll ? 'Downloading...' : 'Download' }}
+              </button>
+              <button
+                type="button"
+                @click="closeDownloadFormatModal"
+                :disabled="isDownloadingAll"
                 class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Cancel
