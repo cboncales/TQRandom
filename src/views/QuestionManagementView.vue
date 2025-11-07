@@ -42,6 +42,9 @@ const downloadType = ref('all'); // 'all' or 'single'
 const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
 const selectedVersions = ref([]); // For multiple version card selections
+const showPreviewModal = ref(false);
+const previewVersion = ref(null);
+const isLoadingPreview = ref(false);
 
 // File upload
 const showUploadModal = ref(false);
@@ -760,6 +763,36 @@ const toggleVersionSelection = (version) => {
 // Check if a version is selected
 const isVersionSelected = (versionId) => {
   return selectedVersions.value.some(v => v.id === versionId);
+};
+
+// Preview version
+const openPreview = async (version) => {
+  isLoadingPreview.value = true;
+  showPreviewModal.value = true;
+  previewVersion.value = null;
+
+  try {
+    const result = await testStore.getVersion(version.id);
+
+    if (result.error) {
+      alert(`Failed to load version: ${result.error}`);
+      showPreviewModal.value = false;
+      return;
+    }
+
+    previewVersion.value = result.data;
+  } catch (error) {
+    console.error('Preview error:', error);
+    alert(`An error occurred: ${error.message}`);
+    showPreviewModal.value = false;
+  } finally {
+    isLoadingPreview.value = false;
+  }
+};
+
+const closePreview = () => {
+  showPreviewModal.value = false;
+  previewVersion.value = null;
 };
 
 // Open format selection modal
@@ -1514,10 +1547,56 @@ onMounted(async () => {
                     </div>
                   </div>
                   <!-- Show buttons when no versions are selected -->
-                  <div v-if="selectedVersions.length === 0" class="flex space-x-2">
+                  <div v-if="selectedVersions.length === 0" class="space-y-2">
+                    <div class="flex space-x-2">
+                      <button
+                        @click.stop="openPreview(version)"
+                        class="flex-1 bg-purple-600 text-white hover:bg-purple-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
+                      >
+                        <svg
+                          class="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                        Preview
+                      </button>
+                      <button
+                        @click.stop="openDownloadFormatModal('single', version.id)"
+                        class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
+                      >
+                        <svg
+                          class="w-4 h-4 mr-1"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                        Download
+                      </button>
+                    </div>
                     <button
-                      @click.stop="openDownloadFormatModal('single', version.id)"
-                      class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
+                      @click.stop="confirmDeleteVersion(version.id)"
+                      class="w-full bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
                     >
                       <svg
                         class="w-4 h-4 mr-1"
@@ -1529,28 +1608,10 @@ onMounted(async () => {
                           stroke-linecap="round"
                           stroke-linejoin="round"
                           stroke-width="2"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                      Download
-                    </button>
-                    <button
-                      @click.stop="confirmDeleteVersion(version.id)"
-                      class="bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200"
-                    >
-                      <svg
-                        class="w-4 h-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                         />
                       </svg>
+                      Delete
                     </button>
                   </div>
                   
@@ -2187,6 +2248,93 @@ onMounted(async () => {
               Cancel
             </button>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Preview Version Modal -->
+    <div
+      v-if="showPreviewModal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
+      @click="closePreview"
+    >
+      <div
+        class="relative w-full max-w-4xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+        @click.stop
+      >
+        <!-- Header (Fixed) -->
+        <div class="flex justify-between items-center px-6 pt-6 pb-4 border-b shrink-0">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">
+              {{ previewVersion?.test_title || 'Loading...' }}
+            </h2>
+            <p class="text-sm text-gray-600 mt-1">
+              Version {{ previewVersion?.version_number }} • 
+              {{ previewVersion?.questions?.length || 0 }} questions • 
+              Generated {{ previewVersion ? new Date(previewVersion.created_at).toLocaleDateString() : '' }}
+            </p>
+          </div>
+          <button
+            @click="closePreview"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="overflow-y-auto flex-1 px-6 py-4">
+          <!-- Loading State -->
+          <div v-if="isLoadingPreview" class="flex flex-col items-center justify-center py-12">
+            <svg class="animate-spin h-12 w-12 text-purple-600 mb-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600">Loading version preview...</p>
+          </div>
+
+          <!-- Content -->
+          <div v-else-if="previewVersion" class="space-y-6">
+            <div
+              v-for="(question, qIndex) in previewVersion.questions"
+              :key="question.question_id"
+              class="bg-gray-50 rounded-lg p-5 border border-gray-200"
+            >
+              <!-- Question -->
+              <div class="flex items-start mb-4">
+                <span class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3">
+                  {{ question.question_number }}
+                </span>
+                <p class="text-lg text-gray-900 font-medium">{{ question.question_text }}</p>
+              </div>
+
+              <!-- Answer Choices -->
+              <div class="ml-11 space-y-2">
+                <div
+                  v-for="(choice, cIndex) in question.answer_choices"
+                  :key="choice.id"
+                  class="flex items-start p-3 rounded-md bg-white border border-gray-200"
+                >
+                  <span class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]">
+                    {{ String.fromCharCode(65 + cIndex) }}.
+                  </span>
+                  <p class="text-gray-800">{{ choice.text }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer (Fixed) -->
+        <div class="px-6 pt-4 pb-6 border-t flex justify-end shrink-0">
+          <button
+            @click="closePreview"
+            class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

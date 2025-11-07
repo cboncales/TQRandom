@@ -263,14 +263,15 @@ const hasCorrectAnswer = () => {
   <!-- Modal backdrop -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
     @click="closeModal"
   >
     <!-- Modal content -->
     <div
-      class="relative top-10 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-screen overflow-y-auto"
+      class="relative w-full max-w-2xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
+      <div class="overflow-y-auto flex-1 p-5">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-lg font-medium text-gray-900">
@@ -564,66 +565,69 @@ const hasCorrectAnswer = () => {
           </div>
         </div>
 
-        <!-- Form Actions -->
-        <div class="flex justify-end space-x-3 pt-6 border-t">
-          <button
-            type="button"
-            @click="closeModal"
-            :disabled="props.isLoading"
-            class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            :disabled="props.isLoading || isUploadingImage"
-            class="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
-            <span v-if="props.isLoading || isUploadingImage" class="w-4 h-4 mr-2 animate-spin">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-            </span>
-            <svg
-              v-else
-              class="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            {{
-              isUploadingImage
-                ? "Uploading images..."
-                : props.isLoading
-                ? editingQuestion
-                  ? "Updating..."
-                  : "Saving..."
-                : editingQuestion
-                ? "Update Question"
-                : "Save Question"
-            }}
-          </button>
-        </div>
       </form>
+      </div>
+      
+      <!-- Form Actions (Fixed Footer) -->
+      <div class="flex justify-end space-x-3 pt-4 pb-5 px-5 border-t bg-white shrink-0">
+        <button
+          type="button"
+          @click="closeModal"
+          :disabled="props.isLoading"
+          class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          @click="handleSubmit"
+          :disabled="props.isLoading || isUploadingImage"
+          class="bg-blue-600 text-white hover:bg-blue-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center disabled:bg-gray-400 disabled:cursor-not-allowed"
+        >
+          <span v-if="props.isLoading || isUploadingImage" class="w-4 h-4 mr-2 animate-spin">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+          </span>
+          <svg
+            v-else
+            class="w-4 h-4 mr-2"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          {{
+            isUploadingImage
+              ? "Uploading images..."
+              : props.isLoading
+              ? editingQuestion
+                ? "Updating..."
+                : "Saving..."
+              : editingQuestion
+              ? "Update Question"
+              : "Save Question"
+          }}
+        </button>
+      </div>
     </div>
   </div>
 
