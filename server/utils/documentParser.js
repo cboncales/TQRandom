@@ -119,9 +119,10 @@ async function extractImagesFromDocx(filePath) {
  * Assumes answer choices start with a letter (A-H) (e.g., "A.", "A)")
  *
  * Now also handles [IMAGE] markers for embedded images
+ * If no markers found, distributes images evenly across questions
  *
  * @param {string} rawText - The raw text extracted from the document.
- * @param {Array} extractedImages - Array of extracted images
+ * @param {Array} extractedImages - Array of extracted images with {url, path}
  * @returns {Array<Object>} An array of question objects.
  */
 function parseDocumentText(rawText, extractedImages = []) {
@@ -130,6 +131,7 @@ function parseDocumentText(rawText, extractedImages = []) {
   let currentQuestion = null;
   let questionNumber = 0;
   let imageIndex = 0;
+  let hasImageMarkers = false;
 
   // Regex for question lines: starts with number, then dot or parenthesis, then text
   const questionPattern = /^(\d+)[\.\)]\s*(.+)$/;
@@ -137,6 +139,9 @@ function parseDocumentText(rawText, extractedImages = []) {
   const answerChoicePattern = /^[A-H][\.\)]\s*(.+)$/i;
   // Regex for image markers
   const imagePattern = /\[IMAGE\]|\[IMG\]|IMAGE_(\d+)/i;
+  
+  // Check if document has any image markers
+  hasImageMarkers = imagePattern.test(rawText);
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -213,6 +218,19 @@ function parseDocumentText(rawText, extractedImages = []) {
       console.warn(`Skipping question ${currentQuestion.question_number} due to invalid number of answer choices (${currentQuestion.answer_choices.length}). Must be between 2 and 8.`);
     } else {
       questions.push(currentQuestion);
+    }
+  }
+
+  // If no [IMAGE] markers were found but we have extracted images,
+  // distribute them evenly across questions (assign to first N questions)
+  if (!hasImageMarkers && extractedImages.length > 0) {
+    console.log(`No [IMAGE] markers found. Auto-distributing ${extractedImages.length} images to first ${Math.min(extractedImages.length, questions.length)} questions.`);
+    
+    for (let i = 0; i < Math.min(extractedImages.length, questions.length); i++) {
+      if (extractedImages[i]) {
+        questions[i].question_image = extractedImages[i];
+        console.log(`Assigned image ${i + 1} to question ${questions[i].question_number}`);
+      }
     }
   }
 

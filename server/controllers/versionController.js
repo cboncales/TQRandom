@@ -303,7 +303,7 @@ export async function getVersion(req, res) {
 }
 
 /**
- * Delete a version
+ * Delete a version and all related data (cascading delete)
  */
 export async function deleteVersion(req, res) {
   try {
@@ -330,7 +330,29 @@ export async function deleteVersion(req, res) {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    // Delete version (cascade will handle related records)
+    // Step 1: Get all version questions for this version
+    const { data: versionQuestions } = await supabase
+      .from('test_version_questions')
+      .select('id')
+      .eq('test_version_id', versionId);
+
+    if (versionQuestions && versionQuestions.length > 0) {
+      const versionQuestionIds = versionQuestions.map(vq => vq.id);
+
+      // Step 1a: Delete test_versions_answer_choices
+      await supabase
+        .from('test_versions_answer_choices')
+        .delete()
+        .in('test_version_question_id', versionQuestionIds);
+
+      // Step 1b: Delete test_version_questions
+      await supabase
+        .from('test_version_questions')
+        .delete()
+        .in('id', versionQuestionIds);
+    }
+
+    // Step 2: Delete the test version
     const { error: deleteError } = await supabase
       .from('test_versions')
       .delete()

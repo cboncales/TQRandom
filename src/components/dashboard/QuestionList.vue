@@ -150,30 +150,6 @@ const getCorrectAnswers = (options) => {
                     </span>
                   </div>
                 </div>
-
-                <!-- Paraphrases -->
-                <div
-                  v-if="question.paraphrases && question.paraphrases.length > 0"
-                  class="mb-4"
-                >
-                  <h5 class="text-sm font-medium text-gray-700 mb-2">
-                    Question Variants:
-                  </h5>
-                  <div class="space-y-1">
-                    <div
-                      v-for="(paraphrase, pIndex) in question.paraphrases"
-                      :key="pIndex"
-                      class="text-sm text-gray-600 bg-blue-50 p-2 rounded border-l-4 border-blue-200"
-                    >
-                      • {{ paraphrase }}
-                    </div>
-                  </div>
-                </div>
-
-                <!-- No paraphrases message -->
-                <div v-else class="text-sm text-gray-500 italic">
-                  No question variants added
-                </div>
               </div>
             </div>
           </div>

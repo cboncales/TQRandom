@@ -229,9 +229,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Update a question and its answer choices
    */
-  async function updateQuestion(questionId, questionText, answerChoices, testId = null) {
+  async function updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null, testId = null) {
     try {
-      const result = await questionApi.updateQuestion(questionId, questionText, answerChoices);
+      const result = await questionApi.updateQuestion(questionId, questionText, answerChoices, questionImageUrl);
       
       if (result.error) {
         return { error: result.error };

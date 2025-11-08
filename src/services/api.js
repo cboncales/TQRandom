@@ -317,10 +317,10 @@ export const questionApi = {
   /**
    * Update a question
    */
-  async updateQuestion(questionId, questionText, answerChoices) {
+  async updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null) {
     return apiRequest(`/api/questions/${questionId}`, {
       method: 'PUT',
-      body: JSON.stringify({ questionText, answerChoices }),
+      body: JSON.stringify({ questionText, answerChoices, questionImageUrl }),
     });
   },
 

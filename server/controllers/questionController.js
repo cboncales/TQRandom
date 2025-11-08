@@ -8,6 +8,10 @@ async function createQuestion(req, res) {
     const { testId, questionText, questionImageUrl, answerChoices } = req.body;
     const userId = req.user.id;
 
+    // Debug: Log received data
+    console.log('Creating question with image URL:', questionImageUrl);
+    console.log('Answer choices with images:', answerChoices?.map(c => ({ hasImage: !!c.imageUrl })));
+
     if (!testId || !questionText || !questionText.trim()) {
       return res.status(400).json({ error: 'Test ID and question text are required' });
     }
@@ -141,8 +145,11 @@ async function getTestQuestions(req, res) {
 async function updateQuestion(req, res) {
   try {
     const { id } = req.params;
-    const { questionText, answerChoices } = req.body;
+    const { questionText, answerChoices, questionImageUrl } = req.body;
     const userId = req.user.id;
+
+    console.log('Updating question with image URL:', questionImageUrl);
+    console.log('Answer choices with images:', answerChoices?.map(c => ({ hasImage: !!c.imageUrl })));
 
     if (!questionText || !questionText.trim()) {
       return res.status(400).json({ error: 'Question text is required' });
@@ -163,10 +170,15 @@ async function updateQuestion(req, res) {
       return res.status(404).json({ error: 'Question not found or access denied' });
     }
 
-    // Update the question text
+    // Update the question text and image URL
+    const updateData = { text: questionText.trim() };
+    if (questionImageUrl !== undefined) {
+      updateData.image_url = questionImageUrl;
+    }
+    
     const { error: updateError } = await supabase
       .from('questions')
-      .update({ text: questionText.trim() })
+      .update(updateData)
       .eq('id', id);
 
     if (updateError) {
@@ -177,7 +189,7 @@ async function updateQuestion(req, res) {
     // Get existing answer choices for this question
     const { data: existingChoices, error: getChoicesError } = await supabase
       .from('answer_choices')
-      .select('id, text')
+      .select('id, text, image_url')
       .eq('question_id', id)
       .order('id', { ascending: true });
 
@@ -197,19 +209,29 @@ async function updateQuestion(req, res) {
         const newChoice = answerChoices[i];
 
         if (existingChoice && newChoice) {
-          // Update existing choice if text is different
+          // Update existing choice if text or image URL is different
+          const choiceUpdateData = {};
           if (existingChoice.text.trim() !== newChoice.text.trim()) {
+            choiceUpdateData.text = newChoice.text.trim();
+          }
+          if (newChoice.imageUrl !== undefined && existingChoice.image_url !== newChoice.imageUrl) {
+            choiceUpdateData.image_url = newChoice.imageUrl;
+          }
+          
+          // Only update if there are changes
+          if (Object.keys(choiceUpdateData).length > 0) {
             await supabase
               .from('answer_choices')
-              .update({ text: newChoice.text.trim() })
+              .update(choiceUpdateData)
               .eq('id', existingChoice.id);
           }
         } else if (!existingChoice && newChoice) {
-          // Insert new choice
+          // Insert new choice with image URL
           await supabase.from('answer_choices').insert([
             {
               question_id: id,
               text: newChoice.text.trim(),
+              image_url: newChoice.imageUrl || null,
             },
           ]);
         } else if (existingChoice && !newChoice) {
@@ -248,7 +270,7 @@ async function updateQuestion(req, res) {
 }
 
 /**
- * Delete a question and its answer choices
+ * Delete a question and all related data (cascading delete)
  */
 async function deleteQuestion(req, res) {
   try {
@@ -270,13 +292,41 @@ async function deleteQuestion(req, res) {
       return res.status(404).json({ error: 'Question not found or access denied' });
     }
 
-    // Delete answer choices first (foreign key constraint)
+    // Step 1: Delete from test versions if this question is used in any
+    const { data: versionQuestions } = await supabase
+      .from('test_version_questions')
+      .select('id')
+      .eq('question_id', id);
+
+    if (versionQuestions && versionQuestions.length > 0) {
+      const versionQuestionIds = versionQuestions.map(vq => vq.id);
+
+      // Delete test_versions_answer_choices
+      await supabase
+        .from('test_versions_answer_choices')
+        .delete()
+        .in('test_version_question_id', versionQuestionIds);
+
+      // Delete test_version_questions
+      await supabase
+        .from('test_version_questions')
+        .delete()
+        .in('id', versionQuestionIds);
+    }
+
+    // Step 2: Delete correct answers (answers table)
+    await supabase
+      .from('answers')
+      .delete()
+      .eq('question_id', id);
+
+    // Step 3: Delete answer choices
     await supabase
       .from('answer_choices')
       .delete()
       .eq('question_id', id);
 
-    // Delete the question
+    // Step 4: Delete the question
     const { error } = await supabase
       .from('questions')
       .delete()
@@ -287,7 +337,7 @@ async function deleteQuestion(req, res) {
       return res.status(500).json({ error: error.message });
     }
 
-    res.json({ success: true });
+    res.json({ success: true, message: 'Question deleted successfully' });
   } catch (error) {
     console.error('Error in deleteQuestion:', error);
     res.status(500).json({ error: 'Failed to delete question' });

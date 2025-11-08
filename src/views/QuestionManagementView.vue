@@ -42,16 +42,24 @@ const downloadType = ref('all'); // 'all' or 'single'
 const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
 const selectedVersions = ref([]); // For multiple version card selections
+const selectAll = ref(false); // For select all checkbox
 const showPreviewModal = ref(false);
 const previewVersion = ref(null);
 const isLoadingPreview = ref(false);
 
 // File upload
 const showUploadModal = ref(false);
-const selectedFile = ref(null);
+const selectedFile = ref(false);
 const isUploadingFile = ref(false);
 const uploadProgress = ref(0);
 const answerKeyText = ref("");
+
+// Image assignment modal state
+const showImageAssignmentModal = ref(false);
+const pendingQuestions = ref([]);
+const extractedImages = ref([]);
+const imageAssignments = ref({}); // { questionIndex: imageUrl }
+const savedAnswerKeyMap = ref({}); // Store parsed answer key for later use
 
 const openQuestionForm = () => {
   editingQuestion.value = null;
@@ -102,7 +110,6 @@ const editQuestion = async (question) => {
       id: question.id,
       question: question.question || question.text, // Use question.question if available, fallback to question.text
       options: options,
-      paraphrases: [], // Add paraphrases support later if needed
     };
 
     showQuestionForm.value = true;
@@ -128,7 +135,8 @@ const handleQuestionSaved = async (questionData) => {
         editingQuestion.value.id,
         questionData.question,
         questionData.options.filter((opt) => opt.text.trim()),
-        questionData.imageUrl // Pass question image URL
+        questionData.imageUrl, // Pass question image URL
+        testId // Pass testId for cache invalidation
       );
 
       if (result.error) {
@@ -158,8 +166,8 @@ const handleQuestionSaved = async (questionData) => {
           }
         }
 
-        // Reload questions to get fresh data
-        await loadQuestions();
+        // Reload questions to get fresh data (force refresh to show images)
+        await loadQuestions(true);
         closeQuestionForm();
       }
     } else {
@@ -202,8 +210,8 @@ const handleQuestionSaved = async (questionData) => {
           }
         }
 
-        // Reload questions to get fresh data
-        await loadQuestions();
+        // Reload questions to get fresh data (force refresh to show images)
+        await loadQuestions(true);
         closeQuestionForm();
       }
     }
@@ -255,9 +263,9 @@ const loadTest = async () => {
   }
 };
 
-const loadQuestions = async () => {
+const loadQuestions = async (forceRefresh = false) => {
   try {
-    const result = await testStore.getTestQuestions(testId);
+    const result = await testStore.getTestQuestions(testId, forceRefresh);
 
     if (result.error) {
       errorMessage.value = result.error;
@@ -278,15 +286,14 @@ const loadQuestions = async () => {
     questions.value = result.data.map((question) => ({
       id: question.id,
       question: question.text,
-      imageUrl: question.image_url || null, // NEW: Include question image
+      imageUrl: question.image_url || null, // Include question image
       type: "multiple-choice",
       options: question.answer_choices.map((choice) => ({
         id: choice.id,
         text: choice.text,
-        imageUrl: choice.image_url || null, // NEW: Include choice image
+        imageUrl: choice.image_url || null, // Include choice image
         isCorrect: correctAnswerMap[question.id] === choice.id,
       })),
-      paraphrases: [], // Not implemented in database yet
     }));
 
   } catch (error) {
@@ -310,6 +317,124 @@ const closeUploadModal = () => {
   showUploadModal.value = false;
   selectedFile.value = null;
   answerKeyText.value = "";
+};
+
+// Image assignment functions
+const assignImageToQuestion = (questionIndex, imageUrl) => {
+  if (imageAssignments.value[questionIndex] === imageUrl) {
+    // Unassign if clicking the same image
+    delete imageAssignments.value[questionIndex];
+  } else {
+    imageAssignments.value[questionIndex] = imageUrl;
+  }
+};
+
+const getAssignedImage = (questionIndex) => {
+  return imageAssignments.value[questionIndex] || null;
+};
+
+const clearAssignment = (questionIndex) => {
+  delete imageAssignments.value[questionIndex];
+};
+
+const closeImageAssignmentModal = () => {
+  showImageAssignmentModal.value = false;
+  pendingQuestions.value = [];
+  extractedImages.value = [];
+  imageAssignments.value = {};
+  savedAnswerKeyMap.value = {}; // Clear saved answer key
+};
+
+const saveQuestionsWithImages = async () => {
+  isUploadingFile.value = true;
+  uploadProgress.value = 0;
+  
+  try {
+    // Use the saved answer key map (was parsed before modal opened)
+    const answerKeyMap = savedAnswerKeyMap.value;
+    console.log('Using saved answer key map for assignment:', answerKeyMap);
+    
+    let successCount = 0;
+    let failCount = 0;
+    let answerSetCount = 0;
+    
+    for (let i = 0; i < pendingQuestions.value.length; i++) {
+      uploadProgress.value = Math.round(((i + 1) / pendingQuestions.value.length) * 50);
+      
+      const parsed = pendingQuestions.value[i];
+      const questionNumber = i + 1;
+      
+      // Get manually assigned image or use auto-assigned
+      const assignedImageUrl = imageAssignments.value[i] || parsed.question_image?.url || null;
+      
+      // Convert answer_choices
+      const answerChoices = parsed.answer_choices.map(choice => ({
+        text: typeof choice === 'string' ? choice : choice.text,
+        imageUrl: typeof choice === 'object' ? choice.image?.url : null
+      }));
+      
+      // Create the question with assigned image
+      const createResult = await testStore.createQuestion(
+        testId,
+        parsed.question_text,
+        answerChoices,
+        assignedImageUrl
+      );
+      
+      if (createResult.error) {
+        console.error(`Failed to create question ${questionNumber}:`, createResult.error);
+        failCount++;
+      } else {
+        successCount++;
+        
+        // Handle answer key if provided
+        const correctAnswerLetter = answerKeyMap[questionNumber];
+        if (correctAnswerLetter && createResult.data) {
+          uploadProgress.value = Math.round(50 + ((i + 1) / pendingQuestions.value.length) * 50);
+          
+          const questionsResult = await testStore.getTestQuestions(testId, true);
+          if (questionsResult.data) {
+            const createdQuestion = questionsResult.data.find(q => q.id === createResult.data.id);
+            
+            if (createdQuestion && createdQuestion.answer_choices) {
+              const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+              const correctChoice = createdQuestion.answer_choices[choiceIndex];
+              
+              if (correctChoice) {
+                const answerResult = await testStore.storeCorrectAnswer(
+                  createResult.data.id,
+                  correctChoice.id,
+                  testId
+                );
+                if (!answerResult.error) {
+                  answerSetCount++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // Close modal and reload
+    closeImageAssignmentModal();
+    await loadQuestions(true);
+    
+    // Show summary
+    let message = `Upload complete!\n\n`;
+    message += `✅ Questions created: ${successCount}\n`;
+    if (failCount > 0) message += `❌ Failed: ${failCount}\n`;
+    if (answerSetCount > 0) message += `🎯 Correct answers set: ${answerSetCount}`;
+    
+    alert(message);
+    
+  } catch (error) {
+    console.error('Error saving questions:', error);
+    alert(`Error: ${error.message}`);
+  } finally {
+    isUploadingFile.value = false;
+    uploadProgress.value = 0;
+  }
 };
 
 const handleFileSelect = (event) => {
@@ -370,8 +495,35 @@ const handleFileUpload = async () => {
     }
 
     const parsedQuestions = result.data.data;
+    const stats = result.data.stats;
     console.log(`Successfully parsed ${parsedQuestions.length} questions from document`);
+    console.log(`Images extracted: ${stats.images_extracted}, uploaded: ${stats.total_images}`);
 
+    // Check if images were extracted
+    if (stats.total_images > 0) {
+      // Store for manual assignment
+      pendingQuestions.value = parsedQuestions;
+      extractedImages.value = result.data.images || [];
+      imageAssignments.value = {};
+      
+      // IMPORTANT: Save the answer key map BEFORE closing the modal (which clears answerKeyText)
+      savedAnswerKeyMap.value = answerKeyMap;
+      console.log('Saved answer key map:', savedAnswerKeyMap.value);
+      
+      // Initialize assignments from already-assigned images
+      parsedQuestions.forEach((q, idx) => {
+        if (q.question_image?.url) {
+          imageAssignments.value[idx] = q.question_image.url;
+        }
+      });
+      
+      // Close upload modal and show image assignment modal
+      closeUploadModal();
+      showImageAssignmentModal.value = true;
+      return;
+    }
+
+    // No images - proceed with normal upload
     // Now add each parsed question to the test
     let successCount = 0;
     let failCount = 0;
@@ -392,6 +544,10 @@ const handleFileUpload = async () => {
 
       // Extract question image URL if present
       const questionImageUrl = parsed.question_image?.url || null;
+
+      // Debug: Log what we're sending
+      console.log(`Question ${questionNumber} - Image URL:`, questionImageUrl);
+      console.log(`Answer choices:`, answerChoices.map(c => ({ text: c.text.substring(0, 20), imageUrl: c.imageUrl })));
 
       // Create the question (with optional image)
       const createResult = await testStore.createQuestion(
@@ -439,9 +595,9 @@ const handleFileUpload = async () => {
       }
     }
 
-    // Close modal and reload questions
+    // Close modal and reload questions (force refresh to show images)
     closeUploadModal();
-    await loadQuestions();
+    await loadQuestions(true);
 
     // Show summary
     let message = `Upload complete!\n\nSuccessfully added: ${successCount} questions`;
@@ -758,11 +914,34 @@ const toggleVersionSelection = (version) => {
     // Not selected, add it
     selectedVersions.value.push(version);
   }
+  
+  // Update select all checkbox state
+  updateSelectAllState();
 };
 
 // Check if a version is selected
 const isVersionSelected = (versionId) => {
   return selectedVersions.value.some(v => v.id === versionId);
+};
+
+// Toggle select all versions
+const toggleSelectAll = () => {
+  if (selectAll.value) {
+    // Select all versions
+    selectedVersions.value = [...versions.value];
+  } else {
+    // Deselect all
+    selectedVersions.value = [];
+  }
+};
+
+// Watch for changes in selectedVersions to update selectAll checkbox
+const updateSelectAllState = () => {
+  if (versions.value.length === 0) {
+    selectAll.value = false;
+  } else {
+    selectAll.value = selectedVersions.value.length === versions.value.length;
+  }
 };
 
 // Preview version
@@ -1491,7 +1670,26 @@ onMounted(async () => {
             </div>
 
             <!-- Versions List -->
-            <div v-else class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div v-else>
+              <!-- Select All Checkbox -->
+              <div class="mb-4 flex items-center">
+                <input
+                  id="select-all-versions"
+                  v-model="selectAll"
+                  @change="toggleSelectAll"
+                  type="checkbox"
+                  class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                />
+                <label
+                  for="select-all-versions"
+                  class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
+                >
+                  Select All ({{ versions.length }} version{{ versions.length !== 1 ? 's' : '' }})
+                </label>
+              </div>
+
+              <!-- Version Cards Grid -->
+              <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               <div
                 v-for="version in versions"
                 :key="version.id"
@@ -1627,6 +1825,7 @@ onMounted(async () => {
                 </div>
               </div>
               </div>
+              </div>
             </div>
 
             <!-- Floating Action Buttons (shown when versions are selected) -->
@@ -1678,7 +1877,7 @@ onMounted(async () => {
 
               <!-- Cancel/Deselect All Button -->
               <button
-                @click.stop="selectedVersions = []"
+                @click.stop="selectedVersions = []; selectAll = false"
                 class="flex items-center justify-center bg-gray-600 text-white hover:bg-gray-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
               >
                 <svg
@@ -2042,6 +2241,176 @@ onMounted(async () => {
               >
                 Cancel
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Image Assignment Modal -->
+      <div
+        v-if="showImageAssignmentModal"
+        class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75"
+        aria-labelledby="modal-title"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-center justify-center min-h-screen p-4">
+          <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
+              <div>
+                <h3 class="text-xl font-semibold text-white">
+                  📸 Assign Images to Questions
+                </h3>
+                <p class="text-sm text-blue-100 mt-1">
+                  Click on an image to assign it to a question. Click again to unassign.
+                </p>
+              </div>
+              <button
+                @click="closeImageAssignmentModal"
+                class="text-white hover:text-gray-200 transition-colors"
+              >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-1 overflow-y-auto p-6">
+              <!-- Extracted Images -->
+              <div class="mb-6">
+                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                  📦 Extracted Images ({{ extractedImages.length }})
+                </h4>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div
+                    v-for="(image, idx) in extractedImages"
+                    :key="idx"
+                    class="border-2 rounded-lg p-2 hover:shadow-md transition-shadow"
+                    :class="Object.values(imageAssignments).includes(image.url) ? 'border-green-500 bg-green-50' : 'border-gray-300'"
+                  >
+                    <img
+                      :src="image.url"
+                      :alt="`Image ${idx + 1}`"
+                      class="w-full h-32 object-contain rounded"
+                    />
+                    <p class="text-xs text-center mt-1 text-gray-600">
+                      Image {{ idx + 1 }}
+                      <span v-if="Object.values(imageAssignments).includes(image.url)" class="text-green-600 font-semibold">
+                        ✓ Assigned
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Questions List -->
+              <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                  📝 Questions ({{ pendingQuestions.length }})
+                </h4>
+                <div class="space-y-4">
+                  <div
+                    v-for="(question, qIdx) in pendingQuestions"
+                    :key="qIdx"
+                    class="border border-gray-300 rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+                  >
+                    <div class="flex items-start gap-4">
+                      <!-- Question Number -->
+                      <div class="shrink-0">
+                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">
+                          {{ qIdx + 1 }}
+                        </span>
+                      </div>
+
+                      <!-- Question Text -->
+                      <div class="flex-1">
+                        <p class="text-gray-900 font-medium">
+                          {{ question.question_text.substring(0, 100) }}{{ question.question_text.length > 100 ? '...' : '' }}
+                        </p>
+
+                        <!-- Assigned Image Preview -->
+                        <div v-if="getAssignedImage(qIdx)" class="mt-3">
+                          <div class="relative inline-block">
+                            <img
+                              :src="getAssignedImage(qIdx)"
+                              alt="Assigned image"
+                              class="h-24 w-auto rounded border-2 border-green-500"
+                            />
+                            <button
+                              @click="clearAssignment(qIdx)"
+                              class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                            >
+                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                              </svg>
+                            </button>
+                          </div>
+                        </div>
+
+                        <!-- Image Selector -->
+                        <div class="mt-3">
+                          <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Select image for this question:
+                          </label>
+                          <div class="flex flex-wrap gap-2">
+                            <button
+                              v-for="(image, imgIdx) in extractedImages"
+                              :key="imgIdx"
+                              @click="assignImageToQuestion(qIdx, image.url)"
+                              class="relative border-2 rounded p-1 hover:shadow-md transition-all"
+                              :class="getAssignedImage(qIdx) === image.url ? 'border-green-500 bg-green-50 ring-2 ring-green-500' : 'border-gray-300 hover:border-blue-400'"
+                            >
+                              <img
+                                :src="image.url"
+                                :alt="`Image ${imgIdx + 1}`"
+                                class="h-16 w-auto rounded"
+                              />
+                              <span
+                                v-if="getAssignedImage(qIdx) === image.url"
+                                class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
+                              >
+                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                              </span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
+              <div class="text-sm text-gray-600">
+                {{ Object.keys(imageAssignments).length }} of {{ pendingQuestions.length }} questions have images assigned
+              </div>
+              <div class="flex gap-3">
+                <button
+                  type="button"
+                  @click="closeImageAssignmentModal"
+                  class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  @click="saveQuestionsWithImages"
+                  :disabled="isUploadingFile"
+                  class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                >
+                  <svg v-if="isUploadingFile" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {{ isUploadingFile ? `Saving... ${uploadProgress}%` : 'Save All Questions' }}
+                </button>
+              </div>
             </div>
           </div>
         </div>

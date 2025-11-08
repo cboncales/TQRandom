@@ -33,8 +33,6 @@ const options = ref([
   { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
   { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
 ]);
-const paraphrases = ref([]);
-const newParaphrase = ref("");
 
 // Reset form function
 const resetForm = () => {
@@ -47,8 +45,6 @@ const resetForm = () => {
     { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
     { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
   ];
-  paraphrases.value = [];
-  newParaphrase.value = "";
   errorMessage.value = "";
 };
 
@@ -64,7 +60,6 @@ watch(
         imageUrl: opt.imageUrl || null,
         imageFile: null
       }));
-      paraphrases.value = [...(newQuestion.paraphrases || [])];
     } else {
       resetForm();
     }
@@ -114,17 +109,6 @@ const toggleCorrectAnswer = (optionId) => {
   if (option) {
     option.isCorrect = !option.isCorrect;
   }
-};
-
-const addParaphrase = () => {
-  if (newParaphrase.value.trim()) {
-    paraphrases.value.push(newParaphrase.value.trim());
-    newParaphrase.value = "";
-  }
-};
-
-const removeParaphrase = (index) => {
-  paraphrases.value.splice(index, 1);
 };
 
 // Image handling functions
@@ -238,7 +222,6 @@ const handleSubmit = async () => {
       imageUrl: uploadedQuestionImageUrl,
       type: "multiple-choice",
       options: processedOptions,
-      paraphrases: [...paraphrases.value],
     };
 
     emit("question-saved", questionData);
@@ -499,69 +482,6 @@ const hasCorrectAnswer = () => {
           <!-- Validation Warning -->
           <div v-if="!hasCorrectAnswer()" class="mt-2 text-sm text-red-600">
             ⚠️ Please mark at least one correct answer
-          </div>
-        </div>
-
-        <!-- Paraphrases Section -->
-        <div>
-          <div class="flex justify-between items-center mb-4">
-            <div>
-              <h4 class="text-sm font-medium text-gray-700">
-                Question Variants (Optional)
-              </h4>
-              <p class="text-xs text-gray-500">
-                Add alternative ways to phrase this question for randomization
-              </p>
-            </div>
-          </div>
-
-          <!-- Add Paraphrase -->
-          <div class="flex space-x-2 mb-4">
-            <input
-              v-model="newParaphrase"
-              type="text"
-              class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Enter a variant of the question..."
-              @keyup.enter="addParaphrase"
-            />
-            <button
-              type="button"
-              @click="addParaphrase"
-              class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-              :disabled="!newParaphrase.trim()"
-            >
-              Add
-            </button>
-          </div>
-
-          <!-- Paraphrases List -->
-          <div v-if="paraphrases.length > 0" class="space-y-2">
-            <div
-              v-for="(paraphrase, index) in paraphrases"
-              :key="index"
-              class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg"
-            >
-              <span class="text-sm text-gray-700">{{ paraphrase }}</span>
-              <button
-                type="button"
-                @click="removeParaphrase(index)"
-                class="text-red-600 hover:text-red-800 ml-2"
-              >
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
           </div>
         </div>
 

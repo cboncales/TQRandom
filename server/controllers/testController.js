@@ -134,25 +134,103 @@ async function updateTest(req, res) {
 }
 
 /**
- * Delete a test
+ * Delete a test and all related data (cascading delete)
  */
 async function deleteTest(req, res) {
   try {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const { error } = await supabase
+    // Verify user owns the test
+    const { data: testData, error: testError } = await supabase
       .from('tests')
-      .delete()
+      .select('id')
       .eq('id', id)
-      .eq('user_id', userId);
+      .eq('user_id', userId)
+      .single();
 
-    if (error) {
-      console.error('Error deleting test:', error);
-      return res.status(500).json({ error: error.message });
+    if (testError || !testData) {
+      return res.status(404).json({ error: 'Test not found or access denied' });
     }
 
-    res.json({ success: true });
+    // Step 1: Get all test versions for this test
+    const { data: versions } = await supabase
+      .from('test_versions')
+      .select('id')
+      .eq('test_id', id);
+
+    if (versions && versions.length > 0) {
+      const versionIds = versions.map(v => v.id);
+
+      // Step 1a: Get all version questions
+      const { data: versionQuestions } = await supabase
+        .from('test_version_questions')
+        .select('id')
+        .in('test_version_id', versionIds);
+
+      if (versionQuestions && versionQuestions.length > 0) {
+        const versionQuestionIds = versionQuestions.map(vq => vq.id);
+
+        // Delete test_versions_answer_choices
+        await supabase
+          .from('test_versions_answer_choices')
+          .delete()
+          .in('test_version_question_id', versionQuestionIds);
+      }
+
+      // Step 1b: Delete test_version_questions
+      await supabase
+        .from('test_version_questions')
+        .delete()
+        .in('test_version_id', versionIds);
+
+      // Step 1c: Delete test_versions
+      await supabase
+        .from('test_versions')
+        .delete()
+        .in('id', versionIds);
+    }
+
+    // Step 2: Get all questions for this test
+    const { data: questions } = await supabase
+      .from('questions')
+      .select('id')
+      .eq('test_id', id);
+
+    if (questions && questions.length > 0) {
+      const questionIds = questions.map(q => q.id);
+
+      // Step 2a: Delete correct answers
+      await supabase
+        .from('answers')
+        .delete()
+        .in('question_id', questionIds);
+
+      // Step 2b: Delete answer choices
+      await supabase
+        .from('answer_choices')
+        .delete()
+        .in('question_id', questionIds);
+
+      // Step 2c: Delete questions
+      await supabase
+        .from('questions')
+        .delete()
+        .in('id', questionIds);
+    }
+
+    // Step 3: Finally, delete the test
+    const { error: deleteError } = await supabase
+      .from('tests')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      console.error('Error deleting test:', deleteError);
+      return res.status(500).json({ error: deleteError.message });
+    }
+
+    res.json({ success: true, message: 'Test deleted successfully' });
   } catch (error) {
     console.error('Error in deleteTest:', error);
     res.status(500).json({ error: 'Failed to delete test' });

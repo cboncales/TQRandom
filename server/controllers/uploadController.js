@@ -59,6 +59,10 @@ async function uploadDocument(req, res) {
 
     // Step 3: Parse text into structured questions
     const parsedQuestions = parseDocumentText(rawText, uploadedImages);
+    
+    const questionsWithImages = parsedQuestions
+      .map((q, idx) => q.question_image ? idx + 1 : null)
+      .filter(n => n !== null);
 
     // Clean up the uploaded file after processing
     await fs.unlink(filePath);
@@ -66,6 +70,7 @@ async function uploadDocument(req, res) {
     res.json({
       message: 'Document processed successfully',
       data: parsedQuestions,
+      images: uploadedImages, // Include uploaded images for manual assignment
       stats: {
         total_questions: parsedQuestions.length,
         total_images: uploadedImages.length,
