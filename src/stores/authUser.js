@@ -138,7 +138,8 @@ export const useAuthUserStore = defineStore("authUser", () => {
    * Check if user is authenticated
    */
   async function checkAuth() {
-    const token = localStorage.getItem('access_token');
+    // Check BOTH localStorage and sessionStorage for token
+    const token = localStorage.getItem('access_token') || sessionStorage.getItem('access_token');
     
     if (!token) {
       userData.value = null;
@@ -167,7 +168,8 @@ export const useAuthUserStore = defineStore("authUser", () => {
    */
   async function refreshAccessToken() {
     try {
-      const refreshToken = localStorage.getItem('refresh_token');
+      // Check BOTH localStorage and sessionStorage for refresh token
+      const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token');
       
       if (!refreshToken) {
         return { error: 'No refresh token available' };
@@ -182,9 +184,10 @@ export const useAuthUserStore = defineStore("authUser", () => {
         return { error: result.error };
       }
 
-      // Store new tokens
-      setAuthToken(result.data.access_token);
-      setRefreshToken(result.data.refresh_token);
+      // Store new tokens (preserve the remember me preference)
+      const rememberMe = localStorage.getItem('remember_me') === 'true';
+      setAuthToken(result.data.access_token, rememberMe);
+      setRefreshToken(result.data.refresh_token, rememberMe);
 
       return { success: true };
     } catch (error) {

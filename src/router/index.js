@@ -74,8 +74,8 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthUserStore();
   
-  // Check if user has a token
-  const hasToken = !!localStorage.getItem('access_token');
+  // Check if user has a token in BOTH localStorage AND sessionStorage
+  const hasToken = !!(localStorage.getItem('access_token') || sessionStorage.getItem('access_token'));
   
   // For guest-only pages (login/register)
   if (to.meta.guestOnly && hasToken) {
