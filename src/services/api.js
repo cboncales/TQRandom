@@ -441,6 +441,15 @@ export const versionApi = {
   },
 
   /**
+   * Get answer key for a version
+   */
+  async getVersionAnswerKey(versionId) {
+    return apiRequest(`/api/versions/${versionId}/answer-key`, {
+      method: 'GET',
+    });
+  },
+
+  /**
    * Delete a version
    */
   async deleteVersion(versionId) {

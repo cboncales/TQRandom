@@ -415,6 +415,23 @@ export const useTestStore = defineStore("testStore", () => {
   }
 
   /**
+   * Get answer key for a version
+   */
+  async function getVersionAnswerKey(versionId) {
+    try {
+      const result = await versionApi.getVersionAnswerKey(versionId);
+      
+      if (result.error) {
+        return { error: result.error };
+      }
+
+      return { data: result.data.data };
+    } catch (error) {
+      return { error: error.message };
+    }
+  }
+
+  /**
    * Delete a version
    */
   async function deleteVersion(versionId, testId) {
@@ -453,6 +470,7 @@ export const useTestStore = defineStore("testStore", () => {
     // Version management
     getTestVersions,
     getVersion,
+    getVersionAnswerKey,
     generateVersions,
     deleteVersion,
     // Cache management

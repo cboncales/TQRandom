@@ -92,7 +92,7 @@ onMounted(() => {
                   Test Management Dashboard
                 </h1>
                 <p class="mt-1 text-sm text-gray-600">
-                  Create and manage your randomization tests
+                  Create and manage your tests
                 </p>
               </div>
               <button

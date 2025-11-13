@@ -1,14 +1,18 @@
 <script setup>
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 const props = defineProps({
   questions: {
     type: Array,
     required: true,
   },
+  selectedQuestions: {
+    type: Array,
+    default: () => [],
+  },
 });
 
-const emit = defineEmits(["edit-question", "delete-question"]);
+const emit = defineEmits(["edit-question", "delete-question", "toggle-selection"]);
 
 const showDeleteConfirm = ref(null);
 
@@ -32,6 +36,14 @@ const cancelDelete = () => {
 const getCorrectAnswers = (options) => {
   return options.filter((option) => option.isCorrect);
 };
+
+const isQuestionSelected = (question) => {
+  return props.selectedQuestions.some((q) => q.id === question.id);
+};
+
+const toggleSelection = (question) => {
+  emit("toggle-selection", question);
+};
 </script>
 
 <template>
@@ -47,12 +59,20 @@ const getCorrectAnswers = (options) => {
       <li
         v-for="(question, index) in questions"
         :key="question.id"
-        class="px-4 py-6 sm:px-6"
+        class="px-4 py-6 sm:px-6 transition-colors duration-200"
+        :class="isQuestionSelected(question) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''"
       >
         <div class="flex items-start justify-between">
           <div class="flex-1 min-w-0">
             <!-- Question Number and Text -->
             <div class="flex items-start">
+              <!-- Selection Checkbox -->
+              <input
+                type="checkbox"
+                :checked="isQuestionSelected(question)"
+                @change="toggleSelection(question)"
+                class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer mt-1.5 mr-3"
+              />
               <span
                 class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 text-sm font-medium mr-3"
               >
@@ -158,15 +178,21 @@ const getCorrectAnswers = (options) => {
           <div class="flex items-center space-x-2 ml-4">
             <button
               @click="editQuestion(question)"
-              class="bg-blue-600 text-white hover:bg-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+              class="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200"
+              title="Edit question"
             >
-              Edit
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
             </button>
             <button
               @click="confirmDelete(question.id)"
-              class="bg-red-600 text-white hover:bg-red-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
+              class="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200"
+              title="Delete question"
             >
-              Delete
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
             </button>
           </div>
         </div>

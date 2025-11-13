@@ -330,6 +330,139 @@ export async function getVersion(req, res) {
 }
 
 /**
+ * Get answer key for a version
+ * Returns question numbers mapped to correct answer letters (A, B, C, D, etc.)
+ */
+export async function getVersionAnswerKey(req, res) {
+  try {
+    const { versionId } = req.params;
+    const userId = req.user.id;
+
+    // Get version with test info and verify ownership
+    const { data: version, error: versionError } = await supabase
+      .from('test_versions')
+      .select(`
+        id,
+        version_number,
+        test_id,
+        tests!inner (
+          id,
+          user_id
+        )
+      `)
+      .eq('id', versionId)
+      .single();
+
+    if (versionError || !version) {
+      return res.status(404).json({ error: 'Version not found' });
+    }
+
+    if (version.tests.user_id !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const testId = version.test_id;
+
+    // Get all questions for this test
+    const { data: testQuestions, error: questionsError } = await supabase
+      .from('questions')
+      .select('id')
+      .eq('test_id', testId);
+
+    if (questionsError) {
+      console.error('Error fetching test questions:', questionsError);
+      return res.status(500).json({ error: questionsError.message });
+    }
+
+    if (!testQuestions || testQuestions.length === 0) {
+      return res.json({
+        data: {
+          version_id: version.id,
+          version_number: version.version_number,
+          answer_key: []
+        }
+      });
+    }
+
+    const questionIds = testQuestions.map(q => q.id);
+
+    // Get all correct answers for these questions
+    const { data: correctAnswers, error: answersError } = await supabase
+      .from('answers')
+      .select('question_id, answer_choices_id')
+      .in('question_id', questionIds);
+
+    if (answersError) {
+      console.error('Error fetching correct answers:', answersError);
+      return res.status(500).json({ error: answersError.message });
+    }
+
+    // Create a map of question_id -> correct_choice_id
+    const answerMap = {};
+    if (correctAnswers) {
+      correctAnswers.forEach(answer => {
+        answerMap[answer.question_id] = answer.answer_choices_id;
+      });
+    }
+
+    // Get version questions with their shuffled answer choices
+    const { data: versionQuestions, error: vqError } = await supabase
+      .from('test_version_questions')
+      .select(`
+        id,
+        question_id,
+        question_order,
+        test_versions_answer_choices (
+          choice_order,
+          answer_choices_id
+        )
+      `)
+      .eq('test_version_id', versionId)
+      .order('question_order', { ascending: true });
+
+    if (vqError) {
+      console.error('Error fetching version questions:', vqError);
+      return res.status(500).json({ error: vqError.message });
+    }
+
+    // Build answer key
+    const answerKey = [];
+    
+    versionQuestions.forEach(vq => {
+      const correctChoiceId = answerMap[vq.question_id];
+      
+      if (correctChoiceId) {
+        // Find which position (order) the correct choice is in the shuffled choices
+        const sortedChoices = vq.test_versions_answer_choices.sort((a, b) => a.choice_order - b.choice_order);
+        const correctChoicePosition = sortedChoices.findIndex(c => c.answer_choices_id === correctChoiceId);
+        
+        if (correctChoicePosition !== -1) {
+          // Convert position to letter (0 = A, 1 = B, etc.)
+          const letter = String.fromCharCode(65 + correctChoicePosition); // 65 is 'A'
+          
+          answerKey.push({
+            question_number: vq.question_order,
+            answer: letter
+          });
+        }
+      }
+    });
+
+    res.json({
+      data: {
+        version_id: version.id,
+        version_number: version.version_number,
+        answer_key: answerKey
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in getVersionAnswerKey:', error);
+    res.status(500).json({ error: 'Failed to fetch version answer key' });
+  }
+}
+
+/**
  * Delete a version and all related data (cascading delete)
  */
 export async function deleteVersion(req, res) {
@@ -405,6 +538,7 @@ export default {
   generateVersions,
   getTestVersions,
   getVersion,
+  getVersionAnswerKey,
   deleteVersion
 };
 

@@ -49,6 +49,9 @@ const selectAll = ref(false); // For select all checkbox
 const showPreviewModal = ref(false);
 const previewVersion = ref(null);
 const isLoadingPreview = ref(false);
+const showAnswerKeyModal = ref(false);
+const answerKeyData = ref(null);
+const isLoadingAnswerKey = ref(false);
 
 // File upload
 const showUploadModal = ref(false);
@@ -56,6 +59,12 @@ const selectedFile = ref(false);
 const isUploadingFile = ref(false);
 const uploadProgress = ref(0);
 const answerKeyText = ref("");
+
+// Question selection for bulk operations
+const selectedQuestions = ref([]);
+const selectAllQuestions = ref(false);
+const isDeletingQuestions = ref(false);
+const questionDeletionProgress = ref({ current: 0, total: 0, message: '' });
 
 // Image assignment modal state
 const showImageAssignmentModal = ref(false);
@@ -234,11 +243,98 @@ const handleQuestionDeleted = async (questionId) => {
       alert(`Error deleting question: ${result.error}`);
     } else {
       questions.value = questions.value.filter((q) => q.id !== questionId);
+      // Remove from selection if it was selected
+      selectedQuestions.value = selectedQuestions.value.filter((q) => q.id !== questionId);
     }
   } catch (error) {
     alert("An unexpected error occurred while deleting the question.");
     console.error("Delete question error:", error);
   }
+};
+
+// Question selection handlers
+const toggleQuestionSelection = (question) => {
+  const index = selectedQuestions.value.findIndex((q) => q.id === question.id);
+  if (index > -1) {
+    selectedQuestions.value.splice(index, 1);
+  } else {
+    selectedQuestions.value.push(question);
+  }
+  // Update select all checkbox state
+  selectAllQuestions.value = selectedQuestions.value.length === questions.value.length;
+};
+
+const toggleSelectAllQuestions = () => {
+  if (selectAllQuestions.value) {
+    selectedQuestions.value = [...questions.value];
+  } else {
+    selectedQuestions.value = [];
+  }
+};
+
+const deleteSelectedQuestions = async () => {
+  if (selectedQuestions.value.length === 0) {
+    return;
+  }
+
+  const questionCount = selectedQuestions.value.length;
+  const questionText = questionCount === 1 ? 'question' : 'questions';
+  
+  if (!confirm(`Are you sure you want to delete ${questionCount} ${questionText}? This action cannot be undone.`)) {
+    return;
+  }
+
+  isDeletingQuestions.value = true;
+  questionDeletionProgress.value = {
+    current: 0,
+    total: questionCount,
+    message: 'Preparing to delete questions...'
+  };
+
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < selectedQuestions.value.length; i++) {
+    const question = selectedQuestions.value[i];
+    
+    // Update progress
+    questionDeletionProgress.value.current = i + 1;
+    questionDeletionProgress.value.message = `Deleting question ${i + 1} of ${questionCount}...`;
+    
+    try {
+      const result = await testStore.deleteQuestion(question.id, testId);
+      
+      if (result.error) {
+        console.error(`Failed to delete question ${question.id}:`, result.error);
+        failCount++;
+      } else {
+        successCount++;
+      }
+    } catch (error) {
+      console.error(`Error deleting question ${question.id}:`, error);
+      failCount++;
+    }
+  }
+
+  // Finalize
+  questionDeletionProgress.value.message = 'Refreshing question list...';
+
+  // Clear selection
+  selectedQuestions.value = [];
+  selectAllQuestions.value = false;
+
+  // Reload questions
+  await loadQuestions(true);
+
+  // Show result
+  if (failCount === 0) {
+    alert(`✅ Successfully deleted ${successCount} ${questionText}!`);
+  } else {
+    alert(`⚠️ Deleted ${successCount} ${questionText}. Failed to delete ${failCount} ${questionText}.`);
+  }
+
+  isDeletingQuestions.value = false;
+  questionDeletionProgress.value = { current: 0, total: 0, message: '' };
 };
 
 const loadTest = async () => {
@@ -360,9 +456,11 @@ const saveQuestionsWithImages = async () => {
     let successCount = 0;
     let failCount = 0;
     let answerSetCount = 0;
+    const createdQuestions = []; // Store created questions for answer setting phase
     
+    // PHASE 1: Create all questions (0-60% progress)
     for (let i = 0; i < pendingQuestions.value.length; i++) {
-      uploadProgress.value = Math.round(((i + 1) / pendingQuestions.value.length) * 50);
+      uploadProgress.value = Math.round(((i + 1) / pendingQuestions.value.length) * 60);
       
       const parsed = pendingQuestions.value[i];
       const questionNumber = i + 1;
@@ -389,15 +487,29 @@ const saveQuestionsWithImages = async () => {
         failCount++;
       } else {
         successCount++;
-        
-        // Handle answer key if provided
-        const correctAnswerLetter = answerKeyMap[questionNumber];
-        if (correctAnswerLetter && createResult.data) {
-          uploadProgress.value = Math.round(50 + ((i + 1) / pendingQuestions.value.length) * 50);
+        createdQuestions.push({
+          questionId: createResult.data.id,
+          questionNumber: questionNumber,
+          correctAnswerLetter: answerKeyMap[questionNumber]
+        });
+      }
+    }
+    
+    // PHASE 2: Set correct answers (60-100% progress)
+    if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
+      uploadProgress.value = 65;
+      
+      // Fetch all questions once
+      const questionsResult = await testStore.getTestQuestions(testId, true);
+      
+      if (questionsResult.data) {
+        for (let i = 0; i < createdQuestions.length; i++) {
+          uploadProgress.value = Math.round(65 + ((i + 1) / createdQuestions.length) * 35);
           
-          const questionsResult = await testStore.getTestQuestions(testId, true);
-          if (questionsResult.data) {
-            const createdQuestion = questionsResult.data.find(q => q.id === createResult.data.id);
+          const { questionId, questionNumber, correctAnswerLetter } = createdQuestions[i];
+          
+          if (correctAnswerLetter) {
+            const createdQuestion = questionsResult.data.find(q => q.id === questionId);
             
             if (createdQuestion && createdQuestion.answer_choices) {
               const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
@@ -405,7 +517,7 @@ const saveQuestionsWithImages = async () => {
               
               if (correctChoice) {
                 const answerResult = await testStore.storeCorrectAnswer(
-                  createResult.data.id,
+                  questionId,
                   correctChoice.id,
                   testId
                 );
@@ -527,19 +639,19 @@ const handleFileUpload = async () => {
     }
 
     // No images - proceed with normal upload
-    // Now add each parsed question to the test
     let successCount = 0;
     let failCount = 0;
     let answerSetCount = 0;
+    const createdQuestions = []; // Store for answer setting phase
 
+    // PHASE 1: Create all questions (0-60% progress)
     for (let i = 0; i < parsedQuestions.length; i++) {
-      uploadProgress.value = Math.round(((i + 1) / parsedQuestions.length) * 50); // First 50% for creating questions
+      uploadProgress.value = Math.round(((i + 1) / parsedQuestions.length) * 60);
 
       const parsed = parsedQuestions[i];
       const questionNumber = i + 1;
       
       // Convert answer_choices array to the format expected by createQuestion
-      // Now includes image URLs if present
       const answerChoices = parsed.answer_choices.map(choice => ({
         text: typeof choice === 'string' ? choice : choice.text,
         imageUrl: typeof choice === 'object' ? choice.image?.url : null
@@ -547,10 +659,6 @@ const handleFileUpload = async () => {
 
       // Extract question image URL if present
       const questionImageUrl = parsed.question_image?.url || null;
-
-      // Debug: Log what we're sending
-      console.log(`Question ${questionNumber} - Image URL:`, questionImageUrl);
-      console.log(`Answer choices:`, answerChoices.map(c => ({ text: c.text.substring(0, 20), imageUrl: c.imageUrl })));
 
       // Create the question (with optional image)
       const createResult = await testStore.createQuestion(
@@ -565,25 +673,37 @@ const handleFileUpload = async () => {
         failCount++;
       } else {
         successCount++;
+        createdQuestions.push({
+          questionId: createResult.data.id,
+          questionNumber: questionNumber,
+          correctAnswerLetter: answerKeyMap[questionNumber]
+        });
+      }
+    }
 
-        // If answer key is provided for this question, set the correct answer
-        const correctAnswerLetter = answerKeyMap[questionNumber];
-        if (correctAnswerLetter && createResult.data) {
-          uploadProgress.value = Math.round(50 + ((i + 1) / parsedQuestions.length) * 50); // Second 50% for setting answers
-
-          // Get the created question with its answer choices
-          const questionsResult = await testStore.getTestQuestions(testId, true); // Force refresh
-          if (questionsResult.data) {
-            const createdQuestion = questionsResult.data.find(q => q.id === createResult.data.id);
+    // PHASE 2: Set correct answers (60-100% progress)
+    if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
+      uploadProgress.value = 65;
+      
+      // Fetch all questions once
+      const questionsResult = await testStore.getTestQuestions(testId, true);
+      
+      if (questionsResult.data) {
+        for (let i = 0; i < createdQuestions.length; i++) {
+          uploadProgress.value = Math.round(65 + ((i + 1) / createdQuestions.length) * 35);
+          
+          const { questionId, questionNumber, correctAnswerLetter } = createdQuestions[i];
+          
+          if (correctAnswerLetter) {
+            const createdQuestion = questionsResult.data.find(q => q.id === questionId);
             
             if (createdQuestion && createdQuestion.answer_choices) {
-              // Find the answer choice that matches the letter (A=0, B=1, C=2, etc.)
               const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
               const correctChoice = createdQuestion.answer_choices[choiceIndex];
               
               if (correctChoice) {
                 const answerResult = await testStore.storeCorrectAnswer(
-                  createResult.data.id,
+                  questionId,
                   correctChoice.id,
                   testId
                 );
@@ -997,6 +1117,35 @@ const openPreview = async (version) => {
 const closePreview = () => {
   showPreviewModal.value = false;
   previewVersion.value = null;
+};
+
+// Answer key functions
+const openAnswerKey = async (version) => {
+  isLoadingAnswerKey.value = true;
+  showAnswerKeyModal.value = true;
+  
+  try {
+    const result = await testStore.getVersionAnswerKey(version.id);
+    
+    if (result.error) {
+      alert(`Failed to load answer key: ${result.error}`);
+      showAnswerKeyModal.value = false;
+      return;
+    }
+    
+    answerKeyData.value = result.data;
+  } catch (error) {
+    console.error('Answer key error:', error);
+    alert(`An error occurred: ${error.message}`);
+    showAnswerKeyModal.value = false;
+  } finally {
+    isLoadingAnswerKey.value = false;
+  }
+};
+
+const closeAnswerKey = () => {
+  showAnswerKeyModal.value = false;
+  answerKeyData.value = null;
 };
 
 // Open format selection modal
@@ -1659,10 +1808,58 @@ onMounted(async () => {
             </div>
 
             <!-- Questions List -->
+            <!-- Select All and Bulk Actions -->
+            <div v-if="questions.length > 0" class="mb-4 bg-white p-4 rounded-lg shadow">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                  <input
+                    id="select-all-questions"
+                    v-model="selectAllQuestions"
+                    @change="toggleSelectAllQuestions"
+                    type="checkbox"
+                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                  />
+                  <label
+                    for="select-all-questions"
+                    class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
+                  >
+                    Select All ({{ questions.length }} question{{ questions.length !== 1 ? 's' : '' }})
+                  </label>
+                </div>
+                
+                <button
+                  v-if="selectedQuestions.length > 0"
+                  @click="deleteSelectedQuestions"
+                  class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
+                  </svg>
+                  Delete {{ selectedQuestions.length }} question{{ selectedQuestions.length > 1 ? 's' : '' }}
+                </button>
+              </div>
+              
+              <div v-if="selectedQuestions.length > 0" class="mt-2 text-xs text-gray-500">
+                {{ selectedQuestions.length }} of {{ questions.length }} question{{ selectedQuestions.length !== 1 ? 's' : '' }} selected
+              </div>
+            </div>
+
             <QuestionList
               :questions="questions"
+              :selected-questions="selectedQuestions"
               @edit-question="editQuestion"
               @delete-question="handleQuestionDeleted"
+              @toggle-selection="toggleQuestionSelection"
             />
           </div>
 
@@ -1746,58 +1943,21 @@ onMounted(async () => {
                     : 'hover:shadow-lg'
                 ]"
               >
-                <div class="p-6">
-                  <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-medium text-gray-900">
-                      {{ version.name }}
-                    </h3>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                      Randomized
-                    </span>
-                  </div>
-                  <div class="space-y-2 text-sm text-gray-500 mb-4">
-                    <div class="flex items-center">
-                      <svg
-                        class="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      {{ version.questionCount }} questions
+                <div class="p-6 flex justify-between">
+                  <!-- Left side: Version info -->
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center justify-between mb-4">
+                      <h3 class="text-lg font-medium text-gray-900">
+                        {{ version.name }}
+                      </h3>
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        Randomized
+                      </span>
                     </div>
-                    <div class="flex items-center">
-                      <svg
-                        class="w-4 h-4 mr-2"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
-                      </svg>
-                      {{ new Date(version.createdAt).toLocaleDateString() }}
-                    </div>
-                  </div>
-                  <!-- Show buttons when no versions are selected -->
-                  <div v-if="selectedVersions.length === 0" class="space-y-2">
-                    <div class="flex space-x-2">
-                      <button
-                        @click.stop="openPreview(version)"
-                        class="flex-1 bg-purple-600 text-white hover:bg-purple-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
-                      >
+                    <div class="space-y-2 text-sm text-gray-500">
+                      <div class="flex items-center">
                         <svg
-                          class="w-4 h-4 mr-1"
+                          class="w-4 h-4 mr-2"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1806,23 +1966,14 @@ onMounted(async () => {
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                          />
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        Preview
-                      </button>
-                      <button
-                        @click.stop="openDownloadFormatModal('single', version.id)"
-                        class="flex-1 bg-blue-600 text-white hover:bg-blue-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
-                      >
+                        {{ version.questionCount }} questions
+                      </div>
+                      <div class="flex items-center">
                         <svg
-                          class="w-4 h-4 mr-1"
+                          class="w-4 h-4 mr-2"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -1831,18 +1982,86 @@ onMounted(async () => {
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        Download
-                      </button>
+                        {{ new Date(version.createdAt).toLocaleDateString() }}
+                      </div>
                     </div>
+                  </div>
+                  
+                  <!-- Right side: Action buttons (vertically aligned) -->
+                  <div v-if="selectedVersions.length === 0" class="flex flex-col space-y-2 ml-4">
                     <button
-                      @click.stop="confirmDeleteVersion(version.id)"
-                      class="w-full bg-red-600 text-white hover:bg-red-700 px-3 py-2 rounded-md text-xs font-medium transition-colors duration-200 flex items-center justify-center"
+                      @click.stop="openAnswerKey(version)"
+                      class="p-2 bg-green-100 text-green-600 hover:bg-green-200 rounded-md transition-colors duration-200"
+                      title="Answer Key"
                     >
                       <svg
-                        class="w-4 h-4 mr-1"
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      @click.stop="openPreview(version)"
+                      class="p-2 bg-purple-100 text-purple-600 hover:bg-purple-200 rounded-md transition-colors duration-200"
+                      title="Preview version"
+                    >
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      @click.stop="openDownloadFormatModal('single', version.id)"
+                      class="p-2 bg-blue-100 text-blue-600 hover:bg-blue-200 rounded-md transition-colors duration-200"
+                      title="Download version"
+                    >
+                      <svg
+                        class="w-5 h-5"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                      </svg>
+                    </button>
+                    <button
+                      @click.stop="confirmDeleteVersion(version.id)"
+                      class="p-2 bg-red-100 text-red-600 hover:bg-red-200 rounded-md transition-colors duration-200"
+                      title="Delete version"
+                    >
+                      <svg
+                        class="w-5 h-5"
                         fill="none"
                         stroke="currentColor"
                         viewBox="0 0 24 24"
@@ -1854,12 +2073,11 @@ onMounted(async () => {
                           d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                         />
                       </svg>
-                      Delete
                     </button>
                   </div>
                   
                   <!-- Show "Selected" badge when THIS card is selected -->
-                  <div v-else-if="isVersionSelected(version.id)" class="flex items-center justify-center py-2">
+                  <div v-else-if="isVersionSelected(version.id)" class="flex items-center ml-4">
                     <div class="flex items-center text-blue-600 font-medium text-sm">
                       <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
@@ -2528,7 +2746,74 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- Progress Modal for Deletion -->
+      <!-- Progress Modal for Question Deletion -->
+      <div
+        v-if="isDeletingQuestions && questionDeletionProgress.total > 0"
+        class="fixed inset-0 z-[60] overflow-y-auto"
+        aria-labelledby="question-deletion-progress-modal"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay - non-clickable -->
+          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+            <div>
+              <!-- Spinner Icon -->
+              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg
+                  class="animate-spin h-10 w-10 text-red-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- Title -->
+              <div class="mt-4 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Deleting Questions
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-600">
+                    {{ questionDeletionProgress.message }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-4">
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progress</span>
+                  <span>{{ questionDeletionProgress.current }} / {{ questionDeletionProgress.total }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
+                    :style="{ width: `${(questionDeletionProgress.current / questionDeletionProgress.total) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Info text -->
+              <div class="mt-4 text-center">
+                <p class="text-xs text-gray-500">
+                  Please wait while we delete the selected questions...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Modal for Version Deletion -->
       <div
         v-if="isDeletingVersions && deletionProgress.total > 0"
         class="fixed inset-0 z-[60] overflow-y-auto"
@@ -2903,6 +3188,84 @@ onMounted(async () => {
         <div class="px-6 pt-4 pb-6 border-t flex justify-end shrink-0">
           <button
             @click="closePreview"
+            class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Answer Key Modal -->
+    <div
+      v-if="showAnswerKeyModal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
+      @click="closeAnswerKey"
+    >
+      <div
+        class="relative w-full max-w-2xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+        @click.stop
+      >
+        <!-- Header (Fixed) -->
+        <div class="flex justify-between items-center px-6 pt-6 pb-4 border-b shrink-0">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">
+              Answer Key
+            </h2>
+            <p v-if="answerKeyData" class="text-sm text-gray-600 mt-1">
+              Version {{ answerKeyData.version_number }}
+            </p>
+          </div>
+          <button
+            @click="closeAnswerKey"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Scrollable Content -->
+        <div class="overflow-y-auto flex-1 px-6 py-4">
+          <!-- Loading State -->
+          <div v-if="isLoadingAnswerKey" class="flex flex-col items-center justify-center py-12">
+            <svg class="animate-spin h-12 w-12 text-green-600 mb-4" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="text-gray-600">Loading answer key...</p>
+          </div>
+
+          <!-- Answer Key Content -->
+          <div v-else-if="answerKeyData && answerKeyData.answer_key">
+            <div v-if="answerKeyData.answer_key.length === 0" class="text-center py-8 text-gray-500">
+              <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <p>No answer key available for this version.</p>
+              <p class="text-sm mt-1">Make sure correct answers are set for the test questions.</p>
+            </div>
+            
+            <!-- Answer Key Grid -->
+            <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div
+                v-for="answer in answerKeyData.answer_key"
+                :key="answer.question_number"
+                class="bg-green-50 border border-green-200 rounded-lg p-3 text-center"
+              >
+                <div class="text-2xl font-bold text-green-700">
+                  {{ answer.question_number }}.{{ answer.answer }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Footer (Fixed) -->
+        <div class="px-6 pt-4 pb-6 border-t flex justify-end shrink-0">
+          <button
+            @click="closeAnswerKey"
             class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
           >
             Close

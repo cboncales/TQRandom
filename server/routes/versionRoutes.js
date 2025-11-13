@@ -3,6 +3,7 @@ import {
   generateVersions, 
   getTestVersions, 
   getVersion, 
+  getVersionAnswerKey,
   deleteVersion 
 } from '../controllers/versionController.js';
 import { authenticateUser } from '../middleware/auth.js';
@@ -27,6 +28,12 @@ router.get('/test/:testId', authenticateUser, getTestVersions);
  * Get a single version with all questions and answers
  */
 router.get('/:versionId', authenticateUser, getVersion);
+
+/**
+ * GET /api/versions/:versionId/answer-key
+ * Get answer key for a specific version
+ */
+router.get('/:versionId/answer-key', authenticateUser, getVersionAnswerKey);
 
 /**
  * DELETE /api/versions/:versionId

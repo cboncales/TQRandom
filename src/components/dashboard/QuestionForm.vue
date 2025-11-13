@@ -180,11 +180,12 @@ const handleSubmit = async () => {
     return;
   }
 
-  const correctAnswers = filledOptions.filter((opt) => opt.isCorrect);
-  if (correctAnswers.length === 0) {
-    errorMessage.value = "Please mark at least one correct answer";
-    return;
-  }
+  // Allow questions without correct answers marked
+  // const correctAnswers = filledOptions.filter((opt) => opt.isCorrect);
+  // if (correctAnswers.length === 0) {
+  //   errorMessage.value = "Please mark at least one correct answer";
+  //   return;
+  // }
 
   try {
     isUploadingImage.value = true;
@@ -479,10 +480,10 @@ const hasCorrectAnswer = () => {
             </div>
           </div>
 
-          <!-- Validation Warning -->
-          <div v-if="!hasCorrectAnswer()" class="mt-2 text-sm text-red-600">
+          <!-- Validation Warning (removed - correct answer is now optional) -->
+          <!-- <div v-if="!hasCorrectAnswer()" class="mt-2 text-sm text-red-600">
             ⚠️ Please mark at least one correct answer
-          </div>
+          </div> -->
         </div>
 
       </form>
