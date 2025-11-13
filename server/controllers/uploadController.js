@@ -26,14 +26,33 @@ async function uploadDocument(req, res) {
     let extractedImages = [];
 
     // Step 1: Extract text and images based on file type
+    console.log(`\n📄 Processing ${fileExtension} file...`);
+    
     if (fileExtension === '.pdf') {
+      console.log('📝 Extracting text from PDF...');
       rawText = await extractTextFromPdf(filePath);
+      console.log(`✅ Text extracted: ${rawText.length} characters`);
+      
+      console.log('🖼️  Extracting images from PDF...');
       extractedImages = await extractImagesFromPdf(filePath);
-      console.log(`Extracted ${extractedImages.length} images from PDF`);
+      console.log(`✅ Extracted ${extractedImages.length} images from PDF`);
+      
+      if (extractedImages.length > 0) {
+        console.log('📦 Image details:', extractedImages.map((img, idx) => ({
+          index: idx,
+          name: img.name,
+          size: `${img.width}x${img.height}`,
+          bufferSize: `${(img.buffer.length / 1024).toFixed(2)} KB`
+        })));
+      }
     } else if (fileExtension === '.docx' || fileExtension === '.doc') {
+      console.log('📝 Extracting text from DOCX...');
       rawText = await extractTextFromDocx(filePath);
+      console.log(`✅ Text extracted: ${rawText.length} characters`);
+      
+      console.log('🖼️  Extracting images from DOCX...');
       extractedImages = await extractImagesFromDocx(filePath);
-      console.log(`Extracted ${extractedImages.length} images from DOCX`);
+      console.log(`✅ Extracted ${extractedImages.length} images from DOCX`);
     } else {
       await fs.unlink(filePath);
       return res.status(400).json({ error: 'Unsupported file type. Only PDF and DOCX are allowed.' });

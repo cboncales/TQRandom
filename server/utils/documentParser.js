@@ -1,5 +1,6 @@
 import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
+import sharp from 'sharp';
 import fs from 'fs/promises';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 
@@ -41,19 +42,35 @@ async function extractImagesFromPdf(filePath) {
             const imageName = operatorList.argsArray[i][0];
             const image = await page.objs.get(imageName);
             
-            if (image && image.data) {
-              // Convert image data to buffer
-              const imageBuffer = Buffer.from(image.data);
+            if (image && image.data && image.width && image.height) {
+              // Determine the number of channels based on the image kind
+              let channels = 4; // Default to RGBA
+              let rawBuffer = Buffer.from(image.data);
+              
+              // PDF.js images are typically in RGBA format
+              // Convert raw pixel data to PNG using sharp
+              const pngBuffer = await sharp(rawBuffer, {
+                raw: {
+                  width: image.width,
+                  height: image.height,
+                  channels: channels
+                }
+              })
+              .png()
+              .toBuffer();
+              
               images.push({
-                buffer: imageBuffer,
+                buffer: pngBuffer,
                 name: `pdf_page${pageNum}_img${images.length}.png`,
                 page: pageNum,
                 width: image.width,
                 height: image.height
               });
+              
+              console.log(`✅ Extracted image from PDF page ${pageNum}: ${image.width}x${image.height}`);
             }
           } catch (imgError) {
-            console.warn(`Could not extract image from page ${pageNum}:`, imgError.message);
+            console.warn(`❌ Could not extract image from page ${pageNum}:`, imgError.message);
           }
         }
       }

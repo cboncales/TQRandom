@@ -33,6 +33,7 @@ const showGenerateVersionModal = ref(false);
 const versionCount = ref(1);
 const questionsPerVersion = ref(50);
 const isGeneratingVersions = ref(false);
+const generationProgress = ref({ current: 0, total: 0, message: '' });
 const isLoadingVersions = ref(false);
 const isDownloadingAll = ref(false);
 const downloadProgress = ref({ current: 0, total: 0 });
@@ -41,6 +42,8 @@ const selectedDownloadFormat = ref('pdf'); // 'pdf' or 'docx'
 const downloadType = ref('all'); // 'all' or 'single'
 const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
+const isDeletingVersions = ref(false);
+const deletionProgress = ref({ current: 0, total: 0, message: '' });
 const selectedVersions = ref([]); // For multiple version card selections
 const selectAll = ref(false); // For select all checkbox
 const showPreviewModal = ref(false);
@@ -667,8 +670,21 @@ const handleGenerateVersions = async () => {
   }
 
   isGeneratingVersions.value = true;
+  generationProgress.value = { 
+    current: 0, 
+    total: versionCount.value, 
+    message: 'Initializing version generation...' 
+  };
 
   try {
+    // Simulate progress updates (since generation happens on backend)
+    const progressInterval = setInterval(() => {
+      if (generationProgress.value.current < versionCount.value) {
+        generationProgress.value.current++;
+        generationProgress.value.message = `Generating version ${generationProgress.value.current} of ${versionCount.value}...`;
+      }
+    }, 800); // Update progress every 800ms
+
     // Use testStore to generate versions
     const result = await testStore.generateVersions(
       testId,
@@ -676,24 +692,33 @@ const handleGenerateVersions = async () => {
       questionsPerVersion.value
     );
 
+    clearInterval(progressInterval);
+
     if (result.error) {
       alert(`Failed to generate versions: ${result.error}`);
       return;
     }
 
+    // Complete progress
+    generationProgress.value.current = versionCount.value;
+    generationProgress.value.message = 'Finalizing...';
+    
     closeGenerateVersionModal();
     
     // Switch to versions tab and reload
     activeTab.value = 'versions';
     await loadVersions();
 
-    alert(`✅ Successfully generated ${result.data.data.length} randomized version(s) using Fisher-Yates algorithm!`);
+    // result.data is the array directly, not nested
+    const count = result.data?.length || versionCount.value;
+    alert(`✅ Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`);
 
   } catch (error) {
     console.error('Generate versions error:', error);
     alert(`An error occurred: ${error.message}`);
   } finally {
     isGeneratingVersions.value = false;
+    generationProgress.value = { current: 0, total: 0, message: '' };
   }
 };
 
@@ -1259,37 +1284,57 @@ const deleteSelectedVersions = async () => {
     return;
   }
 
+  isDeletingVersions.value = true;
+  deletionProgress.value = {
+    current: 0,
+    total: versionCount,
+    message: 'Preparing to delete versions...'
+  };
+
   let successCount = 0;
   let failCount = 0;
 
-  for (const version of selectedVersions.value) {
+  for (let i = 0; i < selectedVersions.value.length; i++) {
+    const version = selectedVersions.value[i];
+    
+    // Update progress
+    deletionProgress.value.current = i + 1;
+    deletionProgress.value.message = `Deleting version ${version.version_number} (${i + 1} of ${versionCount})...`;
+    
     try {
       const result = await testStore.deleteVersion(version.id, testId);
       
       if (result.error) {
-        console.error(`Failed to delete ${version.name}:`, result.error);
+        console.error(`Failed to delete version ${version.version_number}:`, result.error);
         failCount++;
       } else {
         successCount++;
       }
     } catch (error) {
-      console.error(`Error deleting ${version.name}:`, error);
+      console.error(`Error deleting version ${version.version_number}:`, error);
       failCount++;
     }
   }
 
+  // Finalize
+  deletionProgress.value.message = 'Refreshing version list...';
+
   // Clear selection
   selectedVersions.value = [];
+  selectAll.value = false;
 
   // Reload versions
   await loadVersions(true);
 
   // Show result
   if (failCount === 0) {
-    alert(`Successfully deleted ${successCount} ${versionText}!`);
+    alert(`✅ Successfully deleted ${successCount} ${versionText}!`);
   } else {
-    alert(`Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`);
+    alert(`⚠️ Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`);
   }
+
+  isDeletingVersions.value = false;
+  deletionProgress.value = { current: 0, total: 0, message: '' };
 };
 
 onMounted(async () => {
@@ -1671,8 +1716,8 @@ onMounted(async () => {
 
             <!-- Versions List -->
             <div v-else>
-              <!-- Select All Checkbox -->
-              <div class="mb-4 flex items-center">
+              <!-- Select All Checkbox - Only show when at least one version is selected -->
+              <div v-if="selectedVersions.length > 0" class="mb-4 flex items-center">
                 <input
                   id="select-all-versions"
                   v-model="selectAll"
@@ -2416,6 +2461,140 @@ onMounted(async () => {
         </div>
       </div>
 
+      <!-- Progress Modal for Generation -->
+      <div
+        v-if="isGeneratingVersions && generationProgress.total > 0"
+        class="fixed inset-0 z-[60] overflow-y-auto"
+        aria-labelledby="progress-modal"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay - non-clickable -->
+          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+            <div>
+              <!-- Spinner Icon -->
+              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100">
+                <svg
+                  class="animate-spin h-10 w-10 text-blue-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- Title -->
+              <div class="mt-4 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Generating Versions
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-600">
+                    {{ generationProgress.message }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-4">
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progress</span>
+                  <span>{{ generationProgress.current }} / {{ generationProgress.total }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                    :style="{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Info text -->
+              <div class="mt-4 text-center">
+                <p class="text-xs text-gray-500">
+                  Please wait while we generate your randomized versions...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Modal for Deletion -->
+      <div
+        v-if="isDeletingVersions && deletionProgress.total > 0"
+        class="fixed inset-0 z-[60] overflow-y-auto"
+        aria-labelledby="deletion-progress-modal"
+        role="dialog"
+        aria-modal="true"
+      >
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay - non-clickable -->
+          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+            <div>
+              <!-- Spinner Icon -->
+              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg
+                  class="animate-spin h-10 w-10 text-red-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- Title -->
+              <div class="mt-4 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Deleting Versions
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm text-gray-600">
+                    {{ deletionProgress.message }}
+                  </p>
+                </div>
+              </div>
+
+              <!-- Progress Bar -->
+              <div class="mt-4">
+                <div class="flex justify-between text-xs text-gray-600 mb-1">
+                  <span>Progress</span>
+                  <span>{{ deletionProgress.current }} / {{ deletionProgress.total }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
+                    :style="{ width: `${(deletionProgress.current / deletionProgress.total) * 100}%` }"
+                  ></div>
+                </div>
+              </div>
+
+              <!-- Info text -->
+              <div class="mt-4 text-center">
+                <p class="text-xs text-gray-500">
+                  Please wait while we delete the selected versions...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Generate Versions Modal -->
       <div
         v-if="showGenerateVersionModal"
@@ -2672,11 +2851,22 @@ onMounted(async () => {
               class="bg-gray-50 rounded-lg p-5 border border-gray-200"
             >
               <!-- Question -->
-              <div class="flex items-start mb-4">
-                <span class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3">
-                  {{ question.question_number }}
-                </span>
-                <p class="text-lg text-gray-900 font-medium">{{ question.question_text }}</p>
+              <div class="mb-4">
+                <div class="flex items-start">
+                  <span class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3">
+                    {{ question.question_number }}
+                  </span>
+                  <p class="text-lg text-gray-900 font-medium">{{ question.question_text }}</p>
+                </div>
+                
+                <!-- Question Image -->
+                <div v-if="question.question_image_url" class="ml-11 mt-3">
+                  <img 
+                    :src="question.question_image_url" 
+                    alt="Question image"
+                    class="max-w-md h-auto rounded-lg border border-gray-300 shadow-sm"
+                  />
+                </div>
               </div>
 
               <!-- Answer Choices -->
@@ -2684,12 +2874,25 @@ onMounted(async () => {
                 <div
                   v-for="(choice, cIndex) in question.answer_choices"
                   :key="choice.id"
-                  class="flex items-start p-3 rounded-md bg-white border border-gray-200"
+                  class="p-3 rounded-md bg-white border border-gray-200"
                 >
-                  <span class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]">
-                    {{ String.fromCharCode(65 + cIndex) }}.
-                  </span>
-                  <p class="text-gray-800">{{ choice.text }}</p>
+                  <div class="flex items-start">
+                    <span class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]">
+                      {{ String.fromCharCode(65 + cIndex) }}.
+                    </span>
+                    <div class="flex-1">
+                      <p class="text-gray-800">{{ choice.text }}</p>
+                      
+                      <!-- Answer Choice Image -->
+                      <div v-if="choice.image_url" class="mt-2">
+                        <img 
+                          :src="choice.image_url" 
+                          alt="Answer choice image"
+                          class="max-w-xs h-auto rounded border border-gray-300"
+                        />
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

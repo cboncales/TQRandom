@@ -66,10 +66,27 @@ export async function generateVersions(req, res) {
       ? questionsPerVersion 
       : maxQuestions;
 
+    // 🔧 FIX: Get the highest existing version number to continue from it
+    const { data: existingVersions, error: existingError } = await supabase
+      .from('test_versions')
+      .select('version_number')
+      .eq('test_id', testId)
+      .order('version_number', { ascending: false })
+      .limit(1);
+
+    let startingVersionNumber = 1;
+    if (!existingError && existingVersions && existingVersions.length > 0) {
+      startingVersionNumber = existingVersions[0].version_number + 1;
+      console.log(`📊 Continuing from version ${startingVersionNumber} (found ${existingVersions[0].version_number} existing versions)`);
+    }
+
     // Generate versions
     const generatedVersions = [];
     
     for (let i = 0; i < versionCount; i++) {
+      const currentVersionNumber = startingVersionNumber + i;
+      console.log(`\n🔄 Generating version ${currentVersionNumber} (${i + 1}/${versionCount})...`);
+      
       // Select subset of questions if needed
       let questionsToUse = questions;
       if (actualQuestionsPerVersion < maxQuestions) {
@@ -86,7 +103,7 @@ export async function generateVersions(req, res) {
         .from('test_versions')
         .insert([{
           test_id: testId,
-          version_number: i + 1
+          version_number: currentVersionNumber
         }])
         .select()
         .single();
@@ -97,6 +114,7 @@ export async function generateVersions(req, res) {
       }
 
       // Insert shuffled questions with their order
+      console.log(`  📝 Inserting ${shuffledQuestions.length} questions...`);
       const versionQuestions = shuffledQuestions.map((q, index) => ({
         test_version_id: versionData.id,
         question_id: q.id,
@@ -109,7 +127,7 @@ export async function generateVersions(req, res) {
         .select();
 
       if (questionsInsertError) {
-        console.error('Error inserting version questions:', questionsInsertError);
+        console.error('❌ Error inserting version questions:', questionsInsertError);
         continue;
       }
 
@@ -128,21 +146,26 @@ export async function generateVersions(req, res) {
       });
 
       if (answerChoicesData.length > 0) {
+        console.log(`  🔀 Inserting ${answerChoicesData.length} answer choices...`);
         const { error: choicesInsertError } = await supabase
           .from('test_versions_answer_choices')
           .insert(answerChoicesData);
 
         if (choicesInsertError) {
-          console.error('Error inserting answer choices:', choicesInsertError);
+          console.error('❌ Error inserting answer choices:', choicesInsertError);
         }
       }
 
+      console.log(`  ✅ Version ${currentVersionNumber} generated successfully!`);
+      
       generatedVersions.push({
         id: versionData.id,
         version_number: versionData.version_number,
         question_count: shuffledQuestions.length
       });
     }
+
+    console.log(`\n🎉 Generation complete! Created ${generatedVersions.length} new version(s)`);
 
     res.status(201).json({
       success: true,
@@ -249,13 +272,15 @@ export async function getVersion(req, res) {
         question_order,
         questions (
           id,
-          text
+          text,
+          image_url
         ),
         test_versions_answer_choices (
           choice_order,
           answer_choices (
             id,
-            text
+            text,
+            image_url
           )
         )
       `)
@@ -275,6 +300,7 @@ export async function getVersion(req, res) {
         .map(ac => ({
           id: ac.answer_choices.id,
           text: ac.answer_choices.text,
+          image_url: ac.answer_choices.image_url,
           order: ac.choice_order
         }));
 
@@ -282,6 +308,7 @@ export async function getVersion(req, res) {
         question_number: vq.question_order,
         question_id: vq.questions.id,
         question_text: vq.questions.text,
+        question_image_url: vq.questions.image_url,
         answer_choices: sortedChoices
       };
     });
