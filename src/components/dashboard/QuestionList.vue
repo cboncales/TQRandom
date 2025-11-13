@@ -178,7 +178,7 @@ const toggleSelection = (question) => {
           <div class="flex items-center space-x-2 ml-4">
             <button
               @click="editQuestion(question)"
-              class="p-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors duration-200"
+              class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit question"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +187,7 @@ const toggleSelection = (question) => {
             </button>
             <button
               @click="confirmDelete(question.id)"
-              class="p-2 text-red-600 hover:bg-red-50 rounded-md transition-colors duration-200"
+              class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete question"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
