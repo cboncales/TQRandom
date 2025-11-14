@@ -60,7 +60,6 @@ const getStatusColor = (status) => {
                 <h4 class="text-lg font-medium text-gray-900 truncate">
                   {{ test.title }}
                 </h4>
-                <p class="text-sm text-gray-600">{{ test.subject }}</p>
               </div>
               <div class="flex items-center space-x-2">
                 <span
@@ -118,7 +117,7 @@ const getStatusColor = (status) => {
             <!-- Manage Questions Button -->
             <button
               @click="manageQuestions(test.id)"
-              class="bg-gray-100 text-gray-800 shadow hover:bg-gray-200 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+              class="bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
             >
               <svg
                 class="w-4 h-4 mr-1"
@@ -139,7 +138,7 @@ const getStatusColor = (status) => {
             <!-- Edit Button -->
             <button
               @click="editTest(test.id)"
-              class="p-2 text-gray-700 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit test"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,7 +149,7 @@ const getStatusColor = (status) => {
             <!-- Delete Button -->
             <button
               @click="confirmDelete(test.id)"
-              class="p-2 text-gray-700 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete test"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

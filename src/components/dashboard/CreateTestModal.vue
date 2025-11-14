@@ -14,30 +14,13 @@ const emit = defineEmits(["close", "test-created"]);
 const testStore = useTestStore();
 
 const title = ref("");
-const subject = ref("");
 const description = ref("");
 const isLoading = ref(false);
 const errorMessage = ref("");
 
-const predefinedSubjects = [
-  "Mathematics",
-  "Science",
-  "English",
-  "History",
-  "Geography",
-  "Physics",
-  "Chemistry",
-  "Biology",
-  "Computer Science",
-  "Art",
-  "Music",
-  "Physical Education",
-  "Other",
-];
-
 const handleSubmit = async () => {
-  if (!title.value.trim() || !subject.value.trim()) {
-    errorMessage.value = "Please fill in both title and subject";
+  if (!title.value.trim()) {
+    errorMessage.value = "Please fill in the title";
     return;
   }
 
@@ -45,19 +28,13 @@ const handleSubmit = async () => {
   errorMessage.value = "";
 
   try {
-    // Combine subject and description since database doesn't have separate subject field
-    const fullDescription =
-      subject.value.trim() +
-      (description.value.trim() ? ` - ${description.value.trim()}` : "");
-
-    const result = await testStore.createTest(title.value, fullDescription);
+    const result = await testStore.createTest(title.value, description.value.trim());
 
     if (result.error) {
       errorMessage.value = result.error;
     } else {
       emit("test-created", {
         ...result.data,
-        subject: subject.value.trim(), // Keep subject for UI display
         questionCount: 0,
         status: "draft",
       });
@@ -73,7 +50,6 @@ const handleSubmit = async () => {
 
 const resetForm = () => {
   title.value = "";
-  subject.value = "";
   description.value = "";
   errorMessage.value = "";
 };
@@ -162,51 +138,6 @@ const closeModal = () => {
           />
         </div>
 
-        <!-- Subject -->
-        <div>
-          <label
-            for="test-subject"
-            class="block text-sm font-medium text-gray-700"
-          >
-            Subject *
-          </label>
-          <select
-            id="test-subject"
-            v-model="subject"
-            required
-            :disabled="isLoading"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-          >
-            <option value="">Select a subject</option>
-            <option
-              v-for="subj in predefinedSubjects"
-              :key="subj"
-              :value="subj"
-            >
-              {{ subj }}
-            </option>
-          </select>
-        </div>
-
-        <!-- Custom Subject Input (if Other is selected) -->
-        <div v-if="subject === 'Other'">
-          <label
-            for="custom-subject"
-            class="block text-sm font-medium text-gray-700"
-          >
-            Custom Subject *
-          </label>
-          <input
-            id="custom-subject"
-            v-model="subject"
-            type="text"
-            required
-            :disabled="isLoading"
-            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-            placeholder="Enter custom subject"
-          />
-        </div>
-
         <!-- Description -->
         <div>
           <label
@@ -241,10 +172,10 @@ const closeModal = () => {
           <button
             type="submit"
             class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
-            :disabled="!title.trim() || !subject.trim() || isLoading"
+            :disabled="!title.trim() || isLoading"
             :class="{
               'opacity-50 cursor-not-allowed':
-                !title.trim() || !subject.trim() || isLoading,
+                !title.trim() || isLoading,
             }"
           >
             <span v-if="isLoading" class="w-4 h-4 mr-2 animate-spin">

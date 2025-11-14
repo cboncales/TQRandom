@@ -13,13 +13,64 @@ const successMessage = ref("");
 
 onMounted(async () => {
   try {
-    // Check if user is already authenticated after OAuth callback
-    const isAuthenticated = await authStore.isAuthenticated();
+    // Try to extract code from query parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    let code = urlParams.get('code');
 
-    if (isAuthenticated) {
-      // Get user information to populate store
-      await authStore.getUserInformation();
+    // If no code in query params, check hash (Supabase might use hash-based flow)
+    if (!code && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      code = hashParams.get('code');
+      
+      // Check if Supabase sent tokens directly in hash (implicit flow)
+      const accessToken = hashParams.get('access_token');
+      const refreshToken = hashParams.get('refresh_token');
+      
+      
+      // If we have tokens directly, use them
+      if (accessToken && refreshToken) {
+        // Import token setters
+        const { setAuthToken, setRefreshToken } = await import('@/services/api');
+        
+        // Store tokens
+        setAuthToken(accessToken, true);
+        setRefreshToken(refreshToken, true);
+        
+        // Get user information
+        await authStore.getUserInformation();
+        
+        successMessage.value =
+          "Successfully signed in with Google! Redirecting to dashboard...";
 
+        setTimeout(() => {
+          router.push("/dashboard");
+        }, 2000);
+        return;
+      }
+    }
+
+    console.log("OAuth code:", code);
+
+    if (!code) {
+      console.error("No code or tokens found in URL");
+      errorMessage.value = "No authentication code received. Please check console for URL details.";
+      setTimeout(() => {
+        router.push("/login");
+      }, 5000);
+      return;
+    }
+
+    // Handle OAuth callback with the code
+    const result = await authStore.handleOAuthCallback(code);
+
+    if (result.error) {
+      console.error("OAuth callback result error:", result.error);
+      errorMessage.value = result.error;
+      setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+    } else {
+      console.log("OAuth callback successful");
       successMessage.value =
         "Successfully signed in with Google! Redirecting to dashboard...";
 
@@ -27,13 +78,6 @@ onMounted(async () => {
       setTimeout(() => {
         router.push("/dashboard");
       }, 2000);
-    } else {
-      errorMessage.value = "Authentication failed. Please try again.";
-
-      // Redirect to login page after a delay
-      setTimeout(() => {
-        router.push("/login");
-      }, 3000);
     }
   } catch (error) {
     console.error("OAuth callback error:", error);
@@ -52,7 +96,7 @@ onMounted(async () => {
 <template>
   <AppLayout>
     <div
-      class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
+      class="min-h-screen bg-gray-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
     >
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">

@@ -1,5 +1,12 @@
 <script setup>
 import AppLayout from "@/components/layout/AppLayout.vue";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
+
+const navigateTo = (routeName) => {
+  router.push({ name: routeName });
+};
 </script>
 
 <template>
@@ -16,11 +23,13 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </p>
           <div class="space-x-4">
             <button
+              @click="navigateTo('register')"
               class="bg-white text-blue-600 hover:bg-gray-100 font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
             >
               Get Started
             </button>
             <button
+              @click="navigateTo('learn-more')"
               class="border-2 border-white text-white hover:bg-white hover:text-blue-600 font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
             >
               Learn More
@@ -31,7 +40,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
     </section>
 
     <!-- Features Section -->
-    <section class="py-16 bg-white">
+    <section class="py-16 bg-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
           <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">

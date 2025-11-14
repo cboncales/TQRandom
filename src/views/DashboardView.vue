@@ -81,7 +81,7 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-200">
       <!-- Dashboard Header -->
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,7 +97,7 @@ onMounted(() => {
               </div>
               <button
                 @click="openCreateModal"
-                class="bg-gray-100 text-gray-800 shadow hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
               >
                 <svg
                   class="w-5 h-5 mr-2"

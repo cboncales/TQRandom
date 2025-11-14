@@ -97,7 +97,7 @@ const userDisplayName = computed(() => {
             <div class="ml-10 flex items-baseline space-x-4">
               <button
                 @click="navigateTo('home')"
-                class="text-white hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                class="text-white hover:text-gray-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
               >
                 Home
               </button>
@@ -106,7 +106,7 @@ const userDisplayName = computed(() => {
               <template v-if="isAuthenticated">
                 <button
                   @click="navigateTo('dashboard')"
-                  class="text-white hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  class="text-white hover:text-gray-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                 >
                   Dashboard
                 </button>
@@ -115,7 +115,7 @@ const userDisplayName = computed(() => {
                 <div class="relative">
                   <button
                     @click="toggleUserDropdown"
-                    class="flex items-center text-white hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                    class="flex items-center text-white hover:text-gray-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                   >
                     <svg class="w-4 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -166,7 +166,7 @@ const userDisplayName = computed(() => {
                 </button>
                 <button
                   @click="navigateTo('register')"
-                  class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                  class="bg-blue-500 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
                 >
                   Get Started
                 </button>
@@ -321,14 +321,14 @@ const userDisplayName = computed(() => {
             <ul class="space-y-2">
               <li>
                 <a
-                  href="#"
+                  @click="navigateTo('home')"
                   class="text-gray-300 hover:text-white transition-colors duration-200"
                   >Home</a
                 >
               </li>
               <li>
                 <a
-                  href="#"
+                  @click="navigateTo('about')"
                   class="text-gray-300 hover:text-white transition-colors duration-200"
                   >About</a
                 >

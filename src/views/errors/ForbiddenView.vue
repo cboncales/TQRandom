@@ -4,7 +4,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 
 <template>
   <AppLayout>
-    <div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="min-h-screen flex items-center justify-center bg-gray-200">
       <div class="text-center">
         <div class="mb-8">
           <h1 class="text-9xl font-bold text-gray-300">403</h1>

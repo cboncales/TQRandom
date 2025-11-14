@@ -231,8 +231,9 @@ export const authApi = {
    * Handle OAuth callback
    */
   async handleOAuthCallback(code) {
-    return apiRequest(`/api/auth/callback?code=${code}`, {
-      method: 'GET',
+    return apiRequest('/api/auth/callback', {
+      method: 'POST',
+      body: JSON.stringify({ code }),
     });
   },
 };

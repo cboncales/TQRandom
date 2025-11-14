@@ -178,7 +178,7 @@ const toggleSelection = (question) => {
           <div class="flex items-center space-x-2 ml-4">
             <button
               @click="editQuestion(question)"
-              class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 bg-gray-100 text-blue-500 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit question"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,7 +187,7 @@ const toggleSelection = (question) => {
             </button>
             <button
               @click="confirmDelete(question.id)"
-              class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 bg-gray-100 text-red-500 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete question"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,11 +226,11 @@ const toggleSelection = (question) => {
   <!-- Delete Confirmation Modal -->
   <div
     v-if="showDeleteConfirm"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-gray-transparent bg-opacity-50 overflow-y-auto h-full w-full z-50"
     @click="cancelDelete"
   >
     <div
-      class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+      class="relative top-20 mx-auto p-5 border border-gray-300 w-96 shadow-lg rounded-md bg-white"
       @click.stop
     >
       <div class="mt-3 text-center">

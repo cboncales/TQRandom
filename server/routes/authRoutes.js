@@ -22,7 +22,7 @@ router.post('/refresh', refreshToken);
 router.post('/reset-password-request', resetPasswordRequest);
 router.post('/reset-password-confirm', confirmPasswordReset);
 router.get('/google', signInWithGoogle);
-router.get('/callback', handleOAuthCallback);
+router.post('/callback', handleOAuthCallback);
 
 // Protected routes (authentication required)
 router.post('/logout', authenticateUser, logout);

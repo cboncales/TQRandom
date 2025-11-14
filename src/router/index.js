@@ -48,6 +48,19 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/learn-more',
+    name: 'learn-more',
+    component: () => import('@/views/LearnMore.vue'),
+
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/about',
+    name: 'about',
+    component: () => import('@/views/About.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/UserSettingsView.vue'),

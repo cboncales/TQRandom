@@ -17,14 +17,12 @@ const successMessage = ref("");
 // Form data
 const form = ref({
   title: "",
-  subject: "",
   description: "",
 });
 
 // Original data for comparison
 const originalForm = ref({
   title: "",
-  subject: "",
   description: "",
 });
 
@@ -41,16 +39,9 @@ const loadTest = async () => {
     } else {
       const test = result.data;
 
-      // Parse subject and description from the combined description field
-      const subject = test.description?.split(" - ")[0] || "General";
-      const description = test.description?.includes(" - ")
-        ? test.description.split(" - ").slice(1).join(" - ")
-        : test.description || "";
-
       form.value = {
         title: test.title,
-        subject: subject,
-        description: description,
+        description: test.description || "",
       };
 
       // Store original values for comparison
@@ -68,7 +59,6 @@ const loadTest = async () => {
 const hasChanges = () => {
   return (
     form.value.title !== originalForm.value.title ||
-    form.value.subject !== originalForm.value.subject ||
     form.value.description !== originalForm.value.description
   );
 };
@@ -91,15 +81,9 @@ const handleSubmit = async () => {
       return;
     }
 
-    // Combine subject and description like in CreateTestModal
-    const combinedDescription =
-      form.value.subject.trim() && form.value.description.trim()
-        ? `${form.value.subject.trim()} - ${form.value.description.trim()}`
-        : form.value.subject.trim() || form.value.description.trim() || null;
-
     const updates = {
       title: form.value.title.trim(),
-      description: combinedDescription,
+      description: form.value.description.trim() || null,
     };
 
     const result = await testStore.updateTest(testId, updates);
@@ -143,7 +127,7 @@ onMounted(() => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-200">
       <!-- Header -->
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -200,7 +184,7 @@ onMounted(() => {
           class="bg-red-50 border border-red-200 rounded-lg p-6 mb-8"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-red-400"
                 fill="currentColor"
@@ -225,7 +209,7 @@ onMounted(() => {
           class="bg-green-50 border border-green-200 rounded-lg p-6 mb-8"
         >
           <div class="flex">
-            <div class="flex-shrink-0">
+            <div class="shrink-0">
               <svg
                 class="h-5 w-5 text-green-400"
                 fill="currentColor"
@@ -263,24 +247,6 @@ onMounted(() => {
                 :disabled="isSaving"
                 class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="Enter test title"
-              />
-            </div>
-
-            <!-- Subject -->
-            <div>
-              <label
-                for="subject"
-                class="block text-sm font-medium text-gray-700"
-              >
-                Subject
-              </label>
-              <input
-                id="subject"
-                v-model="form.subject"
-                type="text"
-                :disabled="isSaving"
-                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                placeholder="e.g., Mathematics, Science, History"
               />
             </div>
 
