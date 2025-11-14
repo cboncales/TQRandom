@@ -61,6 +61,18 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: '/services',
+    name: 'services',
+    component: () => import('@/views/Services.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/contact',
+    name: 'contact',
+    component: () => import('@/views/Contact.vue'),
+    meta: { requiresAuth: false },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/UserSettingsView.vue'),
