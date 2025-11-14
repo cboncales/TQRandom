@@ -66,6 +66,63 @@ export function clearAuthTokens() {
 }
 
 /**
+ * Show session expired notification
+ */
+function showSessionExpiredNotification() {
+  // Create or update notification element
+  let notification = document.getElementById('session-expired-notification');
+  
+  if (!notification) {
+    notification = document.createElement('div');
+    notification.id = 'session-expired-notification';
+    notification.className = 'fixed top-4 right-4 z-[9999] bg-red-50 border border-red-200 rounded-lg shadow-lg p-4 max-w-sm animate-slide-in';
+    notification.innerHTML = `
+      <div class="flex items-start">
+        <div class="shrink-0">
+          <svg class="h-5 w-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+          </svg>
+        </div>
+        <div class="ml-3 flex-1">
+          <h3 class="text-sm font-semibold text-red-800">Session Expired</h3>
+          <p class="mt-1 text-xs text-red-700">Your session has expired. Please log in again to continue.</p>
+          <button onclick="window.location.href='/login'" class="mt-2 text-xs font-medium text-red-800 hover:text-red-900 underline">
+            Go to Login
+          </button>
+        </div>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 shrink-0 text-red-400 hover:text-red-600">
+          <span class="sr-only">Close</span>
+          <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    `;
+    
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slide-in {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      .animate-slide-in {
+        animation: slide-in 0.3s ease-out;
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => {
+      if (notification && notification.parentElement) {
+        notification.remove();
+      }
+    }, 10000);
+  }
+}
+
+/**
  * Make an authenticated API request with automatic token refresh
  */
 async function apiRequest(endpoint, options = {}, retryCount = 0) {
@@ -106,16 +163,22 @@ async function apiRequest(endpoint, options = {}, retryCount = 0) {
           // Try to refresh the token
           const refreshResult = await authApi.refreshToken(refreshToken);
           if (!refreshResult.error && refreshResult.data) {
-            // Store new tokens
-            setAuthToken(refreshResult.data.access_token);
-            setRefreshToken(refreshResult.data.refresh_token);
+            // Store new tokens (preserve remember me preference)
+            const rememberMe = localStorage.getItem('remember_me') === 'true';
+            setAuthToken(refreshResult.data.access_token, rememberMe);
+            setRefreshToken(refreshResult.data.refresh_token, rememberMe);
             
             // Retry the original request with new token
             return apiRequest(endpoint, options, retryCount + 1);
           }
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError);
+          // Show session expired notification instead of immediate redirect
+          showSessionExpiredNotification();
         }
+      } else {
+        // No refresh token available
+        showSessionExpiredNotification();
       }
     }
 

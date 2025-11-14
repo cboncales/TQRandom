@@ -71,6 +71,8 @@ const showImageAssignmentModal = ref(false);
 const pendingQuestions = ref([]);
 const extractedImages = ref([]);
 const imageAssignments = ref({}); // { questionIndex: imageUrl }
+const answerChoiceImageAssignments = ref({}); // { `${questionIndex}-${choiceIndex}`: imageUrl }
+const imageAssignmentTab = ref('questions'); // 'questions' or 'answerChoices'
 const savedAnswerKeyMap = ref({}); // Store parsed answer key for later use
 
 const openQuestionForm = () => {
@@ -110,17 +112,19 @@ const editQuestion = async (question) => {
       }
     }
 
-    // Transform answer_choices to options format with isCorrect flag
+    // Transform answer_choices to options format with isCorrect flag and imageUrl
     const options = (answerChoices || []).map((choice) => ({
       id: choice.id,
       text: choice.text,
       isCorrect: choice.id === correctAnswerChoiceId,
+      imageUrl: choice.image_url || null, // Preserve existing image URL
     }));
 
     // Create the editing question object in the format expected by QuestionForm
     editingQuestion.value = {
       id: question.id,
       question: question.question || question.text, // Use question.question if available, fallback to question.text
+      imageUrl: question.image_url || null, // Preserve existing question image URL
       options: options,
     };
 
@@ -436,11 +440,34 @@ const clearAssignment = (questionIndex) => {
   delete imageAssignments.value[questionIndex];
 };
 
+// Answer choice image assignment functions
+const assignImageToAnswerChoice = (questionIndex, choiceIndex, imageUrl) => {
+  const key = `${questionIndex}-${choiceIndex}`;
+  if (answerChoiceImageAssignments.value[key] === imageUrl) {
+    // Unassign if clicking the same image
+    delete answerChoiceImageAssignments.value[key];
+  } else {
+    answerChoiceImageAssignments.value[key] = imageUrl;
+  }
+};
+
+const getAssignedAnswerChoiceImage = (questionIndex, choiceIndex) => {
+  const key = `${questionIndex}-${choiceIndex}`;
+  return answerChoiceImageAssignments.value[key] || null;
+};
+
+const clearAnswerChoiceAssignment = (questionIndex, choiceIndex) => {
+  const key = `${questionIndex}-${choiceIndex}`;
+  delete answerChoiceImageAssignments.value[key];
+};
+
 const closeImageAssignmentModal = () => {
   showImageAssignmentModal.value = false;
   pendingQuestions.value = [];
   extractedImages.value = [];
   imageAssignments.value = {};
+  answerChoiceImageAssignments.value = {};
+  imageAssignmentTab.value = 'questions';
   savedAnswerKeyMap.value = {}; // Clear saved answer key
 };
 
@@ -468,11 +495,16 @@ const saveQuestionsWithImages = async () => {
       // Get manually assigned image or use auto-assigned
       const assignedImageUrl = imageAssignments.value[i] || parsed.question_image?.url || null;
       
-      // Convert answer_choices
-      const answerChoices = parsed.answer_choices.map(choice => ({
-        text: typeof choice === 'string' ? choice : choice.text,
-        imageUrl: typeof choice === 'object' ? choice.image?.url : null
-      }));
+      // Convert answer_choices with manually assigned images
+      const answerChoices = parsed.answer_choices.map((choice, choiceIdx) => {
+        // Check for manually assigned answer choice image
+        const manuallyAssignedImage = getAssignedAnswerChoiceImage(i, choiceIdx);
+        
+        return {
+          text: typeof choice === 'string' ? choice : choice.text,
+          imageUrl: manuallyAssignedImage || (typeof choice === 'object' ? choice.image?.url : null)
+        };
+      });
       
       // Create the question with assigned image
       const createResult = await testStore.createQuestion(
@@ -2192,10 +2224,55 @@ onMounted(async () => {
                 <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
                   Upload Document
                 </h3>
-                <div class="mt-2">
+                <div class="mt-2 space-y-3">
                   <p class="text-sm text-gray-500">
                     Upload a PDF or Word document to extract questions automatically.
                   </p>
+                  
+                  <!-- Format Instructions -->
+                  <div class="bg-green-50 border border-green-200 rounded-md p-4 text-left">
+                    <p class="text-sm font-semibold text-green-800 mb-2">Required Format:</p>
+                    <div class="space-y-2 text-xs text-green-700">
+                      <div>
+                        <p class="font-medium mb-1">Questions must be numbered:</p>
+                        <div class="bg-white rounded px-3 py-2 font-mono text-gray-700">
+                          1. What is the capital of France?<br>
+                          2. What is 2 + 2?
+                        </div>
+                      </div>
+                      <div>
+                        <p class="font-medium mb-1">Answer choices must use letters:</p>
+                        <div class="bg-white rounded px-3 py-2 font-mono text-gray-700">
+                          A. Paris<br>
+                          B. London<br>
+                          C. Berlin<br>
+                          D. Madrid
+                        </div>
+                      </div>
+                      <div class="bg-green-100 rounded px-3 py-2">
+                        <p class="font-semibold">Tips:</p>
+                        <ul class="mt-1 space-y-1 list-disc list-inside">
+                          <li>Use <strong>1., 2., 3.</strong> for questions</li>
+                          <li>Use <strong>A., B., C., D.</strong> for answers</li>
+                          <li>Keep one blank line between questions</li>
+                          <li>Images are extracted from <strong>Word files only</strong></li>
+                        </ul>
+                      </div>
+                      <div class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2">
+                        <p class="text-xs text-yellow-800">
+                          <strong>Note:</strong> PDF image extraction is temporarily unavailable. Please use Word files (.doc, .docx) for documents with images.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- File Types -->
+                  <div class="bg-blue-50 border border-blue-200 rounded-md p-3 text-left">
+                    <p class="text-xs font-semibold text-blue-800 mb-1">Supported Files:</p>
+                    <p class="text-xs text-blue-700">
+                      <strong>PDF</strong> (.pdf) or <strong>Word</strong> (.doc, .docx) - Max 10MB
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -2504,7 +2581,7 @@ onMounted(async () => {
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
               <div>
                 <h3 class="text-xl font-semibold text-white">
-                  📸 Assign Images to Questions
+                  Assign Images to Questions
                 </h3>
                 <p class="text-sm text-blue-100 mt-1">
                   Click on an image to assign it to a question. Click again to unassign.
@@ -2525,14 +2602,14 @@ onMounted(async () => {
               <!-- Extracted Images -->
               <div class="mb-6">
                 <h4 class="text-lg font-semibold text-gray-900 mb-3">
-                  📦 Extracted Images ({{ extractedImages.length }})
+                  Extracted Images ({{ extractedImages.length }})
                 </h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div
                     v-for="(image, idx) in extractedImages"
                     :key="idx"
                     class="border-2 rounded-lg p-2 hover:shadow-md transition-shadow"
-                    :class="Object.values(imageAssignments).includes(image.url) ? 'border-green-500 bg-green-50' : 'border-gray-300'"
+                    :class="(Object.values(imageAssignments).includes(image.url) || Object.values(answerChoiceImageAssignments).includes(image.url)) ? 'border-green-500 bg-green-50' : 'border-gray-300'"
                   >
                     <img
                       :src="image.url"
@@ -2541,7 +2618,7 @@ onMounted(async () => {
                     />
                     <p class="text-xs text-center mt-1 text-gray-600">
                       Image {{ idx + 1 }}
-                      <span v-if="Object.values(imageAssignments).includes(image.url)" class="text-green-600 font-semibold">
+                      <span v-if="Object.values(imageAssignments).includes(image.url) || Object.values(answerChoiceImageAssignments).includes(image.url)" class="text-green-600 font-semibold">
                         ✓ Assigned
                       </span>
                     </p>
@@ -2549,10 +2626,30 @@ onMounted(async () => {
                 </div>
               </div>
 
-              <!-- Questions List -->
-              <div>
+              <!-- Tabs -->
+              <div class="mb-6 border-b border-gray-200">
+                <nav class="-mb-px flex space-x-8">
+                  <button
+                    @click="imageAssignmentTab = 'questions'"
+                    class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
+                    :class="imageAssignmentTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  >
+                    Questions
+                  </button>
+                  <button
+                    @click="imageAssignmentTab = 'answerChoices'"
+                    class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
+                    :class="imageAssignmentTab === 'answerChoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                  >
+                    Answer Choices
+                  </button>
+                </nav>
+              </div>
+
+              <!-- Questions Tab Content -->
+              <div v-if="imageAssignmentTab === 'questions'">
                 <h4 class="text-lg font-semibold text-gray-900 mb-3">
-                  📝 Questions ({{ pendingQuestions.length }})
+                  Assign Images to Questions ({{ pendingQuestions.length }})
                 </h4>
                 <div class="space-y-4">
                   <div
@@ -2596,7 +2693,7 @@ onMounted(async () => {
                         <!-- Image Selector -->
                         <div class="mt-3">
                           <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Select image for this question:
+                            Select image:
                           </label>
                           <div class="flex flex-wrap gap-2">
                             <button
@@ -2627,12 +2724,101 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
+
+              <!-- Answer Choices Tab Content -->
+              <div v-if="imageAssignmentTab === 'answerChoices'">
+                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                  Assign Images to Answer Choices
+                </h4>
+                <div class="space-y-6">
+                  <div
+                    v-for="(question, qIdx) in pendingQuestions"
+                    :key="qIdx"
+                    class="border border-gray-300 rounded-lg p-4 bg-white"
+                  >
+                    <!-- Question Header -->
+                    <div class="flex items-start gap-3 mb-4 pb-3 border-b border-gray-200">
+                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm shrink-0">
+                        {{ qIdx + 1 }}
+                      </span>
+                      <p class="text-gray-900 font-medium text-sm">
+                        {{ question.question_text.substring(0, 80) }}{{ question.question_text.length > 80 ? '...' : '' }}
+                      </p>
+                    </div>
+
+                    <!-- Answer Choices -->
+                    <div class="space-y-3">
+                      <div
+                        v-for="(choice, choiceIdx) in question.answer_choices"
+                        :key="choiceIdx"
+                        class="pl-4"
+                      >
+                        <div class="flex items-start gap-3">
+                          <span class="text-sm font-semibold text-gray-600 shrink-0 mt-1">
+                            {{ String.fromCharCode(65 + choiceIdx) }}.
+                          </span>
+                          <div class="flex-1">
+                            <p class="text-sm text-gray-800 mb-2">
+                              {{ typeof choice === 'string' ? choice : choice.text }}
+                            </p>
+
+                            <!-- Assigned Image Preview -->
+                            <div v-if="getAssignedAnswerChoiceImage(qIdx, choiceIdx)" class="mb-2">
+                              <div class="relative inline-block">
+                                <img
+                                  :src="getAssignedAnswerChoiceImage(qIdx, choiceIdx)"
+                                  alt="Assigned choice image"
+                                  class="h-20 w-auto rounded border-2 border-green-500"
+                                />
+                                <button
+                                  @click="clearAnswerChoiceAssignment(qIdx, choiceIdx)"
+                                  class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700"
+                                >
+                                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                  </svg>
+                                </button>
+                              </div>
+                            </div>
+
+                            <!-- Image Selector -->
+                            <div class="flex flex-wrap gap-2">
+                              <button
+                                v-for="(image, imgIdx) in extractedImages"
+                                :key="imgIdx"
+                                @click="assignImageToAnswerChoice(qIdx, choiceIdx, image.url)"
+                                class="relative border-2 rounded p-1 hover:shadow-md transition-all"
+                                :class="getAssignedAnswerChoiceImage(qIdx, choiceIdx) === image.url ? 'border-green-500 bg-green-50 ring-2 ring-green-500' : 'border-gray-300 hover:border-blue-400'"
+                              >
+                                <img
+                                  :src="image.url"
+                                  :alt="`Image ${imgIdx + 1}`"
+                                  class="h-14 w-auto rounded"
+                                />
+                                <span
+                                  v-if="getAssignedAnswerChoiceImage(qIdx, choiceIdx) === image.url"
+                                  class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
+                                >
+                                  <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                  </svg>
+                                </span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <!-- Footer -->
             <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
               <div class="text-sm text-gray-600">
-                {{ Object.keys(imageAssignments).length }} of {{ pendingQuestions.length }} questions have images assigned
+                <span class="font-medium">Questions:</span> {{ Object.keys(imageAssignments).length }}/{{ pendingQuestions.length }} |
+                <span class="font-medium">Answer Choices:</span> {{ Object.keys(answerChoiceImageAssignments).length }}
               </div>
               <div class="flex gap-3">
                 <button
