@@ -35,12 +35,12 @@ const routes = [
     component: () => import('@/views/DashboardView.vue'),
     meta: { requiresAuth: true },
   },
-  {
-    path: '/test/:id/edit',
-    name: 'edit-test',
-    component: () => import('@/views/EditTestView.vue'),
-    meta: { requiresAuth: true },
-  },
+  // {
+  //   path: '/test/:id/edit',
+  //   name: 'edit-test',
+  //   component: () => import('@/views/EditTestView.vue'),
+  //   meta: { requiresAuth: true },
+  // },
   {
     path: '/test/:id/questions',
     name: 'question-management',

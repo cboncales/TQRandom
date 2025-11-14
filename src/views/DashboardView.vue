@@ -44,6 +44,11 @@ const handleTestDeleted = async (testId) => {
   }
 };
 
+const handleTestUpdated = async () => {
+  // Reload tests to get updated data
+  await loadTests();
+};
+
 const loadTests = async () => {
   try {
     isLoading.value = true;
@@ -315,6 +320,7 @@ onMounted(() => {
           v-if="!isLoading"
           :tests="tests"
           @test-deleted="handleTestDeleted"
+          @test-updated="handleTestUpdated"
         />
       </div>
 

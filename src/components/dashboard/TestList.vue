@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useRouter } from "vue-router";
+import EditTestModal from "./EditTestModal.vue";
 
 const props = defineProps({
   tests: {
@@ -9,13 +10,20 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["test-deleted"]);
+const emit = defineEmits(["test-deleted", "test-updated"]);
 
 const router = useRouter();
 const showDeleteConfirm = ref(null);
+const isEditOpen = ref(false);
+const selectedTestId = ref(null);
 
 const editTest = (testId) => {
-  router.push({ name: 'edit-test', params: { id: testId } });
+  selectedTestId.value = testId;
+  isEditOpen.value = true;
+};
+
+const refreshTests = () => {
+  emit("test-updated");
 };
 
 const manageQuestions = (testId) => {
@@ -234,6 +242,14 @@ const getStatusColor = (status) => {
       </div>
     </div>
   </div>
+
+  <!-- Edit Test Modal -->
+  <EditTestModal
+    :isOpen="isEditOpen"
+    :testId="selectedTestId"
+    @close="isEditOpen = false"
+    @updated="refreshTests"
+  />
 </template>
 
 <style scoped>
