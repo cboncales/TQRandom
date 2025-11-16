@@ -2474,7 +2474,7 @@ onMounted(async () => {
                   Select Download Format
                 </h3>
                 <div class="mt-2">
-                  <p class="text-sm text-gray-500">
+                  <p class="text-xs md:text-sm lg:text-sm text-gray-500">
                     Choose the file format for downloading 
                     <template v-if="downloadType === 'all'">all versions</template>
                     <template v-else-if="downloadType === 'selected'">{{ selectedVersions.length }} selected version{{ selectedVersions.length > 1 ? 's' : '' }}</template>
@@ -2545,7 +2545,7 @@ onMounted(async () => {
                 type="button"
                 @click="confirmDownload"
                 :disabled="isDownloadingAll"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-sm md:text-base lg:text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <svg
                   v-if="isDownloadingAll"
@@ -2562,7 +2562,7 @@ onMounted(async () => {
                 type="button"
                 @click="closeDownloadFormatModal"
                 :disabled="isDownloadingAll"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -2584,10 +2584,10 @@ onMounted(async () => {
             <!-- Header -->
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
               <div>
-                <h3 class="text-xl font-semibold text-white">
+                <h3 class="text-md md:text-xl lg:text-xl font-semibold text-white">
                   Assign Images to Questions
                 </h3>
-                <p class="text-sm text-blue-100 mt-1">
+                <p class="text-xs md:text-sm lg:text-sm text-blue-100 mt-1">
                   Click on an image to assign it to a question. Click again to unassign.
                 </p>
               </div>
@@ -2605,7 +2605,7 @@ onMounted(async () => {
             <div class="flex-1 overflow-y-auto p-6">
               <!-- Extracted Images -->
               <div class="mb-6">
-                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
                   Extracted Images ({{ extractedImages.length }})
                 </h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2652,7 +2652,7 @@ onMounted(async () => {
 
               <!-- Questions Tab Content -->
               <div v-if="imageAssignmentTab === 'questions'">
-                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
                   Assign Images to Questions ({{ pendingQuestions.length }})
                 </h4>
                 <div class="space-y-4">
@@ -2731,7 +2731,7 @@ onMounted(async () => {
 
               <!-- Answer Choices Tab Content -->
               <div v-if="imageAssignmentTab === 'answerChoices'">
-                <h4 class="text-lg font-semibold text-gray-900 mb-3">
+                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
                   Assign Images to Answer Choices
                 </h4>
                 <div class="space-y-6">
@@ -2819,16 +2819,16 @@ onMounted(async () => {
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center shrink-0">
-              <div class="text-sm text-gray-600">
-                <span class="font-medium">Questions:</span> {{ Object.keys(imageAssignments).length }}/{{ pendingQuestions.length }} |
-                <span class="font-medium">Answer Choices:</span> {{ Object.keys(answerChoiceImageAssignments).length }}
+            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0">
+              <div class="text-sm text-gray-600 mb-3 md:mb-0 lg:mb-0">
+                <span class="text-xs sm:font-medium">Questions:</span> {{ Object.keys(imageAssignments).length }}/{{ pendingQuestions.length }} |
+                <span class="text-xs sm:font-medium">Answer Choices:</span> {{ Object.keys(answerChoiceImageAssignments).length }}
               </div>
               <div class="flex gap-3">
                 <button
                   type="button"
                   @click="closeImageAssignmentModal"
-                  class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                  class="px-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm lg:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
                   Cancel
                 </button>
@@ -2836,7 +2836,7 @@ onMounted(async () => {
                   type="button"
                   @click="saveQuestionsWithImages"
                   :disabled="isUploadingFile"
-                  class="px-6 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+                  class="px-6 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm lg:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                 >
                   <svg v-if="isUploadingFile" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -3167,7 +3167,7 @@ onMounted(async () => {
                 type="button"
                 @click="handleGenerateVersions"
                 :disabled="isGeneratingVersions"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 text-sm md:text-base lg:text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <svg
                   v-if="isGeneratingVersions"
@@ -3195,7 +3195,7 @@ onMounted(async () => {
                 type="button"
                 @click="closeGenerateVersionModal"
                 :disabled="isGeneratingVersions"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -3212,7 +3212,7 @@ onMounted(async () => {
       @click="cancelDeleteVersion"
     >
       <div
-        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+        class="relative top-20 mx-auto p-5 border w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
         @click.stop
       >
         <div class="mt-3 text-center">
@@ -3272,7 +3272,7 @@ onMounted(async () => {
             <h2 class="text-2xl font-bold text-gray-900">
               {{ previewVersion?.test_title || 'Loading...' }}
             </h2>
-            <p class="text-sm text-gray-600 mt-1">
+            <p class="text-xs md:text-sm lg:text-sm text-gray-600 mt-1">
               Version {{ previewVersion?.version_number }} • 
               {{ previewVersion?.questions?.length || 0 }} questions • 
               Generated {{ previewVersion ? new Date(previewVersion.created_at).toLocaleDateString() : '' }}
@@ -3380,7 +3380,7 @@ onMounted(async () => {
         <!-- Header (Fixed) -->
         <div class="flex justify-between items-center px-6 pt-6 pb-4 border-b shrink-0">
           <div>
-            <h2 class="text-2xl font-bold text-gray-900">
+            <h2 class="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900">
               Answer Key
             </h2>
             <p v-if="answerKeyData" class="text-sm text-gray-600 mt-1">
@@ -3425,7 +3425,7 @@ onMounted(async () => {
                 :key="answer.question_number"
                 class="bg-green-50 border border-green-200 rounded-lg p-3 text-center"
               >
-                <div class="text-2xl font-bold text-green-700">
+                <div class="text-xl md:text-2xl lg:text-2xl font-bold text-green-700">
                   {{ answer.question_number }}.{{ answer.answer }}
                 </div>
               </div>

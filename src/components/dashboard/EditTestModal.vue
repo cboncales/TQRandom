@@ -128,7 +128,7 @@ const closeModal = () => {
   >
     <!-- MODAL CARD -->
     <div
-      class="relative bg-white w-full max-w-lg mt-24 p-6 rounded-lg shadow-lg"
+      class="relative bg-white w-full max-w-xs md:max-w-lg lg:max-w-lg mt-24 p-6 rounded-lg shadow-lg"
       @click.stop
     >
       <!-- HEADER -->
@@ -172,7 +172,7 @@ const closeModal = () => {
             <input
               v-model="form.title"
               type="text"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
               :disabled="isSaving"
             />
           </div>
@@ -183,7 +183,7 @@ const closeModal = () => {
             <textarea
               v-model="form.description"
               rows="3"
-              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
               :disabled="isSaving"
             ></textarea>
           </div>

@@ -200,7 +200,7 @@ const getStatusColor = (status) => {
     @click="cancelDelete"
   >
     <div
-      class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+      class="relative top-20 mx-auto p-5 border w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
       @click.stop
     >
       <div class="mt-3 text-center">

@@ -130,16 +130,16 @@ const goBack = () => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-gray-200 py-8">
-      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
           <button
             @click="goBack"
-            class="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+            class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
           >
             <svg
-              class="w-5 h-5 mr-2"
+              class="w-4 h-4 mr-1"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -153,166 +153,249 @@ const goBack = () => {
             </svg>
             Back to Dashboard
           </button>
-          <h1 class="text-3xl font-bold text-gray-900">Account Settings</h1>
-          <p class="mt-2 text-sm text-gray-600">
-            Manage your account information and security settings
-          </p>
-        </div>
-
-        <!-- Profile Settings Card -->
-        <div class="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-6">
-            Profile Information
-          </h2>
-
-          <form @submit.prevent="handleUpdateProfile" class="space-y-4">
-            <!-- Email (read-only) -->
+          <div class="flex items-center space-x-3">
+            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
             <div>
-              <label for="email" class="block text-sm font-medium text-gray-700 mb-1">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                v-model="email"
-                disabled
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500 cursor-not-allowed"
-              />
-              <p class="mt-1 text-xs text-gray-500">
-                Email cannot be changed
+              <h1 class="text-3xl font-bold text-gray-900">Account Settings</h1>
+              <p class="text-sm text-gray-600">
+                Manage your account information and security
               </p>
             </div>
-
-            <!-- First Name -->
-            <div>
-              <label for="firstName" class="block text-sm font-medium text-gray-700 mb-1">
-                First Name <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                v-model="firstName"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                :disabled="isUpdatingProfile"
-              />
-            </div>
-
-            <!-- Last Name -->
-            <div>
-              <label for="lastName" class="block text-sm font-medium text-gray-700 mb-1">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                v-model="lastName"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                :disabled="isUpdatingProfile"
-              />
-            </div>
-
-            <!-- Success Message -->
-            <div v-if="profileMessage" class="p-3 bg-green-50 border border-green-200 rounded-md">
-              <p class="text-sm text-green-800">{{ profileMessage }}</p>
-            </div>
-
-            <!-- Error Message -->
-            <div v-if="profileError" class="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p class="text-sm text-red-800">{{ profileError }}</p>
-            </div>
-
-            <!-- Submit Button -->
-            <div class="pt-2">
-              <button
-                type="submit"
-                :disabled="isUpdatingProfile"
-                class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <span v-if="isUpdatingProfile">Updating...</span>
-                <span v-else>Update Profile</span>
-              </button>
-            </div>
-          </form>
+          </div>
         </div>
 
-        <!-- Password Settings Card -->
-        <div class="bg-white shadow rounded-lg p-6">
-          <h2 class="text-xl font-semibold text-gray-900 mb-6">
-            Change Password
-          </h2>
-
-          <form @submit.prevent="handleUpdatePassword" class="space-y-4">
-            <!-- Current Password -->
-            <div>
-              <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                Current Password <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                id="currentPassword"
-                v-model="currentPassword"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                :disabled="isUpdatingPassword"
-              />
+        <div class="space-y-6">
+          <!-- Profile Settings Card -->
+          <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+              <div class="flex items-center">
+                <div class="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center mr-3">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900">
+                    Profile Information
+                  </h2>
+                  <p class="text-sm text-gray-600">Update your personal details</p>
+                </div>
+              </div>
             </div>
 
-            <!-- New Password -->
-            <div>
-              <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                New Password <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                id="newPassword"
-                v-model="newPassword"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                :disabled="isUpdatingPassword"
-              />
-              <p class="mt-1 text-xs text-gray-500">
-                Must be at least 6 characters long
-              </p>
+            <form @submit.prevent="handleUpdateProfile" class="p-6">
+              <div class="space-y-5">
+                <!-- Email (read-only) -->
+                <div>
+                  <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address
+                  </label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="email"
+                      id="email"
+                      v-model="email"
+                      disabled
+                      class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
+                    />
+                  </div>
+                  <p class="mt-1.5 text-xs text-gray-500 flex items-center">
+                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    Email address cannot be changed
+                  </p>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <!-- First Name -->
+                  <div>
+                    <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">
+                      First Name <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      id="firstName"
+                      v-model="firstName"
+                      required
+                      class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      :disabled="isUpdatingProfile"
+                    />
+                  </div>
+
+                  <!-- Last Name -->
+                  <div>
+                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">
+                      Last Name
+                    </label>
+                    <input
+                      type="text"
+                      id="lastName"
+                      v-model="lastName"
+                      class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                      :disabled="isUpdatingProfile"
+                    />
+                  </div>
+                </div>
+
+                <!-- Success Message -->
+                <div v-if="profileMessage" class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <p class="text-sm text-green-800">{{ profileMessage }}</p>
+                </div>
+
+                <!-- Error Message -->
+                <div v-if="profileError" class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                  <p class="text-sm text-red-800">{{ profileError }}</p>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    :disabled="isUpdatingProfile"
+                    class="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                  >
+                    <svg v-if="isUpdatingProfile" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span v-if="isUpdatingProfile">Updating...</span>
+                    <span v-else>Save Changes</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <!-- Password Settings Card -->
+          <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
+            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+              <div class="flex items-center">
+                <div class="h-10 w-10 rounded-lg bg-gray-700 flex items-center justify-center mr-3">
+                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 class="text-lg font-semibold text-gray-900">
+                    Security Settings
+                  </h2>
+                  <p class="text-sm text-gray-600">Update your password to keep your account secure</p>
+                </div>
+              </div>
             </div>
 
-            <!-- Confirm New Password -->
-            <div>
-              <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-1">
-                Confirm New Password <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="password"
-                id="confirmPassword"
-                v-model="confirmPassword"
-                required
-                class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
-                :disabled="isUpdatingPassword"
-              />
-            </div>
+            <form @submit.prevent="handleUpdatePassword" class="p-6">
+              <div class="space-y-5">
+                <!-- Current Password -->
+                <div>
+                  <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                    Current Password <span class="text-red-500">*</span>
+                  </label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                      </svg>
+                    </div>
+                    <input
+                      type="password"
+                      id="currentPassword"
+                      v-model="currentPassword"
+                      required
+                      class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                      :disabled="isUpdatingPassword"
+                    />
+                  </div>
+                </div>
 
-            <!-- Success Message -->
-            <div v-if="passwordMessage" class="p-3 bg-green-50 border border-green-200 rounded-md">
-              <p class="text-sm text-green-800">{{ passwordMessage }}</p>
-            </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <!-- New Password -->
+                  <div>
+                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                      New Password <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="newPassword"
+                      v-model="newPassword"
+                      required
+                      class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                      :disabled="isUpdatingPassword"
+                    />
+                    <p class="mt-1.5 text-xs text-gray-500 flex items-center">
+                      <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                      </svg>
+                      Minimum 6 characters
+                    </p>
+                  </div>
 
-            <!-- Error Message -->
-            <div v-if="passwordError" class="p-3 bg-red-50 border border-red-200 rounded-md">
-              <p class="text-sm text-red-800">{{ passwordError }}</p>
-            </div>
+                  <!-- Confirm New Password -->
+                  <div>
+                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                      Confirm Password <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="password"
+                      id="confirmPassword"
+                      v-model="confirmPassword"
+                      required
+                      class="w-full px-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
+                      :disabled="isUpdatingPassword"
+                    />
+                  </div>
+                </div>
 
-            <!-- Submit Button -->
-            <div class="pt-2">
-              <button
-                type="submit"
-                :disabled="isUpdatingPassword"
-                class="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <span v-if="isUpdatingPassword">Updating...</span>
-                <span v-else>Change Password</span>
-              </button>
-            </div>
-          </form>
+                <!-- Success Message -->
+                <div v-if="passwordMessage" class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                  </svg>
+                  <p class="text-sm text-green-800">{{ passwordMessage }}</p>
+                </div>
+
+                <!-- Error Message -->
+                <div v-if="passwordError" class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                  </svg>
+                  <p class="text-sm text-red-800">{{ passwordError }}</p>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="pt-2 flex justify-end">
+                  <button
+                    type="submit"
+                    :disabled="isUpdatingPassword"
+                    class="inline-flex items-center px-6 py-2.5 bg-blue-700 text-white rounded-lg hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                  >
+                    <svg v-if="isUpdatingPassword" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span v-if="isUpdatingPassword">Updating...</span>
+                    <span v-else>Change Password</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>
