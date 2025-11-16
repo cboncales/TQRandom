@@ -154,8 +154,8 @@ onMounted(() => {
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="py-6">
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+              <div class="mb-4 md:mb-0">
                 <h1 class="text-2xl font-bold text-gray-900">
                   Test Management Dashboard
                 </h1>

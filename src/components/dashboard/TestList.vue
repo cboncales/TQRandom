@@ -61,31 +61,31 @@ const getStatusColor = (status) => {
 
     <ul class="divide-y divide-gray-200">
       <li v-for="test in tests" :key="test.id" class="px-4 py-4 sm:px-6">
-        <div class="flex items-center justify-between">
+        <!-- Mobile Layout: Stack vertically -->
+        <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+          <!-- Test Info -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between">
-              <div>
+            <div class="flex items-center justify-between sm:justify-start sm:space-x-3">
+              <div class="flex-1 min-w-0">
                 <h4 class="text-lg font-medium text-gray-900 truncate">
                   {{ test.title }}
                 </h4>
               </div>
-              <div class="flex items-center space-x-2">
-                <span
-                  :class="[
-                    'px-2 inline-flex text-xs leading-5 font-semibold rounded-full',
-                    getStatusColor(test.status),
-                  ]"
-                >
-                  {{ test.status }}
-                </span>
-              </div>
+              <span
+                :class="[
+                  'px-2 inline-flex text-xs leading-5 font-semibold rounded-full shrink-0',
+                  getStatusColor(test.status),
+                ]"
+              >
+                {{ test.status }}
+              </span>
             </div>
 
             <p class="mt-2 text-sm text-gray-500">
               {{ test.description }}
             </p>
 
-            <div class="mt-2 flex items-center text-sm text-gray-500 space-x-4">
+            <div class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4">
               <span class="flex items-center">
                 <svg
                   class="shrink-0 mr-1.5 h-4 w-4"
@@ -121,14 +121,15 @@ const getStatusColor = (status) => {
             </div>
           </div>
 
-          <div class="flex items-center space-x-2">
+          <!-- Action Buttons - Full width on mobile, auto width on desktop -->
+          <div class="flex items-center space-x-2 sm:ml-4">
             <!-- Manage Questions Button -->
             <button
               @click="manageQuestions(test.id)"
-              class="bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+              class="flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
             >
               <svg
-                class="w-4 h-4 mr-1"
+                class="w-4 h-4 sm:mr-1"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -140,7 +141,7 @@ const getStatusColor = (status) => {
                   d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              Questions
+              <span>Questions</span>
             </button>
 
             <!-- Edit Button -->

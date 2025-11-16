@@ -179,7 +179,7 @@ const userDisplayName = computed(() => {
           <div class="md:hidden">
             <button
               @click="toggleMenu"
-              class="text-gray-800 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+              class="text-white hover:text-gray-300 focus:outline-none focus:text-gray-300"
             >
               <svg
                 class="h-6 w-6"
@@ -213,27 +213,27 @@ const userDisplayName = computed(() => {
           >
             <button
               @click="navigateTo('home')"
-              class="text-gray-800 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
+              class="text-white hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
             >
               Home
             </button>
 
             <!-- Authenticated Mobile Navigation -->
             <template v-if="isAuthenticated">
-              <div class="px-3 py-2 text-base font-medium text-gray-800">
+              <div class="px-3 py-2 text-base font-medium text-white">
                 Welcome, {{ userDisplayName }}
               </div>
 
               <button
                 @click="navigateTo('dashboard')"
-                class="text-gray-800 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
+                class="text-white hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
               >
                 Dashboard
               </button>
 
               <button
                 @click="navigateTo('settings')"
-                class="text-gray-800 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
+                class="text-white hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
               >
                 Settings
               </button>
@@ -250,7 +250,7 @@ const userDisplayName = computed(() => {
             <template v-else>
               <button
                 @click="navigateTo('login')"
-                class="text-gray-800 hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
+                class="text-white hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
               >
                 Login
               </button>

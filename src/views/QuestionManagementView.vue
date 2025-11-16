@@ -1553,7 +1553,7 @@ onMounted(async () => {
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="py-6">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
               <div class="flex items-center">
                 <button
                   @click="goBackToDashboard"
@@ -1574,19 +1574,20 @@ onMounted(async () => {
                   </svg>
                 </button>
                 <div>
-                  <h1 class="text-2xl font-bold text-gray-900">
+                  <h1 class="text-xl sm:text-2xl font-bold text-gray-900">
                     {{ test.title }}
                   </h1>
                 </div>
               </div>
-              <div class="flex items-center space-x-3">
+              <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <button
                   v-if="activeTab === 'questions'"
                   @click="openUploadModal"
-                  class="bg-green-600 text-white shadow hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  class="bg-green-600 text-white shadow hover:bg-green-700 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  title="Upload Document"
                 >
                   <svg
-                    class="w-5 h-5 mr-2"
+                    class="w-5 h-5 sm:mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1598,15 +1599,16 @@ onMounted(async () => {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  Upload Document
+                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Upload Document</span>
                 </button>
                 <button
                   v-if="activeTab === 'questions'"
                   @click="openQuestionForm"
-                  class="bg-blue-600 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  class="bg-blue-600 text-white shadow hover:bg-blue-700 px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  title="Add Question"
                 >
                   <svg
-                    class="w-5 h-5 mr-2"
+                    class="w-5 h-5 sm:mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -1618,17 +1620,18 @@ onMounted(async () => {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  Add Question
+                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Add Question</span>
                 </button>
-                <div v-if="activeTab === 'versions'" class="flex space-x-2">
+                <div v-if="activeTab === 'versions'" class="flex gap-2 flex-wrap">
                   <button
                     @click="openDownloadFormatModal('all')"
                     :disabled="versions.length === 0 || isDownloadingAll"
-                    class="bg-blue-600 text-white shadow hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    class="bg-blue-600 text-white shadow hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    title="Download All Versions"
                   >
                     <svg
                       v-if="isDownloadingAll"
-                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      class="animate-spin h-4 w-4 sm:mr-2 text-white"
                       fill="none"
                       viewBox="0 0 24 24"
                     >
@@ -1637,7 +1640,7 @@ onMounted(async () => {
                     </svg>
                     <svg
                       v-else
-                      class="w-5 h-5 mr-2"
+                      class="w-5 h-5 sm:mr-2"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1649,15 +1652,17 @@ onMounted(async () => {
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       />
                     </svg>
-                    {{ isDownloadingAll ? `Downloading ${downloadProgress.current}/${downloadProgress.total}...` : 'Download All' }}
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{ isDownloadingAll ? `Downloading ${downloadProgress.current}/${downloadProgress.total}...` : 'Download All' }}</span>
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{ isDownloadingAll ? `${downloadProgress.current}/${downloadProgress.total}` : '' }}</span>
                   </button>
                   <button
                     @click="openGenerateVersionModal"
                     :disabled="questions.length === 0"
-                    class="bg-gray-800 text-white shadow hover:bg-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    class="bg-gray-800 text-white shadow hover:bg-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    title="Generate Versions"
                   >
                     <svg
-                      class="w-5 h-5 mr-2"
+                      class="w-5 h-5 sm:mr-2"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -1669,7 +1674,7 @@ onMounted(async () => {
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                       />
                     </svg>
-                    Generate Versions
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Generate Versions</span>
                   </button>
                 </div>
               </div>
@@ -1678,18 +1683,18 @@ onMounted(async () => {
 
           <!-- Tabs -->
           <div class="border-t border-gray-200">
-            <nav class="-mb-px flex space-x-8">
+            <nav class="-mb-px flex space-x-4 sm:space-x-8">
               <button
                 @click="activeTab = 'questions'"
                 :class="[
                   activeTab === 'questions'
                     ? 'border-blue-500 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200'
+                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center'
                 ]"
               >
                 <svg
-                  class="w-5 h-5 inline-block mr-2"
+                  class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1701,7 +1706,7 @@ onMounted(async () => {
                     d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                Questions ({{ questions.length }})
+                <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Questions({{ questions.length }})</span>
               </button>
               <button
                 @click="activeTab = 'versions'"
@@ -1709,11 +1714,11 @@ onMounted(async () => {
                   activeTab === 'versions'
                     ? 'border-blue-500 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200'
+                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center'
                 ]"
               >
                 <svg
-                  class="w-5 h-5 inline-block mr-2"
+                  class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -1725,7 +1730,7 @@ onMounted(async () => {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                Randomized Versions ({{ versions.length }})
+                <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Randomized Versions ({{ versions.length }})</span>
               </button>
             </nav>
           </div>
