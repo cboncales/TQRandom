@@ -89,7 +89,8 @@ const userDisplayName = computed(() => {
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Brand -->
           <div class="shrink-0 flex items-center">
-            <h1 class="text-xl font-bold text-white">TQ Random</h1>
+            <img src="/favicon.png" alt="TQRandom" class="w-8 h-8" />
+            <h1 class="text-xl font-bold text-white">TQRandom</h1>
           </div>
 
           <!-- Desktop Navigation -->
@@ -276,7 +277,7 @@ const userDisplayName = computed(() => {
         <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
           <!-- Company Info -->
           <div class="md:col-span-2">
-            <h3 class="text-lg font-semibold mb-4">TQ Random</h3>
+            <h3 class="text-lg font-semibold mb-4">TQRandom</h3>
             <p class="text-gray-300 mb-4">
               Your trusted randomization system for efficient and fair
               processes.

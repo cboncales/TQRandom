@@ -16,7 +16,7 @@ const navigateTo = (routeName) => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
         <div class="text-center">
           <h1 class="text-4xl md:text-6xl font-bold mb-6">
-            Welcome to TQ Random
+            Welcome to TQRandom
           </h1>
           <p class="text-xl md:text-2xl mb-8 text-blue-100">
             Your trusted randomization system for efficient and fair processes
@@ -44,7 +44,7 @@ const navigateTo = (routeName) => {
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12">
           <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-            Why Choose TQ Random?
+            Why Choose TQRandom?
           </h2>
           <p class="text-lg text-gray-600 max-w-2xl mx-auto">
             Our platform provides reliable and secure randomization solutions

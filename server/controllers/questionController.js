@@ -148,9 +148,6 @@ async function updateQuestion(req, res) {
     const { questionText, answerChoices, questionImageUrl } = req.body;
     const userId = req.user.id;
 
-    console.log('Updating question with image URL:', questionImageUrl);
-    console.log('Answer choices with images:', answerChoices?.map(c => ({ hasImage: !!c.imageUrl })));
-
     if (!questionText || !questionText.trim()) {
       return res.status(400).json({ error: 'Question text is required' });
     }
@@ -292,14 +289,19 @@ async function deleteQuestion(req, res) {
       return res.status(404).json({ error: 'Question not found or access denied' });
     }
 
-    // Step 1: Delete from test versions if this question is used in any
+    // Step 1: Get test_version_ids that use this question
     const { data: versionQuestions } = await supabase
       .from('test_version_questions')
-      .select('id')
+      .select('id, test_version_id')
       .eq('question_id', id);
 
+    const affectedVersionIds = new Set();
+    
     if (versionQuestions && versionQuestions.length > 0) {
       const versionQuestionIds = versionQuestions.map(vq => vq.id);
+      
+      // Track which versions are affected
+      versionQuestions.forEach(vq => affectedVersionIds.add(vq.test_version_id));
 
       // Delete test_versions_answer_choices
       await supabase
@@ -335,6 +337,27 @@ async function deleteQuestion(req, res) {
     if (error) {
       console.error('Error deleting question:', error);
       return res.status(500).json({ error: error.message });
+    }
+
+    // Step 5: Check if any affected versions are now empty and delete them
+    if (affectedVersionIds.size > 0) {
+      for (const versionId of affectedVersionIds) {
+        // Check if this version still has any questions
+        const { data: remainingQuestions, error: checkError } = await supabase
+          .from('test_version_questions')
+          .select('id')
+          .eq('test_version_id', versionId)
+          .limit(1);
+
+        // If no questions remain, delete the version
+        if (!checkError && (!remainingQuestions || remainingQuestions.length === 0)) {
+          console.log(`Deleting empty test version ${versionId}`);
+          await supabase
+            .from('test_versions')
+            .delete()
+            .eq('id', versionId);
+        }
+      }
     }
 
     res.json({ success: true, message: 'Question deleted successfully' });

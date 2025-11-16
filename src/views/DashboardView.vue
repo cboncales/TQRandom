@@ -2,15 +2,22 @@
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TestList from "@/components/dashboard/TestList.vue";
 import CreateTestModal from "@/components/dashboard/CreateTestModal.vue";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useTestStore } from "@/stores/testStore";
 
 const testStore = useTestStore();
 
 const showCreateModal = ref(false);
 const tests = ref([]);
+const filteredTests = ref([]);
+const searchQuery = ref("");
 const isLoading = ref(true);
 const errorMessage = ref("");
+
+// Stats
+const totalQuestions = ref(0);
+const totalVersions = ref(0);
+const testsWithQuestions = ref(0);
 
 const openCreateModal = () => {
   showCreateModal.value = true;
@@ -37,6 +44,7 @@ const handleTestDeleted = async (testId) => {
       alert(`Error deleting test: ${result.error}`);
     } else {
       tests.value = tests.value.filter((test) => test.id !== testId);
+      filterTests(); // Update filtered tests
     }
   } catch (error) {
     alert("An unexpected error occurred while deleting the test.");
@@ -47,6 +55,23 @@ const handleTestDeleted = async (testId) => {
 const handleTestUpdated = async () => {
   // Reload tests to get updated data
   await loadTests();
+};
+
+const filterTests = () => {
+  const query = searchQuery.value.toLowerCase().trim();
+  
+  if (!query) {
+    filteredTests.value = tests.value;
+  } else {
+    filteredTests.value = tests.value.filter(test => 
+      test.title.toLowerCase().includes(query) ||
+      (test.description && test.description.toLowerCase().includes(query))
+    );
+  }
+};
+
+const handleSearch = () => {
+  filterTests();
 };
 
 const loadTests = async () => {
@@ -66,10 +91,43 @@ const loadTests = async () => {
         description: test.description?.includes(" - ")
           ? test.description.split(" - ").slice(1).join(" - ")
           : test.description || "",
-        questionCount: 0, // TODO: Get actual question count from questions table
+        questionCount: 0, // Will be calculated below
+        versionCount: 0, // Will be calculated below
         status: "draft", // TODO: Add status field to database or determine from data
         createdAt: new Date(test.created_at).toLocaleDateString(),
       }));
+      
+      // Calculate stats for all tests
+      let questionsCount = 0;
+      let versionsCount = 0;
+      let testsWithQuestionsCount = 0;
+      
+      for (const test of tests.value) {
+        // Get question count for each test
+        const questionsResult = await testStore.getTestQuestions(test.id);
+        if (questionsResult.data) {
+          test.questionCount = questionsResult.data.length;
+          questionsCount += questionsResult.data.length;
+          if (questionsResult.data.length > 0) {
+            testsWithQuestionsCount++;
+          }
+        }
+        
+        // Get version count for each test
+        const versionsResult = await testStore.getTestVersions(test.id);
+        if (versionsResult.data) {
+          test.versionCount = versionsResult.data.length;
+          versionsCount += versionsResult.data.length;
+        }
+      }
+      
+      // Update stats
+      totalQuestions.value = questionsCount;
+      totalVersions.value = versionsCount;
+      testsWithQuestions.value = testsWithQuestionsCount;
+      
+      // Initialize filtered tests
+      filteredTests.value = tests.value;
     }
   } catch (error) {
     errorMessage.value = "Failed to load tests. Please try again.";
@@ -78,6 +136,11 @@ const loadTests = async () => {
     isLoading.value = false;
   }
 };
+
+// Watch search query and filter automatically (letter by letter)
+watch(searchQuery, () => {
+  filterTests();
+});
 
 onMounted(() => {
   loadTests();
@@ -164,70 +227,6 @@ onMounted(() => {
               <div class="flex items-center">
                 <div class="shrink-0">
                   <svg
-                    class="h-6 w-6 text-green-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Active Tests
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ tests.filter((t) => t.status === "active").length }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="shrink-0">
-                  <svg
-                    class="h-6 w-6 text-yellow-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                    />
-                  </svg>
-                </div>
-                <div class="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt class="text-sm font-medium text-gray-500 truncate">
-                      Draft Tests
-                    </dt>
-                    <dd class="text-lg font-medium text-gray-900">
-                      {{ tests.filter((t) => t.status === "draft").length }}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="bg-white overflow-hidden shadow rounded-lg">
-            <div class="p-5">
-              <div class="flex items-center">
-                <div class="shrink-0">
-                  <svg
                     class="h-6 w-6 text-purple-600"
                     fill="none"
                     stroke="currentColor"
@@ -247,14 +246,131 @@ onMounted(() => {
                       Total Questions
                     </dt>
                     <dd class="text-lg font-medium text-gray-900">
-                      {{
-                        tests.reduce((sum, test) => sum + test.questionCount, 0)
-                      }}
+                      {{ totalQuestions }}
                     </dd>
                   </dl>
                 </div>
               </div>
             </div>
+          </div>
+
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+              <div class="flex items-center">
+                <div class="shrink-0">
+                  <svg
+                    class="h-6 w-6 text-orange-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                    />
+                  </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt class="text-sm font-medium text-gray-500 truncate">
+                      Total Randomized Versions
+                    </dt>
+                    <dd class="text-lg font-medium text-gray-900">
+                      {{ totalVersions }}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="bg-white overflow-hidden shadow rounded-lg">
+            <div class="p-5">
+              <div class="flex items-center">
+                <div class="shrink-0">
+                  <svg
+                    class="h-6 w-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <div class="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt class="text-sm font-medium text-gray-500 truncate">
+                      Tests with Questions
+                    </dt>
+                    <dd class="text-lg font-medium text-gray-900">
+                      {{ testsWithQuestions }}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Bar -->
+        <div v-if="!isLoading" class="mb-6 flex justify-start">
+          <div class="w-full max-w-md">
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  class="h-5 w-5 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Search tests by title or description..."
+                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+              <div
+                v-if="searchQuery"
+                class="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <button
+                  @click="searchQuery = ''"
+                  class="text-gray-400 hover:text-gray-600"
+                >
+                  <svg
+                    class="h-5 w-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <p v-if="searchQuery" class="mt-2 text-sm text-gray-600">
+              Showing {{ filteredTests.length }} of {{ tests.length }} tests
+            </p>
           </div>
         </div>
 
@@ -318,10 +434,40 @@ onMounted(() => {
         <!-- Test List -->
         <TestList
           v-if="!isLoading"
-          :tests="tests"
+          :tests="filteredTests"
           @test-deleted="handleTestDeleted"
           @test-updated="handleTestUpdated"
         />
+        
+        <!-- No Results Message -->
+        <div
+          v-if="!isLoading && searchQuery && filteredTests.length === 0"
+          class="bg-white rounded-lg shadow p-8 text-center"
+        >
+          <svg
+            class="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No tests found</h3>
+          <p class="mt-1 text-sm text-gray-500">
+            No tests match your search "{{ searchQuery }}"
+          </p>
+          <button
+            @click="searchQuery = ''"
+            class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Clear search
+          </button>
+        </div>
       </div>
 
       <!-- Create Test Modal -->

@@ -117,14 +117,14 @@ const editQuestion = async (question) => {
       id: choice.id,
       text: choice.text,
       isCorrect: choice.id === correctAnswerChoiceId,
-      imageUrl: choice.image_url || null, // Preserve existing image URL
+      imageUrl: choice.imageUrl || choice.image_url || null, // Preserve existing image URL (try both camelCase and snake_case)
     }));
 
     // Create the editing question object in the format expected by QuestionForm
     editingQuestion.value = {
       id: question.id,
       question: question.question || question.text, // Use question.question if available, fallback to question.text
-      imageUrl: question.image_url || null, // Preserve existing question image URL
+      imageUrl: question.imageUrl || question.image_url || null, // Preserve existing question image URL (try both camelCase and snake_case)
       options: options,
     };
 
@@ -332,9 +332,9 @@ const deleteSelectedQuestions = async () => {
 
   // Show result
   if (failCount === 0) {
-    alert(`✅ Successfully deleted ${successCount} ${questionText}!`);
+    alert(`Successfully deleted ${successCount} ${questionText}!`);
   } else {
-    alert(`⚠️ Deleted ${successCount} ${questionText}. Failed to delete ${failCount} ${questionText}.`);
+    alert(`Deleted ${successCount} ${questionText}. Failed to delete ${failCount} ${questionText}.`);
   }
 
   isDeletingQuestions.value = false;
@@ -569,9 +569,9 @@ const saveQuestionsWithImages = async () => {
     
     // Show summary
     let message = `Upload complete!\n\n`;
-    message += `✅ Questions created: ${successCount}\n`;
-    if (failCount > 0) message += `❌ Failed: ${failCount}\n`;
-    if (answerSetCount > 0) message += `🎯 Correct answers set: ${answerSetCount}`;
+    message += `Questions created: ${successCount}\n`;
+    if (failCount > 0) message += `Failed: ${failCount}\n`;
+    if (answerSetCount > 0) message += `Correct answers set: ${answerSetCount}`;
     
     alert(message);
     
@@ -863,7 +863,7 @@ const handleGenerateVersions = async () => {
 
     // result.data is the array directly, not nested
     const count = result.data?.length || versionCount.value;
-    alert(`✅ Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`);
+    alert(`Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`);
 
   } catch (error) {
     console.error('Generate versions error:', error);
@@ -1654,7 +1654,7 @@ onMounted(async () => {
                   <button
                     @click="openGenerateVersionModal"
                     :disabled="questions.length === 0"
-                    class="bg-fuchsia-700 text-white shadow hover:bg-fuchsia-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    class="bg-gray-800 text-white shadow hover:bg-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                   >
                     <svg
                       class="w-5 h-5 mr-2"
@@ -2026,7 +2026,7 @@ onMounted(async () => {
                     </button>
                     <button
                       @click.stop="openPreview(version)"
-                      class="p-2 bg-gray-100 text-fuchsia-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                      class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
                       title="Preview version"
                     >
                       <svg
@@ -2254,8 +2254,7 @@ onMounted(async () => {
                         <ul class="mt-1 space-y-1 list-disc list-inside">
                           <li>Use <strong>1., 2., 3.</strong> for questions</li>
                           <li>Use <strong>A., B., C., D.</strong> for answers</li>
-                          <li>Keep one blank line between questions</li>
-                          <li>Images are extracted from <strong>Word files only</strong></li>
+                          <li>Images extraction for <strong>Word files only</strong></li>
                         </ul>
                       </div>
                       <div class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2">
@@ -3070,7 +3069,7 @@ onMounted(async () => {
             <div>
               <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100">
                 <svg
-                  class="h-6 w-6 text-purple-600"
+                  class="h-6 w-6 text-gray-800"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -3163,7 +3162,7 @@ onMounted(async () => {
                 type="button"
                 @click="handleGenerateVersions"
                 :disabled="isGeneratingVersions"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-purple-600 text-base font-medium text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
               >
                 <svg
                   v-if="isGeneratingVersions"
