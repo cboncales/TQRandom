@@ -876,36 +876,71 @@ const handleGenerateVersions = async () => {
 
 // Helper function to generate Word document for a version
 const generateVersionWord = async (versionData) => {
+  const headerParagraphs = [
+    // Test Title (centered)
+    new Paragraph({
+      text: versionData.test_title,
+      heading: HeadingLevel.HEADING_1,
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 200 },
+    }),
+  ];
+
+  // Add description if it exists (centered)
+  if (versionData.test_description && versionData.test_description.trim()) {
+    headerParagraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: versionData.test_description,
+            size: 22,
+          }),
+        ],
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 200 },
+      })
+    );
+  }
+
+  // Add name and date row
+  headerParagraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "Name: _____________________",
+          size: 22,
+        }),
+        new TextRun({
+          text: "\t\t\t\t\t\t\t\tDate: _____________________",
+          size: 22,
+        }),
+      ],
+      spacing: { after: 100 },
+    })
+  );
+
+  // Add section and score row
+  headerParagraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: "Section: _____________________",
+          size: 22,
+        }),
+        new TextRun({
+          text: "\t\t\t\t\t\t\tScore: _____________________",
+          size: 22,
+        }),
+      ],
+      spacing: { after: 400 },
+    })
+  );
+
   const doc = new Document({
     sections: [{
       properties: {},
       children: [
-        // Header
-        new Paragraph({
-          text: versionData.test_title,
-          heading: HeadingLevel.HEADING_1,
-          alignment: AlignmentType.LEFT,
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `Version ${versionData.version_number}`,
-              bold: true,
-              size: 24,
-            }),
-          ],
-          spacing: { after: 200 },
-        }),
-        new Paragraph({
-          children: [
-            new TextRun({
-              text: `Generated: ${new Date(versionData.created_at).toLocaleString()}`,
-              size: 18,
-              color: "666666",
-            }),
-          ],
-          spacing: { after: 400 },
-        }),
+        ...headerParagraphs,
         
         // Questions
         ...versionData.questions.flatMap((q, qIndex) => {
@@ -927,7 +962,7 @@ const generateVersionWord = async (versionData) => {
             }),
           ];
 
-          // Answer choices
+          // Answer choices (5 spaces before letter)
           const choiceParagraphs = q.answer_choices.map((choice, choiceIndex) => {
             const letter = String.fromCharCode(65 + choiceIndex);
             return new Paragraph({
@@ -938,7 +973,6 @@ const generateVersionWord = async (versionData) => {
                 }),
               ],
               spacing: { after: 80 },
-              indent: { left: 720 },
             });
           });
 
@@ -982,20 +1016,35 @@ const generateVersionPDF = (versionData) => {
       return doc.splitTextToSize(text, maxWidth);
     };
 
-    // Header
+    // Header - Test Title (centered)
     doc.setFontSize(18);
     doc.setFont('helvetica', 'bold');
-    doc.text(versionData.test_title, margin, yPosition);
-    yPosition += 8;
+    doc.text(versionData.test_title, pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 10;
 
-    doc.setFontSize(12);
+    // Description (centered, if exists)
+    if (versionData.test_description && versionData.test_description.trim()) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'normal');
+      const descLines = wrapText(versionData.test_description, contentWidth - 20);
+      descLines.forEach(line => {
+        checkPageBreak(6);
+        doc.text(line, pageWidth / 2, yPosition, { align: 'center' });
+        yPosition += 6;
+      });
+      yPosition += 4;
+    }
+
+    // Name and Date row
+    doc.setFontSize(11);
     doc.setFont('helvetica', 'normal');
-    doc.text(`Version ${versionData.version_number}`, margin, yPosition);
+    doc.text('Name: _____________________', margin, yPosition);
+    doc.text('Date: _____________________', pageWidth - margin, yPosition, { align: 'right' });
     yPosition += 6;
 
-    doc.setFontSize(9);
-    doc.setTextColor(100, 100, 100);
-    doc.text(`Generated: ${new Date(versionData.created_at).toLocaleString()}`, margin, yPosition);
+    // Section and Score row
+    doc.text('Section: _____________________', margin, yPosition);
+    doc.text('Score: _____________________', pageWidth - margin, yPosition, { align: 'right' });
     yPosition += 4;
 
     // Horizontal line
@@ -1016,43 +1065,39 @@ const generateVersionPDF = (versionData) => {
       doc.setFont('helvetica', 'bold');
       
       const questionPrefix = `${q.question_number}. `;
-      const questionLines = wrapText(q.question_text, contentWidth - 10);
+      const prefixWidth = doc.getTextWidth(questionPrefix);
+      const questionLines = wrapText(q.question_text, contentWidth);
       
       // First line with number
       doc.text(questionPrefix, margin, yPosition);
       doc.setFont('helvetica', 'normal');
-      doc.text(questionLines[0], margin + 10, yPosition);
+      doc.text(questionLines[0], margin + prefixWidth, yPosition);
       yPosition += 6;
 
       // Remaining lines
       for (let i = 1; i < questionLines.length; i++) {
         checkPageBreak(6);
-        doc.text(questionLines[i], margin + 10, yPosition);
+        doc.text(questionLines[i], margin + prefixWidth, yPosition);
         yPosition += 6;
       }
 
       yPosition += 2; // Small space before answer choices
 
-      // Answer choices
+      // Answer choices (with 5 white spaces to the left)
       q.answer_choices.forEach((choice, choiceIndex) => {
         checkPageBreak(6);
         
         const letter = String.fromCharCode(65 + choiceIndex); // A, B, C, D...
-        const choicePrefix = `     ${letter}. `;
-        const choiceLines = wrapText(choice.text, contentWidth - 20);
+        const choiceText = `     ${letter}. ${choice.text}`;
+        const choiceLines = wrapText(choiceText, contentWidth);
 
-        // First line with letter
+        // Render all lines of the choice
         doc.setFontSize(10);
-        doc.text(choicePrefix, margin, yPosition);
-        doc.text(choiceLines[0], margin + 15, yPosition);
-        yPosition += 5;
-
-        // Remaining lines
-        for (let i = 1; i < choiceLines.length; i++) {
-          checkPageBreak(5);
-          doc.text(choiceLines[i], margin + 15, yPosition);
+        choiceLines.forEach((line, lineIndex) => {
+          if (lineIndex > 0) checkPageBreak(5);
+          doc.text(line, margin, yPosition);
           yPosition += 5;
-        }
+        });
       });
 
       yPosition += 8; // Space between questions

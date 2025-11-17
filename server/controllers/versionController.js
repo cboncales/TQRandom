@@ -250,6 +250,7 @@ export async function getVersion(req, res) {
         tests!inner (
           id,
           title,
+          description,
           user_id
         )
       `)
@@ -319,6 +320,7 @@ export async function getVersion(req, res) {
         version_number: version.version_number,
         created_at: version.created_at,
         test_title: version.tests.title,
+        test_description: version.tests.description,
         questions: formattedQuestions
       }
     });
