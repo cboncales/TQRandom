@@ -31,7 +31,6 @@ const handleTestCreated = (newTest) => {
   tests.value.unshift({
     ...newTest,
     questionCount: 0, // TODO: Get actual question count
-    status: "draft",
   });
   closeCreateModal();
 };
@@ -93,7 +92,6 @@ const loadTests = async () => {
           : test.description || "",
         questionCount: 0, // Will be calculated below
         versionCount: 0, // Will be calculated below
-        status: "draft", // TODO: Add status field to database or determine from data
         createdAt: new Date(test.created_at).toLocaleDateString(),
       }));
       

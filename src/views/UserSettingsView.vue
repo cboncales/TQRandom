@@ -130,7 +130,7 @@ const goBack = () => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8">
       <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         <!-- Header -->
         <div class="mb-8">
@@ -154,7 +154,7 @@ const goBack = () => {
             Back to Dashboard
           </button>
           <div class="flex items-center space-x-3">
-            <div class="h-12 w-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+            <div class="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
@@ -171,7 +171,7 @@ const goBack = () => {
         <div class="space-y-6">
           <!-- Profile Settings Card -->
           <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+            <div class="bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
               <div class="flex items-center">
                 <div class="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center mr-3">
                   <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +284,7 @@ const goBack = () => {
 
           <!-- Password Settings Card -->
           <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-            <div class="bg-gradient-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+            <div class="bg-linear-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
               <div class="flex items-center">
                 <div class="h-10 w-10 rounded-lg bg-gray-700 flex items-center justify-center mr-3">
                   <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">

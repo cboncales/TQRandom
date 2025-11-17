@@ -36,7 +36,6 @@ const handleSubmit = async () => {
       emit("test-created", {
         ...result.data,
         questionCount: 0,
-        status: "draft",
       });
       resetForm();
     }
