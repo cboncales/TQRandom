@@ -38,7 +38,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
               <li><strong>Frontend:</strong> Vue.js + TailwindCSS</li>
               <li><strong>Backend:</strong> Express.js</li>
               <li><strong>Database & Auth:</strong> Supabase</li>
-              <li><strong>Document Processing:</strong> Custom extraction for PDF/DOCX</li>
+              <li><strong>Document Processing:</strong> Mammoth, pdf-parse, pdfjs-dist, sharp</li>
             </ul>
           </div>
   

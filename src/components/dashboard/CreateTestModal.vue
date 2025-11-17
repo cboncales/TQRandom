@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from "vue";
 import { useTestStore } from "@/stores/testStore";
+import { imageApi } from "@/services/api";
 
 const props = defineProps({
   isOpen: {
@@ -15,8 +16,34 @@ const testStore = useTestStore();
 
 const title = ref("");
 const description = ref("");
+const logoFile = ref(null);
+const logoPreview = ref(null);
 const isLoading = ref(false);
+const isUploadingLogo = ref(false);
 const errorMessage = ref("");
+
+// Logo upload handlers
+const handleLogoUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      errorMessage.value = "Logo file size must be less than 2MB";
+      return;
+    }
+    logoFile.value = file;
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      logoPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeLogo = () => {
+  logoFile.value = null;
+  logoPreview.value = null;
+};
 
 const handleSubmit = async () => {
   if (!title.value.trim()) {
@@ -28,7 +55,24 @@ const handleSubmit = async () => {
   errorMessage.value = "";
 
   try {
-    const result = await testStore.createTest(title.value, description.value.trim());
+    let logoUrl = null;
+    
+    // Upload logo if provided
+    if (logoFile.value) {
+      isUploadingLogo.value = true;
+      const uploadResult = await imageApi.uploadImage(logoFile.value);
+      if (uploadResult.error) {
+        throw new Error(`Logo upload failed: ${uploadResult.error}`);
+      }
+      logoUrl = uploadResult.data.imageUrl;
+      isUploadingLogo.value = false;
+    }
+
+    const result = await testStore.createTest(
+      title.value, 
+      description.value.trim(),
+      logoUrl
+    );
 
     if (result.error) {
       errorMessage.value = result.error;
@@ -40,16 +84,19 @@ const handleSubmit = async () => {
       resetForm();
     }
   } catch (error) {
-    errorMessage.value = "An unexpected error occurred. Please try again.";
+    errorMessage.value = error.message || "An unexpected error occurred. Please try again.";
     console.error("Create test error:", error);
   } finally {
     isLoading.value = false;
+    isUploadingLogo.value = false;
   }
 };
 
 const resetForm = () => {
   title.value = "";
   description.value = "";
+  logoFile.value = null;
+  logoPreview.value = null;
   errorMessage.value = "";
 };
 
@@ -155,6 +202,42 @@ const closeModal = () => {
           />
           <p class="mt-1 text-xs text-gray-500">
             Provide a brief description of what this test covers
+          </p>
+        </div>
+
+        <!-- Header Logo Upload -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Header Logo (Optional)
+          </label>
+          <div v-if="logoPreview" class="mb-3">
+            <div class="relative inline-block">
+              <img 
+                :src="logoPreview" 
+                alt="Logo preview"
+                class="h-24 w-auto rounded-lg border-2 border-gray-300"
+              />
+              <button
+                type="button"
+                @click="removeLogo"
+                :disabled="isLoading || isUploadingLogo"
+                class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <input
+            type="file"
+            accept="image/*"
+            @change="handleLogoUpload"
+            :disabled="isLoading || isUploadingLogo"
+            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <p class="mt-1 text-xs text-gray-500">
+            PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam documents.
           </p>
         </div>
 

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { useTestStore } from "@/stores/testStore";
+import { imageApi } from "@/services/api";
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -14,6 +15,7 @@ const testStore = useTestStore();
 // States
 const isLoading = ref(true);
 const isSaving = ref(false);
+const isUploadingLogo = ref(false);
 const errorMessage = ref("");
 const successMessage = ref("");
 
@@ -23,8 +25,40 @@ const form = ref({
   description: "",
 });
 
+// Logo states
+const currentLogoUrl = ref(null);
+const logoFile = ref(null);
+const logoPreview = ref(null);
+const logoChanged = ref(false);
+
 // Store original for change detection
 let originalSnapshot = {};
+
+// Logo upload handlers
+const handleLogoUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+      errorMessage.value = "Logo file size must be less than 2MB";
+      return;
+    }
+    logoFile.value = file;
+    logoChanged.value = true;
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      logoPreview.value = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeLogo = () => {
+  logoFile.value = null;
+  logoPreview.value = null;
+  currentLogoUrl.value = null;
+  logoChanged.value = true;
+};
 
 // Load test data
 const loadTest = async () => {
@@ -46,7 +80,13 @@ const loadTest = async () => {
         description: test.description || "",
       };
 
-      originalSnapshot = { ...form.value };
+      // Load existing logo
+      currentLogoUrl.value = test.header_logo_url || null;
+      logoPreview.value = test.header_logo_url || null;
+      logoFile.value = null;
+      logoChanged.value = false;
+
+      originalSnapshot = { ...form.value, header_logo_url: test.header_logo_url };
     }
   } catch (err) {
     console.error(err);
@@ -70,7 +110,8 @@ watch(
 const hasChanges = () => {
   return (
     form.value.title !== originalSnapshot.title ||
-    form.value.description !== originalSnapshot.description
+    form.value.description !== originalSnapshot.description ||
+    logoChanged.value
   );
 };
 
@@ -96,6 +137,22 @@ const handleSave = async () => {
       description: form.value.description.trim(),
     };
 
+    // Upload new logo if changed
+    if (logoChanged.value) {
+      if (logoFile.value) {
+        isUploadingLogo.value = true;
+        const uploadResult = await imageApi.uploadImage(logoFile.value);
+        if (uploadResult.error) {
+          throw new Error(`Logo upload failed: ${uploadResult.error}`);
+        }
+        updates.header_logo_url = uploadResult.data.imageUrl;
+        isUploadingLogo.value = false;
+      } else {
+        // Logo was removed
+        updates.header_logo_url = null;
+      }
+    }
+
     const result = await testStore.updateTest(props.testId, updates);
 
     if (result.error) {
@@ -107,9 +164,10 @@ const handleSave = async () => {
       setTimeout(() => emit("close"), 1000);
     }
   } catch (err) {
-    errorMessage.value = "Failed to update test.";
+    errorMessage.value = err.message || "Failed to update test.";
   } finally {
     isSaving.value = false;
+    isUploadingLogo.value = false;
   }
 };
 
@@ -186,6 +244,42 @@ const closeModal = () => {
               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
               :disabled="isSaving"
             ></textarea>
+          </div>
+
+          <!-- Header Logo Upload -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Header Logo (Optional)
+            </label>
+            <div v-if="logoPreview" class="mb-3">
+              <div class="relative inline-block">
+                <img 
+                  :src="logoPreview" 
+                  alt="Logo preview"
+                  class="h-24 w-auto rounded-lg border-2 border-gray-300"
+                />
+                <button
+                  type="button"
+                  @click="removeLogo"
+                  :disabled="isSaving || isUploadingLogo"
+                  class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
+                >
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <input
+              type="file"
+              accept="image/*"
+              @change="handleLogoUpload"
+              :disabled="isSaving || isUploadingLogo"
+              class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            />
+            <p class="mt-1 text-xs text-gray-500">
+              PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam documents.
+            </p>
           </div>
         </div>
 

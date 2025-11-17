@@ -251,6 +251,7 @@ export async function getVersion(req, res) {
           id,
           title,
           description,
+          header_logo_url,
           user_id
         )
       `)
@@ -321,6 +322,7 @@ export async function getVersion(req, res) {
         created_at: version.created_at,
         test_title: version.tests.title,
         test_description: version.tests.description,
+        header_logo_url: version.tests.header_logo_url,
         questions: formattedQuestions
       }
     });

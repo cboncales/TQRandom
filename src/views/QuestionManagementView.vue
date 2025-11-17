@@ -8,11 +8,41 @@ import { useTestStore } from "@/stores/testStore";
 import { uploadApi } from "@/services/api";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel } from "docx";
+import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun } from "docx";
 
 const route = useRoute();
 const router = useRouter();
 const testStore = useTestStore();
+
+// Helper functions for loading images
+const loadImageAsBase64 = (url) => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+};
+
+const loadImageAsBuffer = async (url) => {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const arrayBuffer = await blob.arrayBuffer();
+    return Buffer.from(arrayBuffer);
+  } catch (error) {
+    console.error('Error loading image as buffer:', error);
+    return null;
+  }
+};
 
 const testId = parseInt(route.params.id);
 const showQuestionForm = ref(false);
@@ -876,15 +906,55 @@ const handleGenerateVersions = async () => {
 
 // Helper function to generate Word document for a version
 const generateVersionWord = async (versionData) => {
-  const headerParagraphs = [
-    // Test Title (centered)
+  const headerParagraphs = [];
+
+  // Add logo if it exists (centered, full size)
+  if (versionData.header_logo_url) {
+    try {
+      const imageBuffer = await loadImageAsBuffer(versionData.header_logo_url);
+      if (imageBuffer) {
+        // Get image dimensions to maintain aspect ratio
+        const image = new Image();
+        image.src = versionData.header_logo_url;
+        await new Promise((resolve) => {
+          image.onload = resolve;
+        });
+        
+        const maxWidth = 600; // Maximum width in pixels for Word
+        const aspectRatio = image.width / image.height;
+        const finalWidth = Math.min(image.width, maxWidth);
+        const finalHeight = finalWidth / aspectRatio;
+        
+        headerParagraphs.push(
+          new Paragraph({
+            children: [
+              new ImageRun({
+                data: imageBuffer,
+                transformation: {
+                  width: finalWidth,
+                  height: finalHeight,
+                },
+              }),
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+          })
+        );
+      }
+    } catch (error) {
+      console.error('Failed to load logo for Word document:', error);
+    }
+  }
+
+  // Test Title (centered)
+  headerParagraphs.push(
     new Paragraph({
       text: versionData.test_title,
       heading: HeadingLevel.HEADING_1,
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
-    }),
-  ];
+    })
+  );
 
   // Add description if it exists (centered)
   if (versionData.test_description && versionData.test_description.trim()) {
@@ -986,7 +1056,7 @@ const generateVersionWord = async (versionData) => {
 };
 
 // Helper function to generate PDF for a version
-const generateVersionPDF = (versionData) => {
+const generateVersionPDF = async (versionData) => {
   // Create PDF
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -1015,6 +1085,31 @@ const generateVersionPDF = (versionData) => {
     const wrapText = (text, maxWidth) => {
       return doc.splitTextToSize(text, maxWidth);
     };
+
+    // Add logo if it exists (centered, full width)
+    if (versionData.header_logo_url) {
+      try {
+        const logoBase64 = await loadImageAsBase64(versionData.header_logo_url);
+        
+        // Get image dimensions to maintain aspect ratio
+        const image = new Image();
+        image.src = versionData.header_logo_url;
+        await new Promise((resolve) => {
+          image.onload = resolve;
+        });
+        
+        const aspectRatio = image.width / image.height;
+        const maxLogoWidth = contentWidth; // Use full content width
+        const logoWidth = maxLogoWidth;
+        const logoHeight = logoWidth / aspectRatio;
+        const logoX = margin; // Start at left margin
+        
+        doc.addImage(logoBase64, 'PNG', logoX, yPosition, logoWidth, logoHeight);
+        yPosition += logoHeight + 5; // Add space after logo
+      } catch (error) {
+        console.error('Failed to load logo for PDF:', error);
+      }
+    }
 
     // Header - Test Title (centered)
     doc.setFontSize(18);
@@ -1264,7 +1359,7 @@ const downloadVersion = async (versionId, format = 'pdf') => {
     const baseFilename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}`;
     
     if (format === 'pdf') {
-      const doc = generateVersionPDF(versionData);
+      const doc = await generateVersionPDF(versionData);
       doc.save(`${baseFilename}.pdf`);
     } else if (format === 'docx') {
       const blob = await generateVersionWord(versionData);
@@ -1322,7 +1417,7 @@ const downloadAllVersions = async (format = 'pdf') => {
         
         // Generate file based on format
         if (format === 'pdf') {
-          const doc = generateVersionPDF(versionData);
+          const doc = await generateVersionPDF(versionData);
           fileBlob = doc.output('blob');
         } else if (format === 'docx') {
           fileBlob = await generateVersionWord(versionData);
@@ -1455,7 +1550,7 @@ const downloadSelectedVersionsZip = async (format = 'pdf') => {
         
         // Generate file based on format
         if (format === 'pdf') {
-          const doc = generateVersionPDF(versionData);
+          const doc = await generateVersionPDF(versionData);
           fileBlob = doc.output('blob');
         } else if (format === 'docx') {
           fileBlob = await generateVersionWord(versionData);

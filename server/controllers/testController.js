@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase.js';
  */
 async function createTest(req, res) {
   try {
-    const { title, description } = req.body;
+    const { title, description, header_logo_url } = req.body;
     
     if (!req.user || !req.user.id) {
       console.error('createTest: req.user is undefined');
@@ -26,6 +26,7 @@ async function createTest(req, res) {
           user_id: userId,
           title: title.trim(),
           description: description?.trim() || null,
+          header_logo_url: header_logo_url || null,
         },
       ])
       .select()
@@ -108,6 +109,7 @@ async function updateTest(req, res) {
     const allowedUpdates = {};
     if (updates.title !== undefined) allowedUpdates.title = updates.title.trim();
     if (updates.description !== undefined) allowedUpdates.description = updates.description?.trim() || null;
+    if (updates.header_logo_url !== undefined) allowedUpdates.header_logo_url = updates.header_logo_url || null;
 
     if (Object.keys(allowedUpdates).length === 0) {
       return res.status(400).json({ error: 'No valid updates provided' });
