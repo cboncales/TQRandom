@@ -13,6 +13,8 @@ const filteredTests = ref([]);
 const searchQuery = ref("");
 const isLoading = ref(true);
 const errorMessage = ref("");
+const isDeletingTest = ref(false);
+const deletingTestTitle = ref("");
 
 // Stats
 const totalQuestions = ref(0);
@@ -37,15 +39,29 @@ const handleTestCreated = (newTest) => {
 
 const handleTestDeleted = async (testId) => {
   try {
+    // Find the test to get its title
+    const test = tests.value.find(t => t.id === testId);
+    deletingTestTitle.value = test ? test.title : "Test";
+    
+    // Show progress modal
+    isDeletingTest.value = true;
+    
     const result = await testStore.deleteTest(testId);
 
     if (result.error) {
+      isDeletingTest.value = false;
       alert(`Error deleting test: ${result.error}`);
     } else {
       tests.value = tests.value.filter((test) => test.id !== testId);
       filterTests(); // Update filtered tests
+      
+      // Keep modal visible briefly to show success
+      setTimeout(() => {
+        isDeletingTest.value = false;
+      }, 500);
     }
   } catch (error) {
+    isDeletingTest.value = false;
     alert("An unexpected error occurred while deleting the test.");
     console.error("Delete test error:", error);
   }
@@ -474,6 +490,41 @@ onMounted(() => {
         @close="closeCreateModal"
         @test-created="handleTestCreated"
       />
+
+      <!-- Deleting Test Progress Modal -->
+      <div
+        v-if="isDeletingTest"
+        class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
+      >
+        <div class="relative bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+          <div class="text-center">
+            <!-- Red spinning loader -->
+            <div class="flex justify-center mb-4">
+              <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600"></div>
+            </div>
+            
+            <!-- Title -->
+            <h3 class="text-xl font-semibold text-gray-900 mb-2">
+              Deleting Test
+            </h3>
+            
+            <!-- Test name -->
+            <p class="text-base text-gray-700 mb-4">
+              "{{ deletingTestTitle }}"
+            </p>
+            
+            <!-- Progress message -->
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p class="text-sm text-red-800">
+                Please wait while the system deletes the test and all related data (questions, answer choices, versions)...
+              </p>
+              <p class="text-xs text-red-600 mt-2">
+                This may take a moment for tests with many versions.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
