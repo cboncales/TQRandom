@@ -908,6 +908,20 @@ const handleGenerateVersions = async () => {
 const generateVersionWord = async (versionData) => {
   const headerParagraphs = [];
 
+  // Add version number at the top right
+  headerParagraphs.push(
+    new Paragraph({
+      children: [
+        new TextRun({
+          text: `version_${String(versionData.version_number).padStart(3, '0')}`,
+          size: 20,
+        }),
+      ],
+      alignment: AlignmentType.RIGHT,
+      spacing: { after: 100 },
+    })
+  );
+
   // Add logo if it exists (centered, full size)
   if (versionData.header_logo_url) {
     try {
@@ -1085,6 +1099,13 @@ const generateVersionPDF = async (versionData) => {
     const wrapText = (text, maxWidth) => {
       return doc.splitTextToSize(text, maxWidth);
     };
+
+    // Add version number at the top right
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const versionText = `Version_${String(versionData.version_number).padStart(3, '0')}`;
+    doc.text(versionText, pageWidth - margin, yPosition, { align: 'right' });
+    yPosition += 8;
 
     // Add logo if it exists (centered, full width)
     if (versionData.header_logo_url) {
