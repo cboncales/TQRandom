@@ -7,14 +7,14 @@ import AppLayout from "@/components/layout/AppLayout.vue";
       <section class="py-20 bg-gray-200">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">
-            Learn More About TQ Random
+            Learn More About TQRandom
           </h1>
   
           <!-- What is TQ Random -->
           <div class="bg-white p-8 rounded-2xl shadow mb-10">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">What is TQ Random?</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">What is TQRandom?</h2>
             <p class="text-gray-700 leading-relaxed">
-              TQ Random is a simple and efficient tool built for instructors who want to
+              TQRandom is a simple and efficient tool built for instructors who want to
               streamline test preparation. It helps you manage questions, import files,
               and generate multiple randomized versions of a test in just a few clicks.
             </p>
@@ -40,7 +40,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
               <li>Add questions manually or upload a WORD/PDF file</li>
               <li>The system extracts the questions and answer choices</li>
               <li>Select how many versions you want (e.g., 20 or 50)</li>
-              <li>TQ Random shuffles the questions and choices automatically</li>
+              <li>TQRandom shuffles the questions and choices automatically</li>
               <li>Download the randomized test papers</li>
             </ol>
           </div>
@@ -59,7 +59,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
   
           <!-- Who Can Use It -->
           <div class="bg-white p-8 rounded-2xl shadow mb-10">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Who Can Use TQ Random?</h2>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Who Can Use TQRandom?</h2>
             <p class="text-gray-700 leading-relaxed">
               This tool is created for university instructors, faculty members,
               and teachers handling quizzes, midterms, finals, or any classroom

@@ -425,7 +425,7 @@ const userDisplayName = computed(() => {
         <!-- Copyright -->
         <div class="border-t border-gray-700 mt-8 pt-8 text-center">
           <p class="text-gray-300">
-            &copy; {{ new Date().getFullYear() }} TQ Random. All rights
+            &copy; {{ new Date().getFullYear() }} TQRandom. All rights
             reserved.
           </p>
         </div>

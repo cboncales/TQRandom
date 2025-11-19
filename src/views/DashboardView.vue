@@ -494,33 +494,54 @@ onMounted(() => {
       <!-- Deleting Test Progress Modal -->
       <div
         v-if="isDeletingTest"
-        class="fixed inset-0 bg-gray-600 bg-opacity-75 overflow-y-auto h-full w-full z-50 flex items-center justify-center"
+        class="fixed inset-0 z-60 overflow-y-auto"
+        aria-labelledby="deletion-progress-modal"
+        role="dialog"
+        aria-modal="true"
       >
-        <div class="relative bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
-          <div class="text-center">
-            <!-- Red spinning loader -->
-            <div class="flex justify-center mb-4">
-              <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-red-600"></div>
-            </div>
-            
-            <!-- Title -->
-            <h3 class="text-xl font-semibold text-gray-900 mb-2">
-              Deleting Test
-            </h3>
-            
-            <!-- Test name -->
-            <p class="text-base text-gray-700 mb-4">
-              "{{ deletingTestTitle }}"
-            </p>
-            
-            <!-- Progress message -->
-            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p class="text-sm text-red-800">
-                Please wait while the system deletes the test and all related data (questions, answer choices, versions)...
-              </p>
-              <p class="text-xs text-red-600 mt-2">
-                This may take a moment for tests with many versions.
-              </p>
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+          <!-- Background overlay - non-clickable -->
+          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+
+          <!-- Center modal -->
+          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+            <div>
+              <!-- Spinner Icon -->
+              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+                <svg
+                  class="animate-spin h-10 w-10 text-red-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- Title -->
+              <div class="mt-4 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">
+                  Deleting Test
+                </h3>
+                <div class="mt-2">
+                  <p class="text-sm font-medium text-gray-700">
+                    "{{ deletingTestTitle }}"
+                  </p>
+                </div>
+              </div>
+
+              <!-- Info Message -->
+              <div class="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+                <p class="text-sm text-red-800">
+                  Please wait while the system deletes the test and all related data (questions, answer choices, versions)...
+                </p>
+                <p class="text-xs text-red-600 mt-2">
+                  This may take a moment for tests with many versions.
+                </p>
+              </div>
             </div>
           </div>
         </div>

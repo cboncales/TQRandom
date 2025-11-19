@@ -6,14 +6,14 @@ import AppLayout from "@/components/layout/AppLayout.vue";
       <section class="py-20 bg-gray-200">
         <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">
-            About TQ Random
+            About TQRandom
           </h1>
   
           <!-- Overview -->
           <div class="bg-white p-8 rounded-2xl shadow mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Overview</h2>
             <p class="text-gray-700 leading-relaxed">
-              TQ Random is a web application created to help instructors easily
+              TQRandom is a web application created to help instructors easily
               prepare randomized test questionnaires. It was built with one goal in
               mind: to reduce cheating and save time by generating multiple clean,
               shuffled versions of tests for classroom assessments.
@@ -57,7 +57,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           <div class="bg-white p-8 rounded-2xl shadow mb-10">
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">About the Developer</h2>
             <p class="text-gray-700 leading-relaxed">
-              TQ Random was developed by two 4th-year BSIT student from Caraga State
+              TQRandom was developed by two 4th-year BSIT student from Caraga State
               University as part of a continuous learning journey in full-stack
               development, web applications, and educational tools. The project reflects
               the goal of building practical systems that help real users in academic
