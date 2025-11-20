@@ -413,7 +413,7 @@ onMounted(() => {
                 @click="loadTests"
                 class="mt-2 text-sm text-red-600 hover:text-red-500 underline"
               >
-                Try again
+                Try again or Login again
               </button>
             </div>
           </div>

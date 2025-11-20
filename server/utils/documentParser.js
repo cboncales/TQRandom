@@ -67,10 +67,10 @@ async function extractImagesFromPdf(filePath) {
                 height: image.height
               });
               
-              console.log(`✅ Extracted image from PDF page ${pageNum}: ${image.width}x${image.height}`);
+              console.log(`Extracted image from PDF page ${pageNum}: ${image.width}x${image.height}`);
             }
           } catch (imgError) {
-            console.warn(`❌ Could not extract image from page ${pageNum}:`, imgError.message);
+            console.warn(`Could not extract image from page ${pageNum}:`, imgError.message);
           }
         }
       }
@@ -153,7 +153,7 @@ function parseDocumentText(rawText, extractedImages = []) {
   // Regex for question lines: starts with number, then dot or parenthesis, then text
   const questionPattern = /^(\d+)[\.\)]\s*(.+)$/;
   // Regex for answer choice lines: starts with letter (A-H), then dot or parenthesis, then text
-  const answerChoicePattern = /^[A-H][\.\)]\s*(.+)$/i;
+  const answerChoicePattern = /^[A-H][\.\)]\s+(.+)$/i;
   // Regex for image markers
   const imagePattern = /\[IMAGE\]|\[IMG\]|IMAGE_(\d+)/i;
   
