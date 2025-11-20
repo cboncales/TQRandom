@@ -40,7 +40,11 @@ const handleLogin = async () => {
   isLoading.value = true;
 
   try {
-    const result = await authStore.login(email.value.trim(), password.value, rememberMe.value);
+    const result = await authStore.login(
+      email.value.trim(),
+      password.value,
+      rememberMe.value
+    );
 
     if (result.error) {
       errorMessage.value = result.error;
@@ -122,7 +126,11 @@ const isValidEmail = (email) => {
     <div
       class="min-h-screen flex items-center justify-center bg-gray-200 py-12 px-4 sm:px-6 lg:px-8"
     >
-      <div class="max-w-md w-full bg-gray-50 rounded-2xl shadow-lg p-8 space-y-8">
+      <div
+        class="max-w-md w-full bg-gray-50 rounded-2xl shadow-lg p-8 space-y-8"
+        data-aos="fade-up"
+        data-aos-delay="300"
+      >
         <div class="max-w-md w-full space-y-8">
           <div>
             <div
@@ -209,7 +217,9 @@ const isValidEmail = (email) => {
           <form class="mt-8 space-y-6" @submit.prevent="handleLogin">
             <div class="rounded-md shadow-sm space-y-4">
               <div>
-                <label for="email" class="block text-sm font-medium text-gray-700"
+                <label
+                  for="email"
+                  class="block text-sm font-medium text-gray-700"
                   >Email address</label
                 >
                 <input
@@ -298,7 +308,10 @@ const isValidEmail = (email) => {
                   :disabled="isLoading"
                   class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded disabled:cursor-not-allowed"
                 />
-                <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+                <label
+                  for="remember-me"
+                  class="ml-2 block text-sm text-gray-900"
+                >
                   Remember me
                 </label>
               </div>

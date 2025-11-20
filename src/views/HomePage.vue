@@ -42,7 +42,7 @@ const navigateTo = (routeName) => {
     <!-- Features Section -->
     <section class="py-16 bg-gray-200">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
+        <div class="text-center mb-12" data-aos="fade-up" data-aos-delay="300">
           <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
             Why Choose TQRandom?
           </h2>
@@ -54,7 +54,11 @@ const navigateTo = (routeName) => {
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <!-- Feature 1 -->
-          <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div
+            class="text-center p-6 bg-gray-50 rounded-lg"
+            data-aos="fade-up"
+            data-aos-delay="100"
+          >
             <div
               class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"
             >
@@ -80,7 +84,11 @@ const navigateTo = (routeName) => {
           </div>
 
           <!-- Feature 2 -->
-          <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div
+            class="text-center p-6 bg-gray-50 rounded-lg"
+            data-aos="fade-up"
+            data-aos-delay="200"
+          >
             <div
               class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"
             >
@@ -106,7 +114,11 @@ const navigateTo = (routeName) => {
           </div>
 
           <!-- Feature 3 -->
-          <div class="text-center p-6 bg-gray-50 rounded-lg">
+          <div
+            class="text-center p-6 bg-gray-50 rounded-lg"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
             <div
               class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4"
             >
