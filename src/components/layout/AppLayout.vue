@@ -454,7 +454,7 @@ const userDisplayName = computed(() => {
               </li>
               <li>
                 <a
-                  href="#"
+                  @click="navigateTo('terms')"
                   class="text-gray-300 hover:text-white transition-colors duration-200"
                   >Terms of Service</a
                 >
