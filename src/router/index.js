@@ -79,6 +79,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/policy",
+    name: "policy",
+    component: () => import("@/views/PrivacyPolicy.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/403",
     name: "forbidden",
     component: () => import("@/views/errors/ForbiddenView.vue"),
