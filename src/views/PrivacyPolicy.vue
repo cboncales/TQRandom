@@ -1,5 +1,10 @@
 <script setup>
 import AppLayout from "@/components/layout/AppLayout.vue";
+import { onMounted } from "vue";
+
+onMounted(() => {
+  window.scrollTo(0, 0);
+});
 </script>
 <template>
   <AppLayout>

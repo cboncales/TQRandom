@@ -1,22 +1,28 @@
 <script setup>
 import AppLayout from "@/components/layout/AppLayout.vue";
+import { onMounted } from "vue";
+
+onMounted(() => {
+  window.scrollTo(0, 0);
+});
 </script>
+
 <template>
   <AppLayout>
     <section class="py-20 bg-gray-200">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">
-          Terms Of Services
+          Terms of Service
         </h1>
 
-        <!-- Overview -->
+        <!-- Terms and Conditions -->
         <div
           class="bg-white p-8 rounded-2xl shadow mb-10"
           data-aos="fade-up"
           data-aos-delay="300"
         >
           <h2 class="text-2xl font-semibold text-gray-800 mb-4">
-            Privacy Policy
+            Terms of Service
           </h2>
 
           <p class="text-gray-700 leading-relaxed mb-4">
@@ -24,37 +30,95 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </p>
 
           <p class="text-gray-700 leading-relaxed mb-4">
-            This Privacy Notice for <strong>__________________</strong> ("we,"
-            "us," or "our"), describes how and why we might access, collect,
-            store, use, and/or share ("process") your personal information when
-            you use our services ("Services"), including when you:
+            These Terms and Conditions (“Terms”) govern your use of the website
+            <strong>tq-random.vercel.app</strong> and the TQRandom web
+            application (“Service”). By accessing or using the Service, you
+            agree to be bound by these Terms. If you do not agree, please
+            discontinue use immediately.
           </p>
 
+          <!-- Section: Use of Service -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            1. Use of the Service
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            TQRandom is an online tool designed to help instructors generate
+            randomized test questionnaires. You agree to use the Service only
+            for lawful academic or instructional purposes. You must not misuse,
+            reverse-engineer, or attempt to disrupt the functionality of the
+            system.
+          </p>
+
+          <!-- Section: User Responsibilities -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            2. User Responsibilities
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            By using the Service, you agree that:
+          </p>
           <ul class="list-disc pl-6 text-gray-700 leading-relaxed mb-4">
             <li>
-              Visit our website at <strong>tq-random.vercel.app</strong> or any
-              website of ours that links to this Privacy Notice.
+              You are responsible for the accuracy and legality of the files you
+              upload.
+            </li>
+            <li>You will not upload malicious, harmful, or illegal content.</li>
+            <li>
+              You will not attempt to access restricted areas of the system.
             </li>
             <li>
-              Use TQRandom. TQRandom is a web application created to help
-              instructors easily prepare randomized test questionnaires. It was
-              built with one goal in mind: to reduce cheating and save time by
-              generating multiple clean, shuffled versions of tests for
-              classroom assessments.
-            </li>
-            <li>
-              Engage with us in other related ways, including any sales,
-              marketing, or events.
+              You will not perform actions that could disrupt or damage the
+              Service.
             </li>
           </ul>
 
+          <!-- Section: Intellectual Property -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            3. Intellectual Property
+          </h3>
           <p class="text-gray-700 leading-relaxed mb-4">
-            <strong>Questions or concerns?</strong> Reading this Privacy Notice
-            will help you understand your privacy rights and choices. We are
-            responsible for making decisions about how your personal information
-            is processed. If you do not agree with our policies and practices,
-            please do not use our Services. If you still have any questions or
-            concerns, please contact us at:
+            All features, design elements, code, and content within TQRandom
+            remain the intellectual property of the developers. You may use the
+            Service but do not gain ownership over any part of the platform.
+          </p>
+
+          <!-- Section: Limitation of Liability -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            4. Limitation of Liability
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            TQRandom is provided on an “as-is” and “as-available” basis. We do
+            not guarantee that the Service will be error-free or uninterrupted.
+            Under no circumstances will the developers be held liable for any
+            damages arising from the use or inability to use the Service.
+          </p>
+
+          <!-- Section: Privacy -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            5. Privacy and Data Handling
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            By using the Service, you also agree to our Privacy Policy, which
+            explains how we collect and manage information. Please review it to
+            understand your rights and how your data is handled.
+          </p>
+
+          <!-- Section: Modifications -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            6. Changes to These Terms
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            We may update these Terms from time to time. Updated versions will
+            be posted on this page with a revised “Last Updated” date. Continued
+            use of the Service means you accept any changes made.
+          </p>
+
+          <!-- Section: Contact -->
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+            7. Contact Information
+          </h3>
+          <p class="text-gray-700 leading-relaxed mb-4">
+            For questions or concerns regarding these Terms, you may contact us
+            at:
           </p>
 
           <p class="text-gray-700 leading-relaxed">

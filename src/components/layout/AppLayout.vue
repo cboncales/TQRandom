@@ -461,7 +461,7 @@ const userDisplayName = computed(() => {
               </li>
               <li>
                 <a
-                  href="#"
+                  @click="navigateTo('FAQ')"
                   class="text-gray-300 hover:text-white transition-colors duration-200"
                   >FAQ</a
                 >
