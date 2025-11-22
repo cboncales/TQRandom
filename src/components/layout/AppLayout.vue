@@ -440,7 +440,7 @@ const userDisplayName = computed(() => {
             <ul class="space-y-2">
               <li>
                 <a
-                  href="#"
+                  @click="navigateTo('help')"
                   class="text-gray-300 hover:text-white transition-colors duration-200"
                   >Help Center</a
                 >
