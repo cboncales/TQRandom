@@ -45,8 +45,14 @@ const toggleConfirmPasswordVisibility = () => {
 onMounted(async () => {
   // Load current user data
   if (authStore.userData) {
-    firstName.value = authStore.userData.user_metadata?.first_name || authStore.userData.first_name || "";
-    lastName.value = authStore.userData.user_metadata?.last_name || authStore.userData.last_name || "";
+    firstName.value =
+      authStore.userData.user_metadata?.first_name ||
+      authStore.userData.first_name ||
+      "";
+    lastName.value =
+      authStore.userData.user_metadata?.last_name ||
+      authStore.userData.last_name ||
+      "";
     email.value = authStore.userData.email || "";
   }
 });
@@ -71,7 +77,7 @@ const handleUpdateProfile = async () => {
       profileMessage.value = "Profile updated successfully!";
       // Refresh user data
       await authStore.getUserInformation();
-      
+
       // Clear message after 3 seconds
       setTimeout(() => {
         profileMessage.value = "";
@@ -110,25 +116,29 @@ const handleUpdatePassword = async () => {
   }
 
   if (currentPassword.value === newPassword.value) {
-    passwordError.value = "New password must be different from current password";
+    passwordError.value =
+      "New password must be different from current password";
     return;
   }
 
   isUpdatingPassword.value = true;
 
   try {
-    const result = await userApi.updatePassword(currentPassword.value, newPassword.value);
+    const result = await userApi.updatePassword(
+      currentPassword.value,
+      newPassword.value
+    );
 
     if (result.error) {
       passwordError.value = result.error;
     } else {
       passwordMessage.value = "Password updated successfully!";
-      
+
       // Clear form
       currentPassword.value = "";
       newPassword.value = "";
       confirmPassword.value = "";
-      
+
       // Clear message after 3 seconds
       setTimeout(() => {
         passwordMessage.value = "";
@@ -142,14 +152,18 @@ const handleUpdatePassword = async () => {
 };
 
 const goBack = () => {
-  router.push({ name: 'dashboard' });
+  router.push({ name: "dashboard" });
 };
 </script>
 
 <template>
   <AppLayout>
     <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8">
-      <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div
+        class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
+        data-aos="fade-up"
+        data-aos-delay="200"
+      >
         <!-- Header -->
         <div class="mb-8">
           <button
@@ -172,9 +186,21 @@ const goBack = () => {
             Back to Dashboard
           </button>
           <div class="flex items-center space-x-3">
-            <div class="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            <div
+              class="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center"
+            >
+              <svg
+                class="w-6 h-6 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
             <div>
@@ -188,19 +214,37 @@ const goBack = () => {
 
         <div class="space-y-6">
           <!-- Profile Settings Card -->
-          <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-            <div class="bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200">
+          <div
+            class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200"
+          >
+            <div
+              class="bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200"
+            >
               <div class="flex items-center">
-                <div class="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center mr-3">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                <div
+                  class="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center mr-3"
+                >
+                  <svg
+                    class="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
                 </div>
                 <div>
                   <h2 class="text-lg font-semibold text-gray-900">
                     Profile Information
                   </h2>
-                  <p class="text-sm text-gray-600">Update your personal details</p>
+                  <p class="text-sm text-gray-600">
+                    Update your personal details
+                  </p>
                 </div>
               </div>
             </div>
@@ -209,13 +253,28 @@ const goBack = () => {
               <div class="space-y-5">
                 <!-- Email (read-only) -->
                 <div>
-                  <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="email"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Email Address
                   </label>
                   <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    <div
+                      class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                    >
+                      <svg
+                        class="h-5 w-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                        />
                       </svg>
                     </div>
                     <input
@@ -227,8 +286,16 @@ const goBack = () => {
                     />
                   </div>
                   <p class="mt-1.5 text-xs text-gray-500 flex items-center">
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    <svg
+                      class="w-3 h-3 mr-1"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
                     Email address cannot be changed
                   </p>
@@ -237,7 +304,10 @@ const goBack = () => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <!-- First Name -->
                   <div>
-                    <label for="firstName" class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="firstName"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       First Name <span class="text-red-500">*</span>
                     </label>
                     <input
@@ -252,7 +322,10 @@ const goBack = () => {
 
                   <!-- Last Name -->
                   <div>
-                    <label for="lastName" class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="lastName"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Last Name
                     </label>
                     <input
@@ -266,17 +339,39 @@ const goBack = () => {
                 </div>
 
                 <!-- Success Message -->
-                <div v-if="profileMessage" class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                <div
+                  v-if="profileMessage"
+                  class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg"
+                >
+                  <svg
+                    class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                   <p class="text-sm text-green-800">{{ profileMessage }}</p>
                 </div>
 
                 <!-- Error Message -->
-                <div v-if="profileError" class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                <div
+                  v-if="profileError"
+                  class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg"
+                >
+                  <svg
+                    class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                   <p class="text-sm text-red-800">{{ profileError }}</p>
                 </div>
@@ -288,9 +383,25 @@ const goBack = () => {
                     :disabled="isUpdatingProfile"
                     class="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
                   >
-                    <svg v-if="isUpdatingProfile" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      v-if="isUpdatingProfile"
+                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <span v-if="isUpdatingProfile">Updating...</span>
                     <span v-else>Save Changes</span>
@@ -301,19 +412,37 @@ const goBack = () => {
           </div>
 
           <!-- Password Settings Card -->
-          <div class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200">
-            <div class="bg-linear-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200">
+          <div
+            class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200"
+          >
+            <div
+              class="bg-linear-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200"
+            >
               <div class="flex items-center">
-                <div class="h-10 w-10 rounded-lg bg-purple-500 flex items-center justify-center mr-3">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                <div
+                  class="h-10 w-10 rounded-lg bg-purple-500 flex items-center justify-center mr-3"
+                >
+                  <svg
+                    class="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
                   </svg>
                 </div>
                 <div>
                   <h2 class="text-lg font-semibold text-gray-900">
                     Security Settings
                   </h2>
-                  <p class="text-sm text-gray-600">Update your password to keep your account secure</p>
+                  <p class="text-sm text-gray-600">
+                    Update your password to keep your account secure
+                  </p>
                 </div>
               </div>
             </div>
@@ -322,13 +451,28 @@ const goBack = () => {
               <div class="space-y-5">
                 <!-- Current Password -->
                 <div>
-                  <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                  <label
+                    for="currentPassword"
+                    class="block text-sm font-medium text-gray-700 mb-2"
+                  >
                     Current Password <span class="text-red-500">*</span>
                   </label>
                   <div class="relative">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    <div
+                      class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+                    >
+                      <svg
+                        class="h-5 w-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                        />
                       </svg>
                     </div>
                     <input
@@ -345,7 +489,10 @@ const goBack = () => {
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
                   <!-- New Password -->
                   <div>
-                    <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="newPassword"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       New Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -401,8 +548,16 @@ const goBack = () => {
                       </button>
                     </div>
                     <p class="mt-1.5 text-xs text-gray-500 flex items-center">
-                      <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                      <svg
+                        class="w-3 h-3 mr-1"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fill-rule="evenodd"
+                          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                          clip-rule="evenodd"
+                        />
                       </svg>
                       Minimum 6 characters
                     </p>
@@ -410,7 +565,10 @@ const goBack = () => {
 
                   <!-- Confirm New Password -->
                   <div>
-                    <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      for="confirmPassword"
+                      class="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Confirm Password <span class="text-red-500">*</span>
                     </label>
                     <div class="relative">
@@ -469,17 +627,39 @@ const goBack = () => {
                 </div>
 
                 <!-- Success Message -->
-                <div v-if="passwordMessage" class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <svg class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                <div
+                  v-if="passwordMessage"
+                  class="flex items-start p-4 bg-green-50 border border-green-200 rounded-lg"
+                >
+                  <svg
+                    class="w-5 h-5 text-green-600 mr-3 mt-0.5 shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                   <p class="text-sm text-green-800">{{ passwordMessage }}</p>
                 </div>
 
                 <!-- Error Message -->
-                <div v-if="passwordError" class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <svg class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                <div
+                  v-if="passwordError"
+                  class="flex items-start p-4 bg-red-50 border border-red-200 rounded-lg"
+                >
+                  <svg
+                    class="w-5 h-5 text-red-600 mr-3 mt-0.5 shrink-0"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
                   <p class="text-sm text-red-800">{{ passwordError }}</p>
                 </div>
@@ -491,9 +671,25 @@ const goBack = () => {
                     :disabled="isUpdatingPassword"
                     class="inline-flex items-center px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
                   >
-                    <svg v-if="isUpdatingPassword" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    <svg
+                      v-if="isUpdatingPassword"
+                      class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <span v-if="isUpdatingPassword">Updating...</span>
                     <span v-else>Change Password</span>
@@ -511,4 +707,3 @@ const goBack = () => {
 <style scoped>
 /* Additional styles if needed */
 </style>
-
