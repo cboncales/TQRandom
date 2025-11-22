@@ -126,7 +126,7 @@ const getStatusColor = (status) => {
             <!-- Manage Questions Button -->
             <button
               @click="manageQuestions(test.id)"
-              class="flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+              class="tutorial-test-questions-btn flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
             >
               <svg
                 class="w-4 h-4 sm:mr-1"
@@ -147,7 +147,7 @@ const getStatusColor = (status) => {
             <!-- Edit Button -->
             <button
               @click="editTest(test.id)"
-              class="p-2 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="tutorial-test-edit-btn p-2 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit test"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +158,7 @@ const getStatusColor = (status) => {
             <!-- Delete Button -->
             <button
               @click="confirmDelete(test.id)"
-              class="p-2 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="tutorial-test-delete-btn p-2 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete test"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

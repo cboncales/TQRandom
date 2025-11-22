@@ -108,7 +108,10 @@ const handleRegister = async () => {
             successMessage.value =
               "Registration successful! Redirecting to dashboard...";
             setTimeout(() => {
-              router.push({ name: "dashboard" });
+              router.push({ 
+                name: "dashboard",
+                query: { isNewUser: 'true' }
+              });
             }, 1000);
           }
         } catch (loginError) {

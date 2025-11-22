@@ -2,10 +2,15 @@
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TestList from "@/components/dashboard/TestList.vue";
 import CreateTestModal from "@/components/dashboard/CreateTestModal.vue";
+import TutorialOverlay from "@/components/tutorial/TutorialOverlay.vue";
 import { ref, onMounted, watch } from "vue";
 import { useTestStore } from "@/stores/testStore";
+import { useTutorialStore } from "@/stores/tutorialStore";
+import { useRoute } from "vue-router";
 
 const testStore = useTestStore();
+const tutorialStore = useTutorialStore();
+const route = useRoute();
 
 const showCreateModal = ref(false);
 const tests = ref([]);
@@ -32,7 +37,7 @@ const closeCreateModal = () => {
 const handleTestCreated = (newTest) => {
   tests.value.unshift({
     ...newTest,
-    questionCount: 0, // TODO: Get actual question count
+    questionCount: 0,
   });
   closeCreateModal();
 };
@@ -53,7 +58,7 @@ const handleTestDeleted = async (testId) => {
       alert(`Error deleting test: ${result.error}`);
     } else {
       tests.value = tests.value.filter((test) => test.id !== testId);
-      filterTests(); // Update filtered tests
+      filterTests();
       
       // Keep modal visible briefly to show success
       setTimeout(() => {
@@ -102,12 +107,12 @@ const loadTests = async () => {
       // Transform the database data to match UI expectations
       tests.value = result.data.map((test) => ({
         ...test,
-        subject: test.description?.split(" - ")[0] || "General", // Extract subject from description
+        subject: test.description?.split(" - ")[0] || "General",
         description: test.description?.includes(" - ")
           ? test.description.split(" - ").slice(1).join(" - ")
           : test.description || "",
-        questionCount: 0, // Will be calculated below
-        versionCount: 0, // Will be calculated below
+        questionCount: 0,
+        versionCount: 0,
         createdAt: new Date(test.created_at).toLocaleDateString(),
       }));
       
@@ -158,12 +163,25 @@ watch(searchQuery, () => {
 
 onMounted(() => {
   loadTests();
+  
+  // Check if user just registered (from query parameter or session)
+  const isNewUser = route.query.isNewUser === 'true';
+  const hasCompletedTutorial = localStorage.getItem('tutorialCompleted');
+  
+  if (isNewUser && !hasCompletedTutorial) {
+    tutorialStore.currentStep = 0;
+    tutorialStore.showTutorial = true;
+  }
+
 });
 </script>
 
 <template>
   <AppLayout>
     <div class="min-h-screen bg-gray-200">
+      <!-- Tutorial Overlay -->
+      <TutorialOverlay />
+
       <!-- Dashboard Header -->
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -177,25 +195,37 @@ onMounted(() => {
                   Create and manage your tests
                 </p>
               </div>
-              <button
-                @click="openCreateModal"
-                class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
-              >
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+              <div class="flex items-center gap-4">
+                <button
+                  @click="tutorialStore.restartTutorial()"
+                  class="text-gray-600 hover:text-blue-600 text-sm font-medium flex items-center transition-colors duration-200"
+                  title="Start tutorial (shows you around)"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-                  />
-                </svg>
-                Create New Test Questionnaire
-              </button>
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Help
+                </button>
+                <button
+                  @click="openCreateModal"
+                  class="tutorial-create-btn bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                    />
+                  </svg>
+                  Create New Test Questionnaire
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -203,7 +233,7 @@ onMounted(() => {
 
       <!-- Dashboard Stats -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="tutorial-stats grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div class="bg-white overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
@@ -446,12 +476,13 @@ onMounted(() => {
         </div>
 
         <!-- Test List -->
-        <TestList
-          v-if="!isLoading"
-          :tests="filteredTests"
-          @test-deleted="handleTestDeleted"
-          @test-updated="handleTestUpdated"
-        />
+        <div v-if="!isLoading" class="tutorial-test-list">
+          <TestList
+            :tests="filteredTests"
+            @test-deleted="handleTestDeleted"
+            @test-updated="handleTestUpdated"
+          />
+        </div>
         
         <!-- No Results Message -->
         <div
