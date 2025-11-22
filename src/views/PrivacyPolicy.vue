@@ -29,10 +29,10 @@ onMounted(() => {
           </p>
 
           <p class="text-gray-700 leading-relaxed mb-4">
-            This Privacy Notice for <strong>__________________</strong> ("we,"
-            "us," or "our"), describes how and why we might access, collect,
-            store, use, and/or share ("process") your personal information when
-            you use our services ("Services"), including when you:
+            This Privacy Notice for <strong>TQRandom</strong>, describes how and
+            why we might access, collect, store, use, and/or share ("process")
+            your personal information when you use our services ("Services"),
+            including when you:
           </p>
 
           <ul class="list-disc pl-6 text-gray-700 leading-relaxed mb-4">
