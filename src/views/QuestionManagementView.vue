@@ -8,7 +8,15 @@ import { useTestStore } from "@/stores/testStore";
 import { uploadApi } from "@/services/api";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
-import { Document, Packer, Paragraph, TextRun, AlignmentType, HeadingLevel, ImageRun } from "docx";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  AlignmentType,
+  HeadingLevel,
+  ImageRun,
+} from "docx";
 
 const route = useRoute();
 const router = useRouter();
@@ -18,14 +26,14 @@ const testStore = useTestStore();
 const loadImageAsBase64 = (url) => {
   return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'Anonymous';
+    img.crossOrigin = "Anonymous";
     img.onload = () => {
-      const canvas = document.createElement('canvas');
+      const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext("2d");
       ctx.drawImage(img, 0, 0);
-      resolve(canvas.toDataURL('image/png'));
+      resolve(canvas.toDataURL("image/png"));
     };
     img.onerror = reject;
     img.src = url;
@@ -39,7 +47,7 @@ const loadImageAsBuffer = async (url) => {
     const arrayBuffer = await blob.arrayBuffer();
     return Buffer.from(arrayBuffer);
   } catch (error) {
-    console.error('Error loading image as buffer:', error);
+    console.error("Error loading image as buffer:", error);
     return null;
   }
 };
@@ -63,17 +71,17 @@ const showGenerateVersionModal = ref(false);
 const versionCount = ref(1);
 const questionsPerVersion = ref(50);
 const isGeneratingVersions = ref(false);
-const generationProgress = ref({ current: 0, total: 0, message: '' });
+const generationProgress = ref({ current: 0, total: 0, message: "" });
 const isLoadingVersions = ref(false);
 const isDownloadingAll = ref(false);
 const downloadProgress = ref({ current: 0, total: 0 });
 const showDownloadFormatModal = ref(false);
-const selectedDownloadFormat = ref('pdf'); // 'pdf' or 'docx'
-const downloadType = ref('all'); // 'all' or 'single'
+const selectedDownloadFormat = ref("pdf"); // 'pdf' or 'docx'
+const downloadType = ref("all"); // 'all' or 'single'
 const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
 const isDeletingVersions = ref(false);
-const deletionProgress = ref({ current: 0, total: 0, message: '' });
+const deletionProgress = ref({ current: 0, total: 0, message: "" });
 const selectedVersions = ref([]); // For multiple version card selections
 const selectAll = ref(false); // For select all checkbox
 const showPreviewModal = ref(false);
@@ -94,7 +102,7 @@ const answerKeyText = ref("");
 const selectedQuestions = ref([]);
 const selectAllQuestions = ref(false);
 const isDeletingQuestions = ref(false);
-const questionDeletionProgress = ref({ current: 0, total: 0, message: '' });
+const questionDeletionProgress = ref({ current: 0, total: 0, message: "" });
 
 // Image assignment modal state
 const showImageAssignmentModal = ref(false);
@@ -102,7 +110,7 @@ const pendingQuestions = ref([]);
 const extractedImages = ref([]);
 const imageAssignments = ref({}); // { questionIndex: imageUrl }
 const answerChoiceImageAssignments = ref({}); // { `${questionIndex}-${choiceIndex}`: imageUrl }
-const imageAssignmentTab = ref('questions'); // 'questions' or 'answerChoices'
+const imageAssignmentTab = ref("questions"); // 'questions' or 'answerChoices'
 const savedAnswerKeyMap = ref({}); // Store parsed answer key for later use
 
 const openQuestionForm = () => {
@@ -278,7 +286,9 @@ const handleQuestionDeleted = async (questionId) => {
     } else {
       questions.value = questions.value.filter((q) => q.id !== questionId);
       // Remove from selection if it was selected
-      selectedQuestions.value = selectedQuestions.value.filter((q) => q.id !== questionId);
+      selectedQuestions.value = selectedQuestions.value.filter(
+        (q) => q.id !== questionId
+      );
     }
   } catch (error) {
     alert("An unexpected error occurred while deleting the question.");
@@ -295,7 +305,8 @@ const toggleQuestionSelection = (question) => {
     selectedQuestions.value.push(question);
   }
   // Update select all checkbox state
-  selectAllQuestions.value = selectedQuestions.value.length === questions.value.length;
+  selectAllQuestions.value =
+    selectedQuestions.value.length === questions.value.length;
 };
 
 const toggleSelectAllQuestions = () => {
@@ -312,9 +323,13 @@ const deleteSelectedQuestions = async () => {
   }
 
   const questionCount = selectedQuestions.value.length;
-  const questionText = questionCount === 1 ? 'question' : 'questions';
-  
-  if (!confirm(`Are you sure you want to delete ${questionCount} ${questionText}? This action cannot be undone.`)) {
+  const questionText = questionCount === 1 ? "question" : "questions";
+
+  if (
+    !confirm(
+      `Are you sure you want to delete ${questionCount} ${questionText}? This action cannot be undone.`
+    )
+  ) {
     return;
   }
 
@@ -322,7 +337,7 @@ const deleteSelectedQuestions = async () => {
   questionDeletionProgress.value = {
     current: 0,
     total: questionCount,
-    message: 'Preparing to delete questions...'
+    message: "Preparing to delete questions...",
   };
 
   let successCount = 0;
@@ -330,16 +345,21 @@ const deleteSelectedQuestions = async () => {
 
   for (let i = 0; i < selectedQuestions.value.length; i++) {
     const question = selectedQuestions.value[i];
-    
+
     // Update progress
     questionDeletionProgress.value.current = i + 1;
-    questionDeletionProgress.value.message = `Deleting question ${i + 1} of ${questionCount}...`;
-    
+    questionDeletionProgress.value.message = `Deleting question ${
+      i + 1
+    } of ${questionCount}...`;
+
     try {
       const result = await testStore.deleteQuestion(question.id, testId);
-      
+
       if (result.error) {
-        console.error(`Failed to delete question ${question.id}:`, result.error);
+        console.error(
+          `Failed to delete question ${question.id}:`,
+          result.error
+        );
         failCount++;
       } else {
         successCount++;
@@ -351,7 +371,7 @@ const deleteSelectedQuestions = async () => {
   }
 
   // Finalize
-  questionDeletionProgress.value.message = 'Refreshing question list...';
+  questionDeletionProgress.value.message = "Refreshing question list...";
 
   // Clear selection
   selectedQuestions.value = [];
@@ -364,11 +384,13 @@ const deleteSelectedQuestions = async () => {
   if (failCount === 0) {
     alert(`Successfully deleted ${successCount} ${questionText}!`);
   } else {
-    alert(`Deleted ${successCount} ${questionText}. Failed to delete ${failCount} ${questionText}.`);
+    alert(
+      `Deleted ${successCount} ${questionText}. Failed to delete ${failCount} ${questionText}.`
+    );
   }
 
   isDeletingQuestions.value = false;
-  questionDeletionProgress.value = { current: 0, total: 0, message: '' };
+  questionDeletionProgress.value = { current: 0, total: 0, message: "" };
 };
 
 const loadTest = async () => {
@@ -428,7 +450,6 @@ const loadQuestions = async (forceRefresh = false) => {
         isCorrect: correctAnswerMap[question.id] === choice.id,
       })),
     }));
-
   } catch (error) {
     errorMessage.value = "Failed to load questions";
     console.error("Load questions error:", error);
@@ -497,45 +518,53 @@ const closeImageAssignmentModal = () => {
   extractedImages.value = [];
   imageAssignments.value = {};
   answerChoiceImageAssignments.value = {};
-  imageAssignmentTab.value = 'questions';
+  imageAssignmentTab.value = "questions";
   savedAnswerKeyMap.value = {}; // Clear saved answer key
 };
 
 const saveQuestionsWithImages = async () => {
   isUploadingFile.value = true;
   uploadProgress.value = 0;
-  
+
   try {
     // Use the saved answer key map (was parsed before modal opened)
     const answerKeyMap = savedAnswerKeyMap.value;
-    console.log('Using saved answer key map for assignment:', answerKeyMap);
-    
+    console.log("Using saved answer key map for assignment:", answerKeyMap);
+
     let successCount = 0;
     let failCount = 0;
     let answerSetCount = 0;
     const createdQuestions = []; // Store created questions for answer setting phase
-    
+
     // PHASE 1: Create all questions (0-60% progress)
     for (let i = 0; i < pendingQuestions.value.length; i++) {
-      uploadProgress.value = Math.round(((i + 1) / pendingQuestions.value.length) * 60);
-      
+      uploadProgress.value = Math.round(
+        ((i + 1) / pendingQuestions.value.length) * 60
+      );
+
       const parsed = pendingQuestions.value[i];
       const questionNumber = i + 1;
-      
+
       // Get manually assigned image or use auto-assigned
-      const assignedImageUrl = imageAssignments.value[i] || parsed.question_image?.url || null;
-      
+      const assignedImageUrl =
+        imageAssignments.value[i] || parsed.question_image?.url || null;
+
       // Convert answer_choices with manually assigned images
       const answerChoices = parsed.answer_choices.map((choice, choiceIdx) => {
         // Check for manually assigned answer choice image
-        const manuallyAssignedImage = getAssignedAnswerChoiceImage(i, choiceIdx);
-        
+        const manuallyAssignedImage = getAssignedAnswerChoiceImage(
+          i,
+          choiceIdx
+        );
+
         return {
-          text: typeof choice === 'string' ? choice : choice.text,
-          imageUrl: manuallyAssignedImage || (typeof choice === 'object' ? choice.image?.url : null)
+          text: typeof choice === "string" ? choice : choice.text,
+          imageUrl:
+            manuallyAssignedImage ||
+            (typeof choice === "object" ? choice.image?.url : null),
         };
       });
-      
+
       // Create the question with assigned image
       const createResult = await testStore.createQuestion(
         testId,
@@ -543,40 +572,49 @@ const saveQuestionsWithImages = async () => {
         answerChoices,
         assignedImageUrl
       );
-      
+
       if (createResult.error) {
-        console.error(`Failed to create question ${questionNumber}:`, createResult.error);
+        console.error(
+          `Failed to create question ${questionNumber}:`,
+          createResult.error
+        );
         failCount++;
       } else {
         successCount++;
         createdQuestions.push({
           questionId: createResult.data.id,
           questionNumber: questionNumber,
-          correctAnswerLetter: answerKeyMap[questionNumber]
+          correctAnswerLetter: answerKeyMap[questionNumber],
         });
       }
     }
-    
+
     // PHASE 2: Set correct answers (60-100% progress)
     if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
       uploadProgress.value = 65;
-      
+
       // Fetch all questions once
       const questionsResult = await testStore.getTestQuestions(testId, true);
-      
+
       if (questionsResult.data) {
         for (let i = 0; i < createdQuestions.length; i++) {
-          uploadProgress.value = Math.round(65 + ((i + 1) / createdQuestions.length) * 35);
-          
-          const { questionId, questionNumber, correctAnswerLetter } = createdQuestions[i];
-          
+          uploadProgress.value = Math.round(
+            65 + ((i + 1) / createdQuestions.length) * 35
+          );
+
+          const { questionId, questionNumber, correctAnswerLetter } =
+            createdQuestions[i];
+
           if (correctAnswerLetter) {
-            const createdQuestion = questionsResult.data.find(q => q.id === questionId);
-            
+            const createdQuestion = questionsResult.data.find(
+              (q) => q.id === questionId
+            );
+
             if (createdQuestion && createdQuestion.answer_choices) {
-              const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+              const choiceIndex =
+                correctAnswerLetter.charCodeAt(0) - "A".charCodeAt(0);
               const correctChoice = createdQuestion.answer_choices[choiceIndex];
-              
+
               if (correctChoice) {
                 const answerResult = await testStore.storeCorrectAnswer(
                   questionId,
@@ -592,21 +630,20 @@ const saveQuestionsWithImages = async () => {
         }
       }
     }
-    
+
     // Close modal and reload
     closeImageAssignmentModal();
     await loadQuestions(true);
-    
+
     // Show summary
     let message = `Upload complete!\n\n`;
     message += `Questions created: ${successCount}\n`;
     if (failCount > 0) message += `Failed: ${failCount}\n`;
     if (answerSetCount > 0) message += `Correct answers set: ${answerSetCount}`;
-    
+
     alert(message);
-    
   } catch (error) {
-    console.error('Error saving questions:', error);
+    console.error("Error saving questions:", error);
     alert(`Error: ${error.message}`);
   } finally {
     isUploadingFile.value = false;
@@ -631,7 +668,7 @@ const parseAnswerKey = (text) => {
     return answerMap;
   }
 
-  const lines = text.split('\n');
+  const lines = text.split("\n");
   const pattern = /^(\d+)[\.\):\s]+([A-H])\s*$/i;
 
   for (const line of lines) {
@@ -660,7 +697,7 @@ const handleFileUpload = async () => {
   try {
     // Parse answer key if provided
     const answerKeyMap = parseAnswerKey(answerKeyText.value);
-    console.log('Parsed answer key:', answerKeyMap);
+    console.log("Parsed answer key:", answerKeyMap);
 
     // Upload and parse the document
     const result = await uploadApi.uploadDocument(selectedFile.value);
@@ -673,8 +710,12 @@ const handleFileUpload = async () => {
 
     const parsedQuestions = result.data.data;
     const stats = result.data.stats;
-    console.log(`Successfully parsed ${parsedQuestions.length} questions from document`);
-    console.log(`Images extracted: ${stats.images_extracted}, uploaded: ${stats.total_images}`);
+    console.log(
+      `Successfully parsed ${parsedQuestions.length} questions from document`
+    );
+    console.log(
+      `Images extracted: ${stats.images_extracted}, uploaded: ${stats.total_images}`
+    );
 
     // Check if images were extracted
     if (stats.total_images > 0) {
@@ -682,18 +723,18 @@ const handleFileUpload = async () => {
       pendingQuestions.value = parsedQuestions;
       extractedImages.value = result.data.images || [];
       imageAssignments.value = {};
-      
+
       // IMPORTANT: Save the answer key map BEFORE closing the modal (which clears answerKeyText)
       savedAnswerKeyMap.value = answerKeyMap;
-      console.log('Saved answer key map:', savedAnswerKeyMap.value);
-      
+      console.log("Saved answer key map:", savedAnswerKeyMap.value);
+
       // Initialize assignments from already-assigned images
       parsedQuestions.forEach((q, idx) => {
         if (q.question_image?.url) {
           imageAssignments.value[idx] = q.question_image.url;
         }
       });
-      
+
       // Close upload modal and show image assignment modal
       closeUploadModal();
       showImageAssignmentModal.value = true;
@@ -708,15 +749,17 @@ const handleFileUpload = async () => {
 
     // PHASE 1: Create all questions (0-60% progress)
     for (let i = 0; i < parsedQuestions.length; i++) {
-      uploadProgress.value = Math.round(((i + 1) / parsedQuestions.length) * 60);
+      uploadProgress.value = Math.round(
+        ((i + 1) / parsedQuestions.length) * 60
+      );
 
       const parsed = parsedQuestions[i];
       const questionNumber = i + 1;
-      
+
       // Convert answer_choices array to the format expected by createQuestion
-      const answerChoices = parsed.answer_choices.map(choice => ({
-        text: typeof choice === 'string' ? choice : choice.text,
-        imageUrl: typeof choice === 'object' ? choice.image?.url : null
+      const answerChoices = parsed.answer_choices.map((choice) => ({
+        text: typeof choice === "string" ? choice : choice.text,
+        imageUrl: typeof choice === "object" ? choice.image?.url : null,
       }));
 
       // Extract question image URL if present
@@ -731,14 +774,17 @@ const handleFileUpload = async () => {
       );
 
       if (createResult.error) {
-        console.error(`Failed to create question ${questionNumber}:`, createResult.error);
+        console.error(
+          `Failed to create question ${questionNumber}:`,
+          createResult.error
+        );
         failCount++;
       } else {
         successCount++;
         createdQuestions.push({
           questionId: createResult.data.id,
           questionNumber: questionNumber,
-          correctAnswerLetter: answerKeyMap[questionNumber]
+          correctAnswerLetter: answerKeyMap[questionNumber],
         });
       }
     }
@@ -746,23 +792,29 @@ const handleFileUpload = async () => {
     // PHASE 2: Set correct answers (60-100% progress)
     if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
       uploadProgress.value = 65;
-      
+
       // Fetch all questions once
       const questionsResult = await testStore.getTestQuestions(testId, true);
-      
+
       if (questionsResult.data) {
         for (let i = 0; i < createdQuestions.length; i++) {
-          uploadProgress.value = Math.round(65 + ((i + 1) / createdQuestions.length) * 35);
-          
-          const { questionId, questionNumber, correctAnswerLetter } = createdQuestions[i];
-          
+          uploadProgress.value = Math.round(
+            65 + ((i + 1) / createdQuestions.length) * 35
+          );
+
+          const { questionId, questionNumber, correctAnswerLetter } =
+            createdQuestions[i];
+
           if (correctAnswerLetter) {
-            const createdQuestion = questionsResult.data.find(q => q.id === questionId);
-            
+            const createdQuestion = questionsResult.data.find(
+              (q) => q.id === questionId
+            );
+
             if (createdQuestion && createdQuestion.answer_choices) {
-              const choiceIndex = correctAnswerLetter.charCodeAt(0) - 'A'.charCodeAt(0);
+              const choiceIndex =
+                correctAnswerLetter.charCodeAt(0) - "A".charCodeAt(0);
               const correctChoice = createdQuestion.answer_choices[choiceIndex];
-              
+
               if (correctChoice) {
                 const answerResult = await testStore.storeCorrectAnswer(
                   questionId,
@@ -771,7 +823,9 @@ const handleFileUpload = async () => {
                 );
                 if (!answerResult.error) {
                   answerSetCount++;
-                  console.log(`Set correct answer for Q${questionNumber}: ${correctAnswerLetter}`);
+                  console.log(
+                    `Set correct answer for Q${questionNumber}: ${correctAnswerLetter}`
+                  );
                 }
               }
             }
@@ -793,9 +847,8 @@ const handleFileUpload = async () => {
       message += `\nCorrect answers set: ${answerSetCount}`;
     }
     alert(message);
-
   } catch (error) {
-    console.error('Upload error:', error);
+    console.error("Upload error:", error);
     alert(`An error occurred during upload: ${error.message}`);
   } finally {
     isUploadingFile.value = false;
@@ -806,25 +859,24 @@ const handleFileUpload = async () => {
 const loadVersions = async (forceRefresh = false) => {
   try {
     isLoadingVersions.value = true;
-    
+
     // Use cached version from testStore
     const result = await testStore.getTestVersions(testId, forceRefresh);
 
     if (result.error) {
-      console.error('Error loading versions:', result.error);
+      console.error("Error loading versions:", result.error);
       return;
     }
 
     // Format versions for UI
-    versions.value = result.data.map(v => ({
+    versions.value = result.data.map((v) => ({
       id: v.id,
       name: `Version ${v.version_number}`,
       createdAt: v.created_at,
-      questionCount: v.question_count
+      questionCount: v.question_count,
     }));
-
   } catch (error) {
-    console.error('Load versions error:', error);
+    console.error("Load versions error:", error);
   } finally {
     isLoadingVersions.value = false;
   }
@@ -842,20 +894,25 @@ const closeGenerateVersionModal = () => {
 
 const handleGenerateVersions = async () => {
   if (versionCount.value < 1 || versionCount.value > 100) {
-    alert('Please enter a version count between 1 and 100');
+    alert("Please enter a version count between 1 and 100");
     return;
   }
 
-  if (questionsPerVersion.value < 1 || questionsPerVersion.value > questions.value.length) {
-    alert(`Please enter questions per version between 1 and ${questions.value.length}`);
+  if (
+    questionsPerVersion.value < 1 ||
+    questionsPerVersion.value > questions.value.length
+  ) {
+    alert(
+      `Please enter questions per version between 1 and ${questions.value.length}`
+    );
     return;
   }
 
   isGeneratingVersions.value = true;
-  generationProgress.value = { 
-    current: 0, 
-    total: versionCount.value, 
-    message: 'Initializing version generation...' 
+  generationProgress.value = {
+    current: 0,
+    total: versionCount.value,
+    message: "Initializing version generation...",
   };
 
   try {
@@ -883,24 +940,25 @@ const handleGenerateVersions = async () => {
 
     // Complete progress
     generationProgress.value.current = versionCount.value;
-    generationProgress.value.message = 'Finalizing...';
-    
+    generationProgress.value.message = "Finalizing...";
+
     closeGenerateVersionModal();
-    
+
     // Switch to versions tab and reload
-    activeTab.value = 'versions';
+    activeTab.value = "versions";
     await loadVersions();
 
     // result.data is the array directly, not nested
     const count = result.data?.length || versionCount.value;
-    alert(`Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`);
-
+    alert(
+      `Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`
+    );
   } catch (error) {
-    console.error('Generate versions error:', error);
+    console.error("Generate versions error:", error);
     alert(`An error occurred: ${error.message}`);
   } finally {
     isGeneratingVersions.value = false;
-    generationProgress.value = { current: 0, total: 0, message: '' };
+    generationProgress.value = { current: 0, total: 0, message: "" };
   }
 };
 
@@ -913,7 +971,10 @@ const generateVersionWord = async (versionData) => {
     new Paragraph({
       children: [
         new TextRun({
-          text: `version_${String(versionData.version_number).padStart(3, '0')}`,
+          text: `version_${String(versionData.version_number).padStart(
+            3,
+            "0"
+          )}`,
           size: 20,
         }),
       ],
@@ -933,12 +994,12 @@ const generateVersionWord = async (versionData) => {
         await new Promise((resolve) => {
           image.onload = resolve;
         });
-        
+
         const maxWidth = 600; // Maximum width in pixels for Word
         const aspectRatio = image.width / image.height;
         const finalWidth = Math.min(image.width, maxWidth);
         const finalHeight = finalWidth / aspectRatio;
-        
+
         headerParagraphs.push(
           new Paragraph({
             children: [
@@ -956,7 +1017,7 @@ const generateVersionWord = async (versionData) => {
         );
       }
     } catch (error) {
-      console.error('Failed to load logo for Word document:', error);
+      console.error("Failed to load logo for Word document:", error);
     }
   }
 
@@ -1021,49 +1082,53 @@ const generateVersionWord = async (versionData) => {
   );
 
   const doc = new Document({
-    sections: [{
-      properties: {},
-      children: [
-        ...headerParagraphs,
-        
-        // Questions
-        ...versionData.questions.flatMap((q, qIndex) => {
-          const questionParagraphs = [
-            // Question text
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: `${q.question_number}. `,
-                  bold: true,
-                  size: 22,
-                }),
-                new TextRun({
-                  text: q.question_text,
-                  size: 22,
-                }),
-              ],
-              spacing: { before: 200, after: 100 },
-            }),
-          ];
+    sections: [
+      {
+        properties: {},
+        children: [
+          ...headerParagraphs,
 
-          // Answer choices (5 spaces before letter)
-          const choiceParagraphs = q.answer_choices.map((choice, choiceIndex) => {
-            const letter = String.fromCharCode(65 + choiceIndex);
-            return new Paragraph({
-              children: [
-                new TextRun({
-                  text: `     ${letter}. ${choice.text}`,
-                  size: 20,
-                }),
-              ],
-              spacing: { after: 80 },
-            });
-          });
+          // Questions
+          ...versionData.questions.flatMap((q, qIndex) => {
+            const questionParagraphs = [
+              // Question text
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `${q.question_number}. `,
+                    bold: true,
+                    size: 22,
+                  }),
+                  new TextRun({
+                    text: q.question_text,
+                    size: 22,
+                  }),
+                ],
+                spacing: { before: 200, after: 100 },
+              }),
+            ];
 
-          return [...questionParagraphs, ...choiceParagraphs];
-        }),
-      ],
-    }],
+            // Answer choices (5 spaces before letter)
+            const choiceParagraphs = q.answer_choices.map(
+              (choice, choiceIndex) => {
+                const letter = String.fromCharCode(65 + choiceIndex);
+                return new Paragraph({
+                  children: [
+                    new TextRun({
+                      text: `     ${letter}. ${choice.text}`,
+                      size: 20,
+                    }),
+                  ],
+                  spacing: { after: 80 },
+                });
+              }
+            );
+
+            return [...questionParagraphs, ...choiceParagraphs];
+          }),
+        ],
+      },
+    ],
   });
 
   return await Packer.toBlob(doc);
@@ -1073,156 +1138,165 @@ const generateVersionWord = async (versionData) => {
 const generateVersionPDF = async (versionData) => {
   // Create PDF
   const doc = new jsPDF({
-    orientation: 'portrait',
-    unit: 'mm',
-    format: 'letter' // 8.5" x 11"
+    orientation: "portrait",
+    unit: "mm",
+    format: "letter", // 8.5" x 11"
   });
 
   // Page settings
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 20;
-  const contentWidth = pageWidth - (2 * margin);
+  const contentWidth = pageWidth - 2 * margin;
   let yPosition = margin;
 
-    // Helper function to add new page if needed
-    const checkPageBreak = (neededSpace) => {
-      if (yPosition + neededSpace > pageHeight - margin) {
-        doc.addPage();
-        yPosition = margin;
-        return true;
-      }
-      return false;
-    };
-
-    // Helper function to wrap text
-    const wrapText = (text, maxWidth) => {
-      return doc.splitTextToSize(text, maxWidth);
-    };
-
-    // Add version number at the top right
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const versionText = `Version_${String(versionData.version_number).padStart(3, '0')}`;
-    doc.text(versionText, pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 8;
-
-    // Add logo if it exists (centered, full width)
-    if (versionData.header_logo_url) {
-      try {
-        const logoBase64 = await loadImageAsBase64(versionData.header_logo_url);
-        
-        // Get image dimensions to maintain aspect ratio
-        const image = new Image();
-        image.src = versionData.header_logo_url;
-        await new Promise((resolve) => {
-          image.onload = resolve;
-        });
-        
-        const aspectRatio = image.width / image.height;
-        const maxLogoWidth = contentWidth; // Use full content width
-        const logoWidth = maxLogoWidth;
-        const logoHeight = logoWidth / aspectRatio;
-        const logoX = margin; // Start at left margin
-        
-        doc.addImage(logoBase64, 'PNG', logoX, yPosition, logoWidth, logoHeight);
-        yPosition += logoHeight + 5; // Add space after logo
-      } catch (error) {
-        console.error('Failed to load logo for PDF:', error);
-      }
+  // Helper function to add new page if needed
+  const checkPageBreak = (neededSpace) => {
+    if (yPosition + neededSpace > pageHeight - margin) {
+      doc.addPage();
+      yPosition = margin;
+      return true;
     }
+    return false;
+  };
 
-    // Header - Test Title (centered)
-    doc.setFontSize(18);
-    doc.setFont('helvetica', 'bold');
-    doc.text(versionData.test_title, pageWidth / 2, yPosition, { align: 'center' });
-    yPosition += 10;
+  // Helper function to wrap text
+  const wrapText = (text, maxWidth) => {
+    return doc.splitTextToSize(text, maxWidth);
+  };
 
-    // Description (centered, if exists)
-    if (versionData.test_description && versionData.test_description.trim()) {
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'normal');
-      const descLines = wrapText(versionData.test_description, contentWidth - 20);
-      descLines.forEach(line => {
-        checkPageBreak(6);
-        doc.text(line, pageWidth / 2, yPosition, { align: 'center' });
-        yPosition += 6;
+  // Add version number at the top right
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  const versionText = `Version_${String(versionData.version_number).padStart(
+    3,
+    "0"
+  )}`;
+  doc.text(versionText, pageWidth - margin, yPosition, { align: "right" });
+  yPosition += 8;
+
+  // Add logo if it exists (centered, full width)
+  if (versionData.header_logo_url) {
+    try {
+      const logoBase64 = await loadImageAsBase64(versionData.header_logo_url);
+
+      // Get image dimensions to maintain aspect ratio
+      const image = new Image();
+      image.src = versionData.header_logo_url;
+      await new Promise((resolve) => {
+        image.onload = resolve;
       });
-      yPosition += 4;
-    }
 
-    // Name and Date row
+      const aspectRatio = image.width / image.height;
+      const maxLogoWidth = contentWidth; // Use full content width
+      const logoWidth = maxLogoWidth;
+      const logoHeight = logoWidth / aspectRatio;
+      const logoX = margin; // Start at left margin
+
+      doc.addImage(logoBase64, "PNG", logoX, yPosition, logoWidth, logoHeight);
+      yPosition += logoHeight + 5; // Add space after logo
+    } catch (error) {
+      console.error("Failed to load logo for PDF:", error);
+    }
+  }
+
+  // Header - Test Title (centered)
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text(versionData.test_title, pageWidth / 2, yPosition, {
+    align: "center",
+  });
+  yPosition += 10;
+
+  // Description (centered, if exists)
+  if (versionData.test_description && versionData.test_description.trim()) {
     doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.text('Name: _____________________', margin, yPosition);
-    doc.text('Date: _____________________', pageWidth - margin, yPosition, { align: 'right' });
+    doc.setFont("helvetica", "normal");
+    const descLines = wrapText(versionData.test_description, contentWidth - 20);
+    descLines.forEach((line) => {
+      checkPageBreak(6);
+      doc.text(line, pageWidth / 2, yPosition, { align: "center" });
+      yPosition += 6;
+    });
+    yPosition += 4;
+  }
+
+  // Name and Date row
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Name: _____________________", margin, yPosition);
+  doc.text("Date: _____________________", pageWidth - margin, yPosition, {
+    align: "right",
+  });
+  yPosition += 6;
+
+  // Section and Score row
+  doc.text("Section: _____________________", margin, yPosition);
+  doc.text("Score: _____________________", pageWidth - margin, yPosition, {
+    align: "right",
+  });
+  yPosition += 4;
+
+  // Horizontal line
+  doc.setDrawColor(200, 200, 200);
+  doc.line(margin, yPosition, pageWidth - margin, yPosition);
+  yPosition += 10;
+
+  // Reset text color
+  doc.setTextColor(0, 0, 0);
+
+  // Questions
+  versionData.questions.forEach((q, qIndex) => {
+    // Check if we need a new page for the question
+    checkPageBreak(25); // Minimum space for question start
+
+    // Question number and text
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+
+    const questionPrefix = `${q.question_number}. `;
+    const prefixWidth = doc.getTextWidth(questionPrefix);
+    const questionLines = wrapText(q.question_text, contentWidth);
+
+    // First line with number
+    doc.text(questionPrefix, margin, yPosition);
+    doc.setFont("helvetica", "normal");
+    doc.text(questionLines[0], margin + prefixWidth, yPosition);
     yPosition += 6;
 
-    // Section and Score row
-    doc.text('Section: _____________________', margin, yPosition);
-    doc.text('Score: _____________________', pageWidth - margin, yPosition, { align: 'right' });
-    yPosition += 4;
-
-    // Horizontal line
-    doc.setDrawColor(200, 200, 200);
-    doc.line(margin, yPosition, pageWidth - margin, yPosition);
-    yPosition += 10;
-
-    // Reset text color
-    doc.setTextColor(0, 0, 0);
-
-    // Questions
-    versionData.questions.forEach((q, qIndex) => {
-      // Check if we need a new page for the question
-      checkPageBreak(25); // Minimum space for question start
-
-      // Question number and text
-      doc.setFontSize(11);
-      doc.setFont('helvetica', 'bold');
-      
-      const questionPrefix = `${q.question_number}. `;
-      const prefixWidth = doc.getTextWidth(questionPrefix);
-      const questionLines = wrapText(q.question_text, contentWidth);
-      
-      // First line with number
-      doc.text(questionPrefix, margin, yPosition);
-      doc.setFont('helvetica', 'normal');
-      doc.text(questionLines[0], margin + prefixWidth, yPosition);
+    // Remaining lines
+    for (let i = 1; i < questionLines.length; i++) {
+      checkPageBreak(6);
+      doc.text(questionLines[i], margin + prefixWidth, yPosition);
       yPosition += 6;
+    }
 
-      // Remaining lines
-      for (let i = 1; i < questionLines.length; i++) {
-        checkPageBreak(6);
-        doc.text(questionLines[i], margin + prefixWidth, yPosition);
-        yPosition += 6;
-      }
+    yPosition += 2; // Small space before answer choices
 
-      yPosition += 2; // Small space before answer choices
+    // Answer choices (with 5 white spaces to the left)
+    q.answer_choices.forEach((choice, choiceIndex) => {
+      checkPageBreak(6);
 
-      // Answer choices (with 5 white spaces to the left)
-      q.answer_choices.forEach((choice, choiceIndex) => {
-        checkPageBreak(6);
-        
-        const letter = String.fromCharCode(65 + choiceIndex); // A, B, C, D...
-        const choiceText = `     ${letter}. ${choice.text}`;
-        const choiceLines = wrapText(choiceText, contentWidth);
+      const letter = String.fromCharCode(65 + choiceIndex); // A, B, C, D...
+      const choiceText = `     ${letter}. ${choice.text}`;
+      const choiceLines = wrapText(choiceText, contentWidth);
 
-        // Render all lines of the choice
-        doc.setFontSize(10);
-        choiceLines.forEach((line, lineIndex) => {
-          if (lineIndex > 0) checkPageBreak(5);
-          doc.text(line, margin, yPosition);
-          yPosition += 5;
-        });
-      });
-
-      yPosition += 8; // Space between questions
-
-      // Add extra space after every 5 questions for readability
-      if ((qIndex + 1) % 5 === 0 && qIndex !== versionData.questions.length - 1) {
+      // Render all lines of the choice
+      doc.setFontSize(10);
+      choiceLines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) checkPageBreak(5);
+        doc.text(line, margin, yPosition);
         yPosition += 5;
-      }
+      });
     });
+
+    yPosition += 8; // Space between questions
+
+    // Add extra space after every 5 questions for readability
+    if ((qIndex + 1) % 5 === 0 && qIndex !== versionData.questions.length - 1) {
+      yPosition += 5;
+    }
+  });
 
   // Footer on all pages
   const totalPages = doc.internal.pages.length - 1; // -1 because first element is null
@@ -1230,12 +1304,9 @@ const generateVersionPDF = async (versionData) => {
     doc.setPage(i);
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text(
-      `Page ${i} of ${totalPages}`,
-      pageWidth / 2,
-      pageHeight - 10,
-      { align: 'center' }
-    );
+    doc.text(`Page ${i} of ${totalPages}`, pageWidth / 2, pageHeight - 10, {
+      align: "center",
+    });
   }
 
   return doc;
@@ -1243,8 +1314,8 @@ const generateVersionPDF = async (versionData) => {
 
 // Version card selection (multi-select)
 const toggleVersionSelection = (version) => {
-  const index = selectedVersions.value.findIndex(v => v.id === version.id);
-  
+  const index = selectedVersions.value.findIndex((v) => v.id === version.id);
+
   if (index > -1) {
     // Already selected, remove it
     selectedVersions.value.splice(index, 1);
@@ -1252,14 +1323,14 @@ const toggleVersionSelection = (version) => {
     // Not selected, add it
     selectedVersions.value.push(version);
   }
-  
+
   // Update select all checkbox state
   updateSelectAllState();
 };
 
 // Check if a version is selected
 const isVersionSelected = (versionId) => {
-  return selectedVersions.value.some(v => v.id === versionId);
+  return selectedVersions.value.some((v) => v.id === versionId);
 };
 
 // Toggle select all versions
@@ -1299,7 +1370,7 @@ const openPreview = async (version) => {
 
     previewVersion.value = result.data;
   } catch (error) {
-    console.error('Preview error:', error);
+    console.error("Preview error:", error);
     alert(`An error occurred: ${error.message}`);
     showPreviewModal.value = false;
   } finally {
@@ -1316,19 +1387,19 @@ const closePreview = () => {
 const openAnswerKey = async (version) => {
   isLoadingAnswerKey.value = true;
   showAnswerKeyModal.value = true;
-  
+
   try {
     const result = await testStore.getVersionAnswerKey(version.id);
-    
+
     if (result.error) {
       alert(`Failed to load answer key: ${result.error}`);
       showAnswerKeyModal.value = false;
       return;
     }
-    
+
     answerKeyData.value = result.data;
   } catch (error) {
-    console.error('Answer key error:', error);
+    console.error("Answer key error:", error);
     alert(`An error occurred: ${error.message}`);
     showAnswerKeyModal.value = false;
   } finally {
@@ -1345,28 +1416,31 @@ const closeAnswerKey = () => {
 const openDownloadFormatModal = (type, versionId = null) => {
   downloadType.value = type;
   downloadingVersionId.value = versionId;
-  selectedDownloadFormat.value = 'pdf'; // Default to PDF
+  selectedDownloadFormat.value = "pdf"; // Default to PDF
   showDownloadFormatModal.value = true;
 };
 
 const closeDownloadFormatModal = () => {
   showDownloadFormatModal.value = false;
-  downloadType.value = 'all';
+  downloadType.value = "all";
   downloadingVersionId.value = null;
 };
 
 const confirmDownload = async () => {
-  if (downloadType.value === 'all') {
+  if (downloadType.value === "all") {
     await downloadAllVersions(selectedDownloadFormat.value);
-  } else if (downloadType.value === 'selected') {
+  } else if (downloadType.value === "selected") {
     await downloadSelectedVersionsZip(selectedDownloadFormat.value);
-  } else if (downloadType.value === 'single' && downloadingVersionId.value) {
-    await downloadVersion(downloadingVersionId.value, selectedDownloadFormat.value);
+  } else if (downloadType.value === "single" && downloadingVersionId.value) {
+    await downloadVersion(
+      downloadingVersionId.value,
+      selectedDownloadFormat.value
+    );
   }
   closeDownloadFormatModal();
 };
 
-const downloadVersion = async (versionId, format = 'pdf') => {
+const downloadVersion = async (versionId, format = "pdf") => {
   try {
     // Get version data from cache
     const result = await testStore.getVersion(versionId);
@@ -1377,14 +1451,17 @@ const downloadVersion = async (versionId, format = 'pdf') => {
     }
 
     const versionData = result.data;
-    const baseFilename = `${versionData.test_title.replace(/[^a-z0-9]/gi, '_')}_Version_${versionData.version_number}`;
-    
-    if (format === 'pdf') {
+    const baseFilename = `${versionData.test_title.replace(
+      /[^a-z0-9]/gi,
+      "_"
+    )}_Version_${versionData.version_number}`;
+
+    if (format === "pdf") {
       const doc = await generateVersionPDF(versionData);
       doc.save(`${baseFilename}.pdf`);
-    } else if (format === 'docx') {
+    } else if (format === "docx") {
       const blob = await generateVersionWord(versionData);
-      const downloadLink = document.createElement('a');
+      const downloadLink = document.createElement("a");
       downloadLink.href = URL.createObjectURL(blob);
       downloadLink.download = `${baseFilename}.docx`;
       document.body.appendChild(downloadLink);
@@ -1392,21 +1469,24 @@ const downloadVersion = async (versionId, format = 'pdf') => {
       document.body.removeChild(downloadLink);
       URL.revokeObjectURL(downloadLink.href);
     }
-
   } catch (error) {
-    console.error('Download error:', error);
+    console.error("Download error:", error);
     alert(`An error occurred during download: ${error.message}`);
   }
 };
 
-const downloadAllVersions = async (format = 'pdf') => {
+const downloadAllVersions = async (format = "pdf") => {
   if (versions.value.length === 0) {
-    alert('No versions available to download.');
+    alert("No versions available to download.");
     return;
   }
 
-  const formatName = format === 'pdf' ? 'PDF' : 'Word';
-  if (!confirm(`This will download all ${versions.value.length} versions as ${formatName} files in a ZIP. Continue?`)) {
+  const formatName = format === "pdf" ? "PDF" : "Word";
+  if (
+    !confirm(
+      `This will download all ${versions.value.length} versions as ${formatName} files in a ZIP. Continue?`
+    )
+  ) {
     return;
   }
 
@@ -1415,9 +1495,9 @@ const downloadAllVersions = async (format = 'pdf') => {
 
   try {
     const zip = new JSZip();
-    const testTitle = test.value?.title || 'Test';
-    const folderName = testTitle.replace(/[^a-z0-9]/gi, '_');
-    const fileExtension = format === 'pdf' ? 'pdf' : 'docx';
+    const testTitle = test.value?.title || "Test";
+    const folderName = testTitle.replace(/[^a-z0-9]/gi, "_");
+    const fileExtension = format === "pdf" ? "pdf" : "docx";
 
     // Fetch and generate files for all versions
     for (let i = 0; i < versions.value.length; i++) {
@@ -1429,51 +1509,61 @@ const downloadAllVersions = async (format = 'pdf') => {
         const result = await testStore.getVersion(version.id);
 
         if (result.error) {
-          console.error(`Failed to fetch version ${version.version_number}:`, result.error);
+          console.error(
+            `Failed to fetch version ${version.version_number}:`,
+            result.error
+          );
           continue; // Skip this version and continue with others
         }
 
         const versionData = result.data;
         let fileBlob;
-        
+
         // Generate file based on format
-        if (format === 'pdf') {
+        if (format === "pdf") {
           const doc = await generateVersionPDF(versionData);
-          fileBlob = doc.output('blob');
-        } else if (format === 'docx') {
+          fileBlob = doc.output("blob");
+        } else if (format === "docx") {
           fileBlob = await generateVersionWord(versionData);
         }
-        
-        // Add to ZIP with descriptive filename
-        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.${fileExtension}`;
-        zip.file(filename, fileBlob);
 
+        // Add to ZIP with descriptive filename
+        const filename = `Version_${versionData.version_number
+          .toString()
+          .padStart(3, "0")}.${fileExtension}`;
+        zip.file(filename, fileBlob);
       } catch (error) {
-        console.error(`Error generating ${formatName} for version ${version.version_number}:`, error);
+        console.error(
+          `Error generating ${formatName} for version ${version.version_number}:`,
+          error
+        );
         // Continue with other versions even if one fails
       }
     }
 
     // Generate ZIP file
-    const zipBlob = await zip.generateAsync({ 
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
     });
 
     // Download ZIP file
-    const downloadLink = document.createElement('a');
+    const downloadLink = document.createElement("a");
     downloadLink.href = URL.createObjectURL(zipBlob);
-    downloadLink.download = `${folderName}_All_Versions_${new Date().toISOString().split('T')[0]}.zip`;
+    downloadLink.download = `${folderName}_All_Versions_${
+      new Date().toISOString().split("T")[0]
+    }.zip`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(downloadLink.href);
 
-    alert(`Successfully downloaded ${downloadProgress.value.current} versions!`);
-
+    alert(
+      `Successfully downloaded ${downloadProgress.value.current} versions!`
+    );
   } catch (error) {
-    console.error('Download all error:', error);
+    console.error("Download all error:", error);
     alert(`An error occurred while creating ZIP file: ${error.message}`);
   } finally {
     isDownloadingAll.value = false;
@@ -1501,15 +1591,16 @@ const deleteVersion = async (versionId) => {
     }
 
     // Remove from selected versions if it's in there
-    selectedVersions.value = selectedVersions.value.filter(v => v.id !== versionId);
+    selectedVersions.value = selectedVersions.value.filter(
+      (v) => v.id !== versionId
+    );
 
     // Reload versions (force refresh to get updated list)
     await loadVersions(true);
     showDeleteVersionConfirm.value = null;
-    alert('Version deleted successfully');
-
+    alert("Version deleted successfully");
   } catch (error) {
-    console.error('Delete error:', error);
+    console.error("Delete error:", error);
     alert(`An error occurred: ${error.message}`);
     showDeleteVersionConfirm.value = null;
   }
@@ -1523,22 +1614,26 @@ const downloadSelectedVersions = async () => {
 
   // For single version, just download it directly
   if (selectedVersions.value.length === 1) {
-    openDownloadFormatModal('single', selectedVersions.value[0].id);
+    openDownloadFormatModal("single", selectedVersions.value[0].id);
     return;
   }
 
   // For multiple versions, create a ZIP
-  if (!confirm(`This will download ${selectedVersions.value.length} versions as a ZIP file. Continue?`)) {
+  if (
+    !confirm(
+      `This will download ${selectedVersions.value.length} versions as a ZIP file. Continue?`
+    )
+  ) {
     return;
   }
 
   // Open format modal for selected versions
-  downloadType.value = 'selected';
+  downloadType.value = "selected";
   showDownloadFormatModal.value = true;
 };
 
 // Confirm and execute the selected versions download
-const downloadSelectedVersionsZip = async (format = 'pdf') => {
+const downloadSelectedVersionsZip = async (format = "pdf") => {
   if (selectedVersions.value.length === 0) {
     return;
   }
@@ -1548,9 +1643,9 @@ const downloadSelectedVersionsZip = async (format = 'pdf') => {
 
   try {
     const zip = new JSZip();
-    const testTitle = test.value?.title || 'Test';
-    const folderName = testTitle.replace(/[^a-z0-9]/gi, '_');
-    const fileExtension = format === 'pdf' ? 'pdf' : 'docx';
+    const testTitle = test.value?.title || "Test";
+    const folderName = testTitle.replace(/[^a-z0-9]/gi, "_");
+    const fileExtension = format === "pdf" ? "pdf" : "docx";
 
     // Fetch and generate files for selected versions
     for (let i = 0; i < selectedVersions.value.length; i++) {
@@ -1562,50 +1657,60 @@ const downloadSelectedVersionsZip = async (format = 'pdf') => {
         const result = await testStore.getVersion(version.id);
 
         if (result.error) {
-          console.error(`Failed to fetch version ${version.versionNumber}:`, result.error);
+          console.error(
+            `Failed to fetch version ${version.versionNumber}:`,
+            result.error
+          );
           continue;
         }
 
         const versionData = result.data;
         let fileBlob;
-        
+
         // Generate file based on format
-        if (format === 'pdf') {
+        if (format === "pdf") {
           const doc = await generateVersionPDF(versionData);
-          fileBlob = doc.output('blob');
-        } else if (format === 'docx') {
+          fileBlob = doc.output("blob");
+        } else if (format === "docx") {
           fileBlob = await generateVersionWord(versionData);
         }
-        
-        // Add to ZIP with descriptive filename
-        const filename = `Version_${versionData.version_number.toString().padStart(3, '0')}.${fileExtension}`;
-        zip.file(filename, fileBlob);
 
+        // Add to ZIP with descriptive filename
+        const filename = `Version_${versionData.version_number
+          .toString()
+          .padStart(3, "0")}.${fileExtension}`;
+        zip.file(filename, fileBlob);
       } catch (error) {
-        console.error(`Error generating file for version ${version.versionNumber}:`, error);
+        console.error(
+          `Error generating file for version ${version.versionNumber}:`,
+          error
+        );
       }
     }
 
     // Generate ZIP file
-    const zipBlob = await zip.generateAsync({ 
-      type: 'blob',
-      compression: 'DEFLATE',
-      compressionOptions: { level: 6 }
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: { level: 6 },
     });
 
     // Download ZIP file
-    const downloadLink = document.createElement('a');
+    const downloadLink = document.createElement("a");
     downloadLink.href = URL.createObjectURL(zipBlob);
-    downloadLink.download = `${folderName}_Selected_${selectedVersions.value.length}_Versions_${new Date().toISOString().split('T')[0]}.zip`;
+    downloadLink.download = `${folderName}_Selected_${
+      selectedVersions.value.length
+    }_Versions_${new Date().toISOString().split("T")[0]}.zip`;
     document.body.appendChild(downloadLink);
     downloadLink.click();
     document.body.removeChild(downloadLink);
     URL.revokeObjectURL(downloadLink.href);
 
-    alert(`Successfully downloaded ${downloadProgress.value.current} versions!`);
-
+    alert(
+      `Successfully downloaded ${downloadProgress.value.current} versions!`
+    );
   } catch (error) {
-    console.error('Download error:', error);
+    console.error("Download error:", error);
     alert(`An error occurred while creating ZIP file: ${error.message}`);
   } finally {
     isDownloadingAll.value = false;
@@ -1620,9 +1725,13 @@ const deleteSelectedVersions = async () => {
   }
 
   const versionCount = selectedVersions.value.length;
-  const versionText = versionCount === 1 ? 'version' : 'versions';
-  
-  if (!confirm(`Are you sure you want to delete ${versionCount} ${versionText}? This action cannot be undone.`)) {
+  const versionText = versionCount === 1 ? "version" : "versions";
+
+  if (
+    !confirm(
+      `Are you sure you want to delete ${versionCount} ${versionText}? This action cannot be undone.`
+    )
+  ) {
     return;
   }
 
@@ -1630,7 +1739,7 @@ const deleteSelectedVersions = async () => {
   deletionProgress.value = {
     current: 0,
     total: versionCount,
-    message: 'Preparing to delete versions...'
+    message: "Preparing to delete versions...",
   };
 
   let successCount = 0;
@@ -1638,16 +1747,21 @@ const deleteSelectedVersions = async () => {
 
   for (let i = 0; i < selectedVersions.value.length; i++) {
     const version = selectedVersions.value[i];
-    
+
     // Update progress
     deletionProgress.value.current = i + 1;
-    deletionProgress.value.message = `Deleting version ${version.version_number} (${i + 1} of ${versionCount})...`;
-    
+    deletionProgress.value.message = `Deleting version ${
+      version.version_number
+    } (${i + 1} of ${versionCount})...`;
+
     try {
       const result = await testStore.deleteVersion(version.id, testId);
-      
+
       if (result.error) {
-        console.error(`Failed to delete version ${version.version_number}:`, result.error);
+        console.error(
+          `Failed to delete version ${version.version_number}:`,
+          result.error
+        );
         failCount++;
       } else {
         successCount++;
@@ -1659,7 +1773,7 @@ const deleteSelectedVersions = async () => {
   }
 
   // Finalize
-  deletionProgress.value.message = 'Refreshing version list...';
+  deletionProgress.value.message = "Refreshing version list...";
 
   // Clear selection
   selectedVersions.value = [];
@@ -1672,24 +1786,32 @@ const deleteSelectedVersions = async () => {
   if (failCount === 0) {
     alert(`✅ Successfully deleted ${successCount} ${versionText}!`);
   } else {
-    alert(`⚠️ Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`);
+    alert(
+      `⚠️ Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`
+    );
   }
 
   isDeletingVersions.value = false;
-  deletionProgress.value = { current: 0, total: 0, message: '' };
+  deletionProgress.value = { current: 0, total: 0, message: "" };
 };
 
 onMounted(async () => {
   errorMessage.value = "";
-  
+
   // Check if we have valid cached data for test, questions, and answers
-  const hasValidTestCache = testStore.$state.singleTestCache?.[testId] && 
-    (Date.now() - testStore.$state.singleTestCache[testId].timestamp < 5 * 60 * 1000);
-  const hasValidQuestionsCache = testStore.$state.questionsCache?.[testId] && 
-    (Date.now() - testStore.$state.questionsCache[testId].timestamp < 5 * 60 * 1000);
-  const hasValidAnswersCache = testStore.$state.answersCache?.[testId] && 
-    (Date.now() - testStore.$state.answersCache[testId].timestamp < 5 * 60 * 1000);
-  
+  const hasValidTestCache =
+    testStore.$state.singleTestCache?.[testId] &&
+    Date.now() - testStore.$state.singleTestCache[testId].timestamp <
+      5 * 60 * 1000;
+  const hasValidQuestionsCache =
+    testStore.$state.questionsCache?.[testId] &&
+    Date.now() - testStore.$state.questionsCache[testId].timestamp <
+      5 * 60 * 1000;
+  const hasValidAnswersCache =
+    testStore.$state.answersCache?.[testId] &&
+    Date.now() - testStore.$state.answersCache[testId].timestamp <
+      5 * 60 * 1000;
+
   // Only show loading if we don't have cached data
   if (!hasValidTestCache || !hasValidQuestionsCache || !hasValidAnswersCache) {
     isLoading.value = true;
@@ -1714,7 +1836,9 @@ onMounted(async () => {
       <div class="bg-white shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="py-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div
+              class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
+            >
               <div class="flex items-center">
                 <button
                   @click="goBackToDashboard"
@@ -1760,7 +1884,9 @@ onMounted(async () => {
                       d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
                     />
                   </svg>
-                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Upload Document</span>
+                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm"
+                    >Upload Document</span
+                  >
                 </button>
                 <button
                   v-if="activeTab === 'questions'"
@@ -1781,9 +1907,14 @@ onMounted(async () => {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Add Question</span>
+                  <span class="text-xs sm:text-sm md:text-sm lg:text-sm"
+                    >Add Question</span
+                  >
                 </button>
-                <div v-if="activeTab === 'versions'" class="flex gap-2 flex-wrap">
+                <div
+                  v-if="activeTab === 'versions'"
+                  class="flex gap-2 flex-wrap"
+                >
                   <button
                     @click="openDownloadFormatModal('all')"
                     :disabled="versions.length === 0 || isDownloadingAll"
@@ -1796,8 +1927,19 @@ onMounted(async () => {
                       fill="none"
                       viewBox="0 0 24 24"
                     >
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      <circle
+                        class="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        stroke-width="4"
+                      ></circle>
+                      <path
+                        class="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
                     </svg>
                     <svg
                       v-else
@@ -1813,8 +1955,16 @@ onMounted(async () => {
                         d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                       />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{ isDownloadingAll ? `Downloading ${downloadProgress.current}/${downloadProgress.total}...` : 'Download All' }}</span>
-                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{ isDownloadingAll ? `${downloadProgress.current}/${downloadProgress.total}` : '' }}</span>
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{
+                      isDownloadingAll
+                        ? `Downloading ${downloadProgress.current}/${downloadProgress.total}...`
+                        : "Download All"
+                    }}</span>
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">{{
+                      isDownloadingAll
+                        ? `${downloadProgress.current}/${downloadProgress.total}`
+                        : ""
+                    }}</span>
                   </button>
                   <button
                     @click="openGenerateVersionModal"
@@ -1835,7 +1985,9 @@ onMounted(async () => {
                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                       />
                     </svg>
-                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Generate Versions</span>
+                    <span class="text-xs sm:text-sm md:text-sm lg:text-sm"
+                      >Generate Versions</span
+                    >
                   </button>
                 </div>
               </div>
@@ -1851,7 +2003,7 @@ onMounted(async () => {
                   activeTab === 'questions'
                     ? 'border-blue-500 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center'
+                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center',
                 ]"
               >
                 <svg
@@ -1867,7 +2019,9 @@ onMounted(async () => {
                     d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Questions({{ questions.length }})</span>
+                <span class="text-xs sm:text-sm md:text-sm lg:text-sm"
+                  >Questions({{ questions.length }})</span
+                >
               </button>
               <button
                 @click="activeTab = 'versions'"
@@ -1875,7 +2029,7 @@ onMounted(async () => {
                   activeTab === 'versions'
                     ? 'border-blue-500 text-blue-700'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
-                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center'
+                  'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center',
                 ]"
               >
                 <svg
@@ -1891,7 +2045,9 @@ onMounted(async () => {
                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                   />
                 </svg>
-                <span class="text-xs sm:text-sm md:text-sm lg:text-sm">Randomized Versions ({{ versions.length }})</span>
+                <span class="text-xs sm:text-sm md:text-sm lg:text-sm"
+                  >Randomized Versions ({{ versions.length }})</span
+                >
               </button>
             </nav>
           </div>
@@ -1988,7 +2144,10 @@ onMounted(async () => {
 
             <!-- Questions List -->
             <!-- Select All and Bulk Actions -->
-            <div v-if="questions.length > 0" class="mb-4 bg-white p-4 rounded-lg shadow">
+            <div
+              v-if="questions.length > 0"
+              class="mb-4 bg-white p-4 rounded-lg shadow"
+            >
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
                   <input
@@ -2002,10 +2161,12 @@ onMounted(async () => {
                     for="select-all-questions"
                     class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
                   >
-                    Select All ({{ questions.length }} question{{ questions.length !== 1 ? 's' : '' }})
+                    Select All ({{ questions.length }} question{{
+                      questions.length !== 1 ? "s" : ""
+                    }})
                   </label>
                 </div>
-                
+
                 <button
                   v-if="selectedQuestions.length > 0"
                   @click="deleteSelectedQuestions"
@@ -2024,12 +2185,21 @@ onMounted(async () => {
                       d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                     />
                   </svg>
-                  Delete {{ selectedQuestions.length }} question{{ selectedQuestions.length > 1 ? 's' : '' }}
+                  Delete {{ selectedQuestions.length }} question{{
+                    selectedQuestions.length > 1 ? "s" : ""
+                  }}
                 </button>
               </div>
-              
-              <div v-if="selectedQuestions.length > 0" class="mt-2 text-xs text-gray-500">
-                {{ selectedQuestions.length }} of {{ questions.length }} question{{ selectedQuestions.length !== 1 ? 's' : '' }} selected
+
+              <div
+                v-if="selectedQuestions.length > 0"
+                class="mt-2 text-xs text-gray-500"
+              >
+                {{ selectedQuestions.length }} of
+                {{ questions.length }} question{{
+                  selectedQuestions.length !== 1 ? "s" : ""
+                }}
+                selected
               </div>
             </div>
 
@@ -2059,9 +2229,12 @@ onMounted(async () => {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">No versions generated</h3>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">
+                No versions generated
+              </h3>
               <p class="mt-1 text-sm text-gray-500">
-                Generate randomized versions of your test using the Fisher-Yates algorithm.
+                Generate randomized versions of your test using the Fisher-Yates
+                algorithm.
               </p>
               <div class="mt-6">
                 <button
@@ -2093,7 +2266,10 @@ onMounted(async () => {
             <!-- Versions List -->
             <div v-else>
               <!-- Select All Checkbox - Only show when at least one version is selected -->
-              <div v-if="selectedVersions.length > 0" class="mb-4 flex items-center">
+              <div
+                v-if="selectedVersions.length > 0"
+                class="mb-4 flex items-center"
+              >
                 <input
                   id="select-all-versions"
                   v-model="selectAll"
@@ -2105,38 +2281,86 @@ onMounted(async () => {
                   for="select-all-versions"
                   class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
                 >
-                  Select All ({{ versions.length }} version{{ versions.length !== 1 ? 's' : '' }})
+                  Select All ({{ versions.length }} version{{
+                    versions.length !== 1 ? "s" : ""
+                  }})
                 </label>
               </div>
 
               <!-- Version Cards Grid -->
               <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              <div
-                v-for="version in versions"
-                :key="version.id"
-                @click="toggleVersionSelection(version)"
-                class="bg-white overflow-hidden shadow rounded-lg transition-all duration-200 cursor-pointer"
-                :class="[
-                  isVersionSelected(version.id)
-                    ? 'ring-3 ring-blue-500 shadow-xl scale-[1.02]'
-                    : 'hover:shadow-lg'
-                ]"
-              >
-                <div class="p-6 flex justify-between">
-                  <!-- Left side: Version info -->
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center justify-between mb-4">
-                      <h3 class="text-lg font-medium text-gray-900">
-                        {{ version.name }}
-                      </h3>
-                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-blue-800">
-                        Randomized
-                      </span>
+                <div
+                  v-for="version in versions"
+                  :key="version.id"
+                  @click="toggleVersionSelection(version)"
+                  class="bg-white overflow-hidden shadow rounded-lg transition-all duration-200 cursor-pointer"
+                  :class="[
+                    isVersionSelected(version.id)
+                      ? 'ring-3 ring-blue-500 shadow-xl scale-[1.02]'
+                      : 'hover:shadow-lg',
+                  ]"
+                >
+                  <div class="p-6 flex justify-between">
+                    <!-- Left side: Version info -->
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">
+                          {{ version.name }}
+                        </h3>
+                        <span
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-blue-800"
+                        >
+                          Randomized
+                        </span>
+                      </div>
+                      <div class="space-y-2 text-sm text-gray-500">
+                        <div class="flex items-center">
+                          <svg
+                            class="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          {{ version.questionCount }} questions
+                        </div>
+                        <div class="flex items-center">
+                          <svg
+                            class="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          {{ new Date(version.createdAt).toLocaleDateString() }}
+                        </div>
+                      </div>
                     </div>
-                    <div class="space-y-2 text-sm text-gray-500">
-                      <div class="flex items-center">
+
+                    <!-- Right side: Action buttons (vertically aligned) -->
+                    <div
+                      v-if="selectedVersions.length === 0"
+                      class="flex flex-col space-y-2 ml-4"
+                    >
+                      <button
+                        @click.stop="openAnswerKey(version)"
+                        class="p-2 bg-gray-100 text-green-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        title="Answer Key"
+                      >
                         <svg
-                          class="w-4 h-4 mr-2"
+                          class="w-5 h-5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -2145,14 +2369,17 @@ onMounted(async () => {
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
                           />
                         </svg>
-                        {{ version.questionCount }} questions
-                      </div>
-                      <div class="flex items-center">
+                      </button>
+                      <button
+                        @click.stop="openPreview(version)"
+                        class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        title="Preview version"
+                      >
                         <svg
-                          class="w-4 h-4 mr-2"
+                          class="w-5 h-5"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -2161,187 +2388,165 @@ onMounted(async () => {
                             stroke-linecap="round"
                             stroke-linejoin="round"
                             stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
                           />
                         </svg>
-                        {{ new Date(version.createdAt).toLocaleDateString() }}
-                      </div>
+                      </button>
+                      <button
+                        @click.stop="
+                          openDownloadFormatModal('single', version.id)
+                        "
+                        class="p-2 bg-gray-100 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        title="Download version"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                          />
+                        </svg>
+                      </button>
+                      <button
+                        @click.stop="confirmDeleteVersion(version.id)"
+                        class="p-2 bg-gray-100 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        title="Delete version"
+                      >
+                        <svg
+                          class="w-5 h-5"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                          />
+                        </svg>
+                      </button>
                     </div>
-                  </div>
-                  
-                  <!-- Right side: Action buttons (vertically aligned) -->
-                  <div v-if="selectedVersions.length === 0" class="flex flex-col space-y-2 ml-4">
-                    <button
-                      @click.stop="openAnswerKey(version)"
-                      class="p-2 bg-gray-100 text-green-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
-                      title="Answer Key"
+
+                    <!-- Show "Selected" badge when THIS card is selected -->
+                    <div
+                      v-else-if="isVersionSelected(version.id)"
+                      class="flex items-center ml-4"
                     >
-                      <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                      <div
+                        class="flex items-center text-blue-600 font-medium text-sm"
                       >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      @click.stop="openPreview(version)"
-                      class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
-                      title="Preview version"
-                    >
-                      <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      @click.stop="openDownloadFormatModal('single', version.id)"
-                      class="p-2 bg-gray-100 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
-                      title="Download version"
-                    >
-                      <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                      </svg>
-                    </button>
-                    <button
-                      @click.stop="confirmDeleteVersion(version.id)"
-                      class="p-2 bg-gray-100 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
-                      title="Delete version"
-                    >
-                      <svg
-                        class="w-5 h-5"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          stroke-width="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  <!-- Show "Selected" badge when THIS card is selected -->
-                  <div v-else-if="isVersionSelected(version.id)" class="flex items-center ml-4">
-                    <div class="flex items-center text-blue-600 font-medium text-sm">
-                      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                      </svg>
-                      Selected
+                        <svg
+                          class="w-5 h-5 mr-2"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                            clip-rule="evenodd"
+                          />
+                        </svg>
+                        Selected
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              </div>
-              </div>
-            </div>
-
-            <!-- Floating Action Buttons (shown when versions are selected) -->
-            <div
-              v-if="selectedVersions.length > 0"
-              class="fixed bottom-8 right-8 flex flex-col space-y-3 z-40 animate-fade-in"
-            >
-              <!-- Download Button (for all selected) -->
-              <button
-                @click.stop="downloadSelectedVersions"
-                class="group flex items-center bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-              >
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-                Download {{ selectedVersions.length }} version{{ selectedVersions.length > 1 ? 's' : '' }}
-              </button>
-              
-              <!-- Delete Button (for all selected) -->
-              <button
-                @click.stop="deleteSelectedVersions"
-                class="group flex items-center bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-              >
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                  />
-                </svg>
-                Delete {{ selectedVersions.length }} version{{ selectedVersions.length > 1 ? 's' : '' }}
-              </button>
-
-              <!-- Cancel/Deselect All Button -->
-              <button
-                @click.stop="selectedVersions = []; selectAll = false"
-                class="flex items-center justify-center bg-gray-600 text-white hover:bg-gray-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
-              >
-                <svg
-                  class="w-5 h-5 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-                Clear Selection
-              </button>
             </div>
           </div>
-        </div>
 
-        <!-- Question Form Modal -->
+          <!-- Floating Action Buttons (shown when versions are selected) -->
+          <div
+            v-if="selectedVersions.length > 0"
+            class="fixed bottom-8 right-8 flex flex-col space-y-3 z-40 animate-fade-in"
+          >
+            <!-- Download Button (for all selected) -->
+            <button
+              @click.stop="downloadSelectedVersions"
+              class="group flex items-center bg-blue-600 text-white hover:bg-blue-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
+              </svg>
+              Download {{ selectedVersions.length }} version{{
+                selectedVersions.length > 1 ? "s" : ""
+              }}
+            </button>
+
+            <!-- Delete Button (for all selected) -->
+            <button
+              @click.stop="deleteSelectedVersions"
+              class="group flex items-center bg-red-600 text-white hover:bg-red-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+              Delete {{ selectedVersions.length }} version{{
+                selectedVersions.length > 1 ? "s" : ""
+              }}
+            </button>
+
+            <!-- Cancel/Deselect All Button -->
+            <button
+              @click.stop="
+                selectedVersions = [];
+                selectAll = false;
+              "
+              class="flex items-center justify-center bg-gray-600 text-white hover:bg-gray-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Question Form Modal -->
       <QuestionForm
         :is-open="showQuestionForm"
         :editing-question="editingQuestion"
@@ -2358,20 +2563,32 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+          data-aos="fade-up"
+          data-aos-delay="300"
+        >
           <!-- Background overlay -->
           <div
-            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
             aria-hidden="true"
             @click="closeUploadModal"
           ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div
+            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+          >
             <div>
-              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+              <div
+                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"
+              >
                 <svg
                   class="h-6 w-6 text-green-600"
                   fill="none"
@@ -2387,31 +2604,47 @@ onMounted(async () => {
                 </svg>
               </div>
               <div class="mt-3 text-center sm:mt-5">
-                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                <h3
+                  class="text-lg leading-6 font-medium text-gray-900"
+                  id="modal-title"
+                >
                   Upload Document
                 </h3>
                 <div class="mt-2 space-y-3">
                   <p class="text-sm text-gray-500">
-                    Upload a PDF or Word document to extract questions automatically.
+                    Upload a PDF or Word document to extract questions
+                    automatically.
                   </p>
-                  
+
                   <!-- Format Instructions -->
-                  <div class="bg-green-50 border border-green-200 rounded-md p-4 text-left">
-                    <p class="text-sm font-semibold text-green-800 mb-2">Required Format:</p>
+                  <div
+                    class="bg-green-50 border border-green-200 rounded-md p-4 text-left"
+                  >
+                    <p class="text-sm font-semibold text-green-800 mb-2">
+                      Required Format:
+                    </p>
                     <div class="space-y-2 text-xs text-green-700">
                       <div>
-                        <p class="font-medium mb-1">Questions must be numbered:</p>
-                        <div class="bg-white rounded px-3 py-2 font-mono text-gray-700">
-                          1. What is the capital of France?<br>
+                        <p class="font-medium mb-1">
+                          Questions must be numbered:
+                        </p>
+                        <div
+                          class="bg-white rounded px-3 py-2 font-mono text-gray-700"
+                        >
+                          1. What is the capital of France?<br />
                           2. What is 2 + 2?
                         </div>
                       </div>
                       <div>
-                        <p class="font-medium mb-1">Answer choices must use letters:</p>
-                        <div class="bg-white rounded px-3 py-2 font-mono text-gray-700">
-                          A. Paris<br>
-                          B. London<br>
-                          C. Berlin<br>
+                        <p class="font-medium mb-1">
+                          Answer choices must use letters:
+                        </p>
+                        <div
+                          class="bg-white rounded px-3 py-2 font-mono text-gray-700"
+                        >
+                          A. Paris<br />
+                          B. London<br />
+                          C. Berlin<br />
                           D. Madrid
                         </div>
                       </div>
@@ -2419,23 +2652,37 @@ onMounted(async () => {
                         <p class="font-semibold">Tips:</p>
                         <ul class="mt-1 space-y-1 list-disc list-inside">
                           <li>Use <strong>1., 2., 3.</strong> for questions</li>
-                          <li>Use <strong>A., B., C., D.</strong> for answers</li>
-                          <li>Images extraction for <strong>Word files only</strong></li>
+                          <li>
+                            Use <strong>A., B., C., D.</strong> for answers
+                          </li>
+                          <li>
+                            Images extraction for
+                            <strong>Word files only</strong>
+                          </li>
                         </ul>
                       </div>
-                      <div class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2">
+                      <div
+                        class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2"
+                      >
                         <p class="text-xs text-yellow-800">
-                          <strong>Note:</strong> PDF image extraction is temporarily unavailable. Please use Word files (.doc, .docx) for documents with images.
+                          <strong>Note:</strong> PDF image extraction is
+                          temporarily unavailable. Please use Word files (.doc,
+                          .docx) for documents with images.
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <!-- File Types -->
-                  <div class="bg-blue-50 border border-blue-200 rounded-md p-3 text-left">
-                    <p class="text-xs font-semibold text-blue-800 mb-1">Supported Files:</p>
+                  <div
+                    class="bg-blue-50 border border-blue-200 rounded-md p-3 text-left"
+                  >
+                    <p class="text-xs font-semibold text-blue-800 mb-1">
+                      Supported Files:
+                    </p>
                     <p class="text-xs text-blue-700">
-                      <strong>PDF</strong> (.pdf) or <strong>Word</strong> (.doc, .docx) - Max 10MB
+                      <strong>PDF</strong> (.pdf) or
+                      <strong>Word</strong> (.doc, .docx) - Max 10MB
                     </p>
                   </div>
                 </div>
@@ -2444,7 +2691,9 @@ onMounted(async () => {
 
             <div class="mt-5">
               <!-- File Upload Area -->
-              <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors">
+              <div
+                class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
+              >
                 <input
                   type="file"
                   @change="handleFileSelect"
@@ -2467,12 +2716,16 @@ onMounted(async () => {
                     />
                   </svg>
                   <div class="mt-2">
-                    <span class="text-sm font-medium text-blue-600 hover:text-blue-500">
+                    <span
+                      class="text-sm font-medium text-blue-600 hover:text-blue-500"
+                    >
                       Click to upload
                     </span>
                     <span class="text-sm text-gray-500"> or drag and drop</span>
                   </div>
-                  <p class="text-xs text-gray-500 mt-1">PDF, DOC, DOCX up to 10MB</p>
+                  <p class="text-xs text-gray-500 mt-1">
+                    PDF, DOC, DOCX up to 10MB
+                  </p>
                 </label>
               </div>
 
@@ -2493,13 +2746,19 @@ onMounted(async () => {
                         d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                    <span class="text-sm text-gray-900">{{ selectedFile.name }}</span>
+                    <span class="text-sm text-gray-900">{{
+                      selectedFile.name
+                    }}</span>
                   </div>
                   <button
                     @click="selectedFile = null"
                     class="text-red-600 hover:text-red-700"
                   >
-                    <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                    <svg
+                      class="h-5 w-5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
                       <path
                         fill-rule="evenodd"
                         d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -2512,7 +2771,10 @@ onMounted(async () => {
 
               <!-- Answer Key Input -->
               <div class="mt-5">
-                <label for="answerKey" class="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  for="answerKey"
+                  class="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Answer Key (Optional)
                   <span class="text-xs font-normal text-gray-500 ml-1">
                     - Paste answer key to automatically set correct answers
@@ -2527,10 +2789,19 @@ onMounted(async () => {
                   :disabled="isUploadingFile"
                 ></textarea>
                 <p class="mt-1 text-xs text-gray-500">
-                  <svg class="inline w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                  <svg
+                    class="inline w-3 h-3 mr-1"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill-rule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                      clip-rule="evenodd"
+                    />
                   </svg>
-                  Format: "1. A" or "1) A" (one per line). Letters A-H supported.
+                  Format: "1. A" or "1) A" (one per line). Letters A-H
+                  supported.
                 </p>
               </div>
             </div>
@@ -2538,8 +2809,12 @@ onMounted(async () => {
             <!-- Upload Progress -->
             <div v-if="isUploadingFile" class="mt-5">
               <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700">Processing...</span>
-                <span class="text-sm font-medium text-gray-700">{{ uploadProgress }}%</span>
+                <span class="text-sm font-medium text-gray-700"
+                  >Processing...</span
+                >
+                <span class="text-sm font-medium text-gray-700"
+                  >{{ uploadProgress }}%</span
+                >
               </div>
               <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div
@@ -2552,7 +2827,9 @@ onMounted(async () => {
               </p>
             </div>
 
-            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
+            >
               <button
                 type="button"
                 @click="handleFileUpload"
@@ -2579,7 +2856,7 @@ onMounted(async () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {{ isUploadingFile ? 'Processing...' : 'Upload & Extract' }}
+                {{ isUploadingFile ? "Processing..." : "Upload & Extract" }}
               </button>
               <button
                 type="button"
@@ -2602,20 +2879,32 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        >
           <!-- Background overlay -->
           <div
-            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
             aria-hidden="true"
             @click="closeDownloadFormatModal"
           ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div
+            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
             <div>
-              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100">
+              <div
+                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100"
+              >
                 <svg
                   class="h-6 w-6 text-blue-600"
                   fill="none"
@@ -2631,14 +2920,23 @@ onMounted(async () => {
                 </svg>
               </div>
               <div class="mt-3 text-center sm:mt-5">
-                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                <h3
+                  class="text-lg leading-6 font-medium text-gray-900"
+                  id="modal-title"
+                >
                   Select Download Format
                 </h3>
                 <div class="mt-2">
                   <p class="text-xs md:text-sm lg:text-sm text-gray-500">
-                    Choose the file format for downloading 
-                    <template v-if="downloadType === 'all'">all versions</template>
-                    <template v-else-if="downloadType === 'selected'">{{ selectedVersions.length }} selected version{{ selectedVersions.length > 1 ? 's' : '' }}</template>
+                    Choose the file format for downloading
+                    <template v-if="downloadType === 'all'"
+                      >all versions</template
+                    >
+                    <template v-else-if="downloadType === 'selected'"
+                      >{{ selectedVersions.length }} selected version{{
+                        selectedVersions.length > 1 ? "s" : ""
+                      }}</template
+                    >
                     <template v-else>this version</template>.
                   </p>
                 </div>
@@ -2646,7 +2944,11 @@ onMounted(async () => {
                   <!-- PDF Option -->
                   <label
                     class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
-                    :class="selectedDownloadFormat === 'pdf' ? 'border-blue-600 ring-2 ring-blue-600' : ''"
+                    :class="
+                      selectedDownloadFormat === 'pdf'
+                        ? 'border-blue-600 ring-2 ring-blue-600'
+                        : ''
+                    "
                   >
                     <input
                       type="radio"
@@ -2657,24 +2959,52 @@ onMounted(async () => {
                     />
                     <div class="flex flex-1 items-center">
                       <div class="flex items-center">
-                        <svg class="h-8 w-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        <svg
+                          class="h-8 w-8 text-red-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                          />
                         </svg>
                         <div class="ml-3 text-left">
-                          <span class="block text-sm font-medium text-gray-900">PDF Format</span>
-                          <span class="block text-xs text-gray-500">Portable Document Format - Universal compatibility</span>
+                          <span class="block text-sm font-medium text-gray-900"
+                            >PDF Format</span
+                          >
+                          <span class="block text-xs text-gray-500"
+                            >Portable Document Format - Universal
+                            compatibility</span
+                          >
                         </div>
                       </div>
                     </div>
-                    <svg v-if="selectedDownloadFormat === 'pdf'" class="h-5 w-5 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    <svg
+                      v-if="selectedDownloadFormat === 'pdf'"
+                      class="h-5 w-5 text-blue-600 shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
                   </label>
 
                   <!-- Word Option -->
                   <label
                     class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
-                    :class="selectedDownloadFormat === 'docx' ? 'border-blue-600 ring-2 ring-blue-600' : ''"
+                    :class="
+                      selectedDownloadFormat === 'docx'
+                        ? 'border-blue-600 ring-2 ring-blue-600'
+                        : ''
+                    "
                   >
                     <input
                       type="radio"
@@ -2685,23 +3015,48 @@ onMounted(async () => {
                     />
                     <div class="flex flex-1 items-center">
                       <div class="flex items-center">
-                        <svg class="h-8 w-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        <svg
+                          class="h-8 w-8 text-blue-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
                         </svg>
                         <div class="ml-3 text-left">
-                          <span class="block text-sm font-medium text-gray-900">Word Format (DOCX)</span>
-                          <span class="block text-xs text-gray-500">Editable document - Microsoft Word compatible</span>
+                          <span class="block text-sm font-medium text-gray-900"
+                            >Word Format (DOCX)</span
+                          >
+                          <span class="block text-xs text-gray-500"
+                            >Editable document - Microsoft Word compatible</span
+                          >
                         </div>
                       </div>
                     </div>
-                    <svg v-if="selectedDownloadFormat === 'docx'" class="h-5 w-5 text-blue-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                    <svg
+                      v-if="selectedDownloadFormat === 'docx'"
+                      class="h-5 w-5 text-blue-600 shrink-0"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                        clip-rule="evenodd"
+                      />
                     </svg>
                   </label>
                 </div>
               </div>
             </div>
-            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
+            >
               <button
                 type="button"
                 @click="confirmDownload"
@@ -2714,10 +3069,21 @@ onMounted(async () => {
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
-                {{ isDownloadingAll ? 'Downloading...' : 'Download' }}
+                {{ isDownloadingAll ? "Downloading..." : "Download" }}
               </button>
               <button
                 type="button"
@@ -2741,23 +3107,40 @@ onMounted(async () => {
         aria-modal="true"
       >
         <div class="flex items-center justify-center min-h-screen p-4">
-          <div class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+          <div
+            class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+          >
             <!-- Header -->
-            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0">
+            <div
+              class="px-6 py-4 border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0"
+            >
               <div>
-                <h3 class="text-md md:text-xl lg:text-xl font-semibold text-white">
+                <h3
+                  class="text-md md:text-xl lg:text-xl font-semibold text-white"
+                >
                   Assign Images to Questions
                 </h3>
                 <p class="text-xs md:text-sm lg:text-sm text-blue-100 mt-1">
-                  Click on an image to assign it to a question. Click again to unassign.
+                  Click on an image to assign it to a question. Click again to
+                  unassign.
                 </p>
               </div>
               <button
                 @click="closeImageAssignmentModal"
                 class="text-white hover:text-gray-200 transition-colors"
               >
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -2766,7 +3149,9 @@ onMounted(async () => {
             <div class="flex-1 overflow-y-auto p-6">
               <!-- Extracted Images -->
               <div class="mb-6">
-                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
+                <h4
+                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+                >
                   Extracted Images ({{ extractedImages.length }})
                 </h4>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2774,7 +3159,14 @@ onMounted(async () => {
                     v-for="(image, idx) in extractedImages"
                     :key="idx"
                     class="border-2 rounded-lg p-2 hover:shadow-md transition-shadow"
-                    :class="(Object.values(imageAssignments).includes(image.url) || Object.values(answerChoiceImageAssignments).includes(image.url)) ? 'border-green-500 bg-green-50' : 'border-gray-300'"
+                    :class="
+                      Object.values(imageAssignments).includes(image.url) ||
+                      Object.values(answerChoiceImageAssignments).includes(
+                        image.url
+                      )
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-gray-300'
+                    "
                   >
                     <img
                       :src="image.url"
@@ -2783,7 +3175,15 @@ onMounted(async () => {
                     />
                     <p class="text-xs text-center mt-1 text-gray-600">
                       Image {{ idx + 1 }}
-                      <span v-if="Object.values(imageAssignments).includes(image.url) || Object.values(answerChoiceImageAssignments).includes(image.url)" class="text-green-600 font-semibold">
+                      <span
+                        v-if="
+                          Object.values(imageAssignments).includes(image.url) ||
+                          Object.values(answerChoiceImageAssignments).includes(
+                            image.url
+                          )
+                        "
+                        class="text-green-600 font-semibold"
+                      >
                         ✓ Assigned
                       </span>
                     </p>
@@ -2792,19 +3192,27 @@ onMounted(async () => {
               </div>
 
               <!-- Tabs -->
-              <div class="mb-6 border-b border-gray-200">
+              <div class="mb-6 border-gray-200">
                 <nav class="-mb-px flex space-x-8">
                   <button
                     @click="imageAssignmentTab = 'questions'"
                     class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
-                    :class="imageAssignmentTab === 'questions' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    :class="
+                      imageAssignmentTab === 'questions'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    "
                   >
                     Questions
                   </button>
                   <button
                     @click="imageAssignmentTab = 'answerChoices'"
                     class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
-                    :class="imageAssignmentTab === 'answerChoices' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    :class="
+                      imageAssignmentTab === 'answerChoices'
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    "
                   >
                     Answer Choices
                   </button>
@@ -2813,7 +3221,9 @@ onMounted(async () => {
 
               <!-- Questions Tab Content -->
               <div v-if="imageAssignmentTab === 'questions'">
-                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
+                <h4
+                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+                >
                   Assign Images to Questions ({{ pendingQuestions.length }})
                 </h4>
                 <div class="space-y-4">
@@ -2825,7 +3235,9 @@ onMounted(async () => {
                     <div class="flex items-start gap-4">
                       <!-- Question Number -->
                       <div class="shrink-0">
-                        <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm">
+                        <span
+                          class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm"
+                        >
                           {{ qIdx + 1 }}
                         </span>
                       </div>
@@ -2833,7 +3245,10 @@ onMounted(async () => {
                       <!-- Question Text -->
                       <div class="flex-1">
                         <p class="text-gray-900 font-medium">
-                          {{ question.question_text.substring(0, 100) }}{{ question.question_text.length > 100 ? '...' : '' }}
+                          {{ question.question_text.substring(0, 100)
+                          }}{{
+                            question.question_text.length > 100 ? "..." : ""
+                          }}
                         </p>
 
                         <!-- Assigned Image Preview -->
@@ -2848,8 +3263,18 @@ onMounted(async () => {
                               @click="clearAssignment(qIdx)"
                               class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
                             >
-                              <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                              <svg
+                                class="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                  stroke-width="2"
+                                  d="M6 18L18 6M6 6l12 12"
+                                />
                               </svg>
                             </button>
                           </div>
@@ -2857,7 +3282,9 @@ onMounted(async () => {
 
                         <!-- Image Selector -->
                         <div class="mt-3">
-                          <label class="block text-sm font-medium text-gray-700 mb-2">
+                          <label
+                            class="block text-sm font-medium text-gray-700 mb-2"
+                          >
                             Select image:
                           </label>
                           <div class="flex flex-wrap gap-2">
@@ -2866,7 +3293,11 @@ onMounted(async () => {
                               :key="imgIdx"
                               @click="assignImageToQuestion(qIdx, image.url)"
                               class="relative border-2 rounded p-1 hover:shadow-md transition-all"
-                              :class="getAssignedImage(qIdx) === image.url ? 'border-green-500 bg-green-50 ring-2 ring-green-500' : 'border-gray-300 hover:border-blue-400'"
+                              :class="
+                                getAssignedImage(qIdx) === image.url
+                                  ? 'border-green-500 bg-green-50 ring-2 ring-green-500'
+                                  : 'border-gray-300 hover:border-blue-400'
+                              "
                             >
                               <img
                                 :src="image.url"
@@ -2877,8 +3308,16 @@ onMounted(async () => {
                                 v-if="getAssignedImage(qIdx) === image.url"
                                 class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
                               >
-                                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                <svg
+                                  class="w-3 h-3"
+                                  fill="currentColor"
+                                  viewBox="0 0 20 20"
+                                >
+                                  <path
+                                    fill-rule="evenodd"
+                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                    clip-rule="evenodd"
+                                  />
                                 </svg>
                               </span>
                             </button>
@@ -2892,7 +3331,9 @@ onMounted(async () => {
 
               <!-- Answer Choices Tab Content -->
               <div v-if="imageAssignmentTab === 'answerChoices'">
-                <h4 class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3">
+                <h4
+                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+                >
                   Assign Images to Answer Choices
                 </h4>
                 <div class="space-y-6">
@@ -2902,12 +3343,17 @@ onMounted(async () => {
                     class="border border-gray-300 rounded-lg p-4 bg-white"
                   >
                     <!-- Question Header -->
-                    <div class="flex items-start gap-3 mb-4 pb-3 border-b border-gray-200">
-                      <span class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm shrink-0">
+                    <div
+                      class="flex items-start gap-3 mb-4 pb-3 border-gray-200"
+                    >
+                      <span
+                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm shrink-0"
+                      >
                         {{ qIdx + 1 }}
                       </span>
                       <p class="text-gray-900 font-medium text-sm">
-                        {{ question.question_text.substring(0, 80) }}{{ question.question_text.length > 80 ? '...' : '' }}
+                        {{ question.question_text.substring(0, 80)
+                        }}{{ question.question_text.length > 80 ? "..." : "" }}
                       </p>
                     </div>
 
@@ -2919,28 +3365,56 @@ onMounted(async () => {
                         class="pl-4"
                       >
                         <div class="flex items-start gap-3">
-                          <span class="text-sm font-semibold text-gray-600 shrink-0 mt-1">
+                          <span
+                            class="text-sm font-semibold text-gray-600 shrink-0 mt-1"
+                          >
                             {{ String.fromCharCode(65 + choiceIdx) }}.
                           </span>
                           <div class="flex-1">
                             <p class="text-sm text-gray-800 mb-2">
-                              {{ typeof choice === 'string' ? choice : choice.text }}
+                              {{
+                                typeof choice === "string"
+                                  ? choice
+                                  : choice.text
+                              }}
                             </p>
 
                             <!-- Assigned Image Preview -->
-                            <div v-if="getAssignedAnswerChoiceImage(qIdx, choiceIdx)" class="mb-2">
+                            <div
+                              v-if="
+                                getAssignedAnswerChoiceImage(qIdx, choiceIdx)
+                              "
+                              class="mb-2"
+                            >
                               <div class="relative inline-block">
                                 <img
-                                  :src="getAssignedAnswerChoiceImage(qIdx, choiceIdx)"
+                                  :src="
+                                    getAssignedAnswerChoiceImage(
+                                      qIdx,
+                                      choiceIdx
+                                    )
+                                  "
                                   alt="Assigned choice image"
                                   class="h-20 w-auto rounded border-2 border-green-500"
                                 />
                                 <button
-                                  @click="clearAnswerChoiceAssignment(qIdx, choiceIdx)"
+                                  @click="
+                                    clearAnswerChoiceAssignment(qIdx, choiceIdx)
+                                  "
                                   class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700"
                                 >
-                                  <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                  <svg
+                                    class="w-2.5 h-2.5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      stroke-linecap="round"
+                                      stroke-linejoin="round"
+                                      stroke-width="2"
+                                      d="M6 18L18 6M6 6l12 12"
+                                    />
                                   </svg>
                                 </button>
                               </div>
@@ -2951,9 +3425,22 @@ onMounted(async () => {
                               <button
                                 v-for="(image, imgIdx) in extractedImages"
                                 :key="imgIdx"
-                                @click="assignImageToAnswerChoice(qIdx, choiceIdx, image.url)"
+                                @click="
+                                  assignImageToAnswerChoice(
+                                    qIdx,
+                                    choiceIdx,
+                                    image.url
+                                  )
+                                "
                                 class="relative border-2 rounded p-1 hover:shadow-md transition-all"
-                                :class="getAssignedAnswerChoiceImage(qIdx, choiceIdx) === image.url ? 'border-green-500 bg-green-50 ring-2 ring-green-500' : 'border-gray-300 hover:border-blue-400'"
+                                :class="
+                                  getAssignedAnswerChoiceImage(
+                                    qIdx,
+                                    choiceIdx
+                                  ) === image.url
+                                    ? 'border-green-500 bg-green-50 ring-2 ring-green-500'
+                                    : 'border-gray-300 hover:border-blue-400'
+                                "
                               >
                                 <img
                                   :src="image.url"
@@ -2961,11 +3448,24 @@ onMounted(async () => {
                                   class="h-14 w-auto rounded"
                                 />
                                 <span
-                                  v-if="getAssignedAnswerChoiceImage(qIdx, choiceIdx) === image.url"
+                                  v-if="
+                                    getAssignedAnswerChoiceImage(
+                                      qIdx,
+                                      choiceIdx
+                                    ) === image.url
+                                  "
                                   class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
                                 >
-                                  <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                  <svg
+                                    class="w-2.5 h-2.5"
+                                    fill="currentColor"
+                                    viewBox="0 0 20 20"
+                                  >
+                                    <path
+                                      fill-rule="evenodd"
+                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                      clip-rule="evenodd"
+                                    />
                                   </svg>
                                 </span>
                               </button>
@@ -2980,10 +3480,16 @@ onMounted(async () => {
             </div>
 
             <!-- Footer -->
-            <div class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0">
+            <div
+              class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0"
+            >
               <div class="text-sm text-gray-600 mb-3 md:mb-0 lg:mb-0">
-                <span class="text-xs sm:font-medium">Questions:</span> {{ Object.keys(imageAssignments).length }}/{{ pendingQuestions.length }} |
-                <span class="text-xs sm:font-medium">Answer Choices:</span> {{ Object.keys(answerChoiceImageAssignments).length }}
+                <span class="text-xs sm:font-medium">Questions:</span>
+                {{ Object.keys(imageAssignments).length }}/{{
+                  pendingQuestions.length
+                }}
+                | <span class="text-xs sm:font-medium">Answer Choices:</span>
+                {{ Object.keys(answerChoiceImageAssignments).length }}
               </div>
               <div class="flex gap-3">
                 <button
@@ -2999,11 +3505,32 @@ onMounted(async () => {
                   :disabled="isUploadingFile"
                   class="px-6 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm lg:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
                 >
-                  <svg v-if="isUploadingFile" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <svg
+                    v-if="isUploadingFile"
+                    class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      class="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      stroke-width="4"
+                    ></circle>
+                    <path
+                      class="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
                   </svg>
-                  {{ isUploadingFile ? `Saving... ${uploadProgress}%` : 'Save All Questions' }}
+                  {{
+                    isUploadingFile
+                      ? `Saving... ${uploadProgress}%`
+                      : "Save All Questions"
+                  }}
                 </button>
               </div>
             </div>
@@ -3019,28 +3546,54 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        >
           <!-- Background overlay - non-clickable -->
-          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          <div
+            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
+            aria-hidden="true"
+          ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+          <div
+            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border border-gray-300"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
             <div>
               <!-- Spinner Icon -->
-              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100">
+              <div
+                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100"
+              >
                 <svg
                   class="animate-spin h-10 w-10 text-blue-600"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
               </div>
-              
+
               <!-- Title -->
               <div class="mt-4 text-center">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -3057,12 +3610,21 @@ onMounted(async () => {
               <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-600 mb-1">
                   <span>Progress</span>
-                  <span>{{ generationProgress.current }} / {{ generationProgress.total }}</span>
+                  <span
+                    >{{ generationProgress.current }} /
+                    {{ generationProgress.total }}</span
+                  >
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                   <div
                     class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{ width: `${(generationProgress.current / generationProgress.total) * 100}%` }"
+                    :style="{
+                      width: `${
+                        (generationProgress.current /
+                          generationProgress.total) *
+                        100
+                      }%`,
+                    }"
                   ></div>
                 </div>
               </div>
@@ -3086,28 +3648,52 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        >
           <!-- Background overlay - non-clickable -->
-          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          <div
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
+            aria-hidden="true"
+          ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+          <div
+            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6"
+          >
             <div>
               <!-- Spinner Icon -->
-              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+              <div
+                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100"
+              >
                 <svg
                   class="animate-spin h-10 w-10 text-red-600"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
               </div>
-              
+
               <!-- Title -->
               <div class="mt-4 text-center">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -3124,12 +3710,21 @@ onMounted(async () => {
               <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-600 mb-1">
                   <span>Progress</span>
-                  <span>{{ questionDeletionProgress.current }} / {{ questionDeletionProgress.total }}</span>
+                  <span
+                    >{{ questionDeletionProgress.current }} /
+                    {{ questionDeletionProgress.total }}</span
+                  >
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                   <div
                     class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{ width: `${(questionDeletionProgress.current / questionDeletionProgress.total) * 100}%` }"
+                    :style="{
+                      width: `${
+                        (questionDeletionProgress.current /
+                          questionDeletionProgress.total) *
+                        100
+                      }%`,
+                    }"
                   ></div>
                 </div>
               </div>
@@ -3153,28 +3748,52 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        >
           <!-- Background overlay - non-clickable -->
-          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          <div
+            class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
+            aria-hidden="true"
+          ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+          <div
+            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6"
+          >
             <div>
               <!-- Spinner Icon -->
-              <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100">
+              <div
+                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100"
+              >
                 <svg
                   class="animate-spin h-10 w-10 text-red-600"
                   xmlns="http://www.w3.org/2000/svg"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
                 </svg>
               </div>
-              
+
               <!-- Title -->
               <div class="mt-4 text-center">
                 <h3 class="text-lg leading-6 font-medium text-gray-900">
@@ -3191,12 +3810,20 @@ onMounted(async () => {
               <div class="mt-4">
                 <div class="flex justify-between text-xs text-gray-600 mb-1">
                   <span>Progress</span>
-                  <span>{{ deletionProgress.current }} / {{ deletionProgress.total }}</span>
+                  <span
+                    >{{ deletionProgress.current }} /
+                    {{ deletionProgress.total }}</span
+                  >
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2.5">
                   <div
                     class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{ width: `${(deletionProgress.current / deletionProgress.total) * 100}%` }"
+                    :style="{
+                      width: `${
+                        (deletionProgress.current / deletionProgress.total) *
+                        100
+                      }%`,
+                    }"
                   ></div>
                 </div>
               </div>
@@ -3220,20 +3847,32 @@ onMounted(async () => {
         role="dialog"
         aria-modal="true"
       >
-        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
+        >
           <!-- Background overlay -->
           <div
-            class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
             aria-hidden="true"
             @click="closeGenerateVersionModal"
           ></div>
 
           <!-- Center modal -->
-          <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+          <span
+            class="hidden sm:inline-block sm:align-middle sm:h-screen"
+            aria-hidden="true"
+            >&#8203;</span
+          >
 
-          <div class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+          <div
+            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
+            data-aos="fade-up"
+            data-aos-delay="300"
+          >
             <div>
-              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100">
+              <div
+                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100"
+              >
                 <svg
                   class="h-6 w-6 text-gray-800"
                   fill="none"
@@ -3249,12 +3888,16 @@ onMounted(async () => {
                 </svg>
               </div>
               <div class="mt-3 text-center sm:mt-5">
-                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
+                <h3
+                  class="text-lg leading-6 font-medium text-gray-900"
+                  id="modal-title"
+                >
                   Generate Randomized Versions
                 </h3>
                 <div class="mt-2">
                   <p class="text-sm text-gray-500">
-                    Create randomized test versions using the Fisher-Yates shuffle algorithm.
+                    Create randomized test versions using the Fisher-Yates
+                    shuffle algorithm.
                   </p>
                 </div>
               </div>
@@ -3263,7 +3906,10 @@ onMounted(async () => {
             <div class="mt-5 space-y-4">
               <!-- Number of Versions -->
               <div>
-                <label for="versionCount" class="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  for="versionCount"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Number of Versions
                 </label>
                 <input
@@ -3281,7 +3927,10 @@ onMounted(async () => {
 
               <!-- Questions per Version -->
               <div>
-                <label for="questionsPerVersion" class="block text-sm font-medium text-gray-700 mb-1">
+                <label
+                  for="questionsPerVersion"
+                  class="block text-sm font-medium text-gray-700 mb-1"
+                >
                   Questions per Version
                 </label>
                 <input
@@ -3316,14 +3965,17 @@ onMounted(async () => {
                   <div class="text-sm text-blue-700">
                     <p class="font-medium">Fisher-Yates Algorithm</p>
                     <p class="mt-1 text-xs">
-                      Each version will have questions in a unique randomized order with equal probability distribution.
+                      Each version will have questions in a unique randomized
+                      order with equal probability distribution.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+            <div
+              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
+            >
               <button
                 type="button"
                 @click="handleGenerateVersions"
@@ -3350,7 +4002,7 @@ onMounted(async () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {{ isGeneratingVersions ? 'Generating...' : 'Generate' }}
+                {{ isGeneratingVersions ? "Generating..." : "Generate" }}
               </button>
               <button
                 type="button"
@@ -3369,11 +4021,13 @@ onMounted(async () => {
     <!-- Delete Version Confirmation Modal -->
     <div
       v-if="showDeleteVersionConfirm"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
       @click="cancelDeleteVersion"
+      data-aos="fade-up"
+      data-aos-delay="300"
     >
       <div
-        class="relative top-20 mx-auto p-5 border w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
+        class="relative top-50 mx-auto p-5 border border-gray-300 w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
         @click.stop
       >
         <div class="mt-3 text-center">
@@ -3394,10 +4048,12 @@ onMounted(async () => {
               />
             </svg>
           </div>
-          <h3 class="text-lg font-medium text-gray-900 mt-2">Delete Test Version</h3>
+          <h3 class="text-lg font-medium text-gray-900 mt-2">
+            Delete Test Version
+          </h3>
           <p class="mt-2 text-sm text-gray-500">
-            Are you sure you want to delete this randomized version? This action cannot be
-            undone.
+            Are you sure you want to delete this randomized version? This action
+            cannot be undone.
           </p>
           <div class="mt-4 flex justify-center space-x-3">
             <button
@@ -3420,31 +4076,47 @@ onMounted(async () => {
     <!-- Preview Version Modal -->
     <div
       v-if="showPreviewModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
       @click="closePreview"
+      data-aos="fade-up"
+      data-aos-delay="300"
     >
       <div
-        class="relative w-full max-w-4xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+        class="relative w-full max-w-4xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
         @click.stop
       >
         <!-- Header (Fixed) -->
-        <div class="flex justify-between items-center px-6 pt-6 pb-4 border-b shrink-0">
+        <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
           <div>
             <h2 class="text-2xl font-bold text-gray-900">
-              {{ previewVersion?.test_title || 'Loading...' }}
+              {{ previewVersion?.test_title || "Loading..." }}
             </h2>
             <p class="text-xs md:text-sm lg:text-sm text-gray-600 mt-1">
-              Version {{ previewVersion?.version_number }} • 
-              {{ previewVersion?.questions?.length || 0 }} questions • 
-              Generated {{ previewVersion ? new Date(previewVersion.created_at).toLocaleDateString() : '' }}
+              Version {{ previewVersion?.version_number }} •
+              {{ previewVersion?.questions?.length || 0 }} questions • Generated
+              {{
+                previewVersion
+                  ? new Date(previewVersion.created_at).toLocaleDateString()
+                  : ""
+              }}
             </p>
           </div>
           <button
             @click="closePreview"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -3452,10 +4124,28 @@ onMounted(async () => {
         <!-- Scrollable Content -->
         <div class="overflow-y-auto flex-1 px-6 py-4">
           <!-- Loading State -->
-          <div v-if="isLoadingPreview" class="flex flex-col items-center justify-center py-12">
-            <svg class="animate-spin h-12 w-12 text-purple-600 mb-4" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <div
+            v-if="isLoadingPreview"
+            class="flex flex-col items-center justify-center py-12"
+          >
+            <svg
+              class="animate-spin h-12 w-12 text-purple-600 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
             <p class="text-gray-600">Loading version preview...</p>
           </div>
@@ -3470,16 +4160,20 @@ onMounted(async () => {
               <!-- Question -->
               <div class="mb-4">
                 <div class="flex items-start">
-                  <span class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3">
+                  <span
+                    class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3"
+                  >
                     {{ question.question_number }}
                   </span>
-                  <p class="text-lg text-gray-900 font-medium">{{ question.question_text }}</p>
+                  <p class="text-lg text-gray-900 font-medium">
+                    {{ question.question_text }}
+                  </p>
                 </div>
-                
+
                 <!-- Question Image -->
                 <div v-if="question.question_image_url" class="ml-11 mt-3">
-                  <img 
-                    :src="question.question_image_url" 
+                  <img
+                    :src="question.question_image_url"
                     alt="Question image"
                     class="max-w-md h-auto rounded-lg border border-gray-300 shadow-sm"
                   />
@@ -3494,16 +4188,18 @@ onMounted(async () => {
                   class="p-3 rounded-md bg-white border border-gray-200"
                 >
                   <div class="flex items-start">
-                    <span class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]">
+                    <span
+                      class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]"
+                    >
                       {{ String.fromCharCode(65 + cIndex) }}.
                     </span>
                     <div class="flex-1">
                       <p class="text-gray-800">{{ choice.text }}</p>
-                      
+
                       <!-- Answer Choice Image -->
                       <div v-if="choice.image_url" class="mt-2">
-                        <img 
-                          :src="choice.image_url" 
+                        <img
+                          :src="choice.image_url"
                           alt="Answer choice image"
                           class="max-w-xs h-auto rounded border border-gray-300"
                         />
@@ -3517,7 +4213,7 @@ onMounted(async () => {
         </div>
 
         <!-- Footer (Fixed) -->
-        <div class="px-6 pt-4 pb-6 border-t flex justify-end shrink-0">
+        <div class="px-6 pt-4 pb-6 flex justify-end shrink-0">
           <button
             @click="closePreview"
             class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
@@ -3531,15 +4227,17 @@ onMounted(async () => {
     <!-- Answer Key Modal -->
     <div
       v-if="showAnswerKeyModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
+      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
       @click="closeAnswerKey"
+      data-aos="fade-up"
+      data-aos-delay="300"
     >
       <div
-        class="relative w-full max-w-2xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+        class="relative w-full max-w-2xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
         @click.stop
       >
         <!-- Header (Fixed) -->
-        <div class="flex justify-between items-center px-6 pt-6 pb-4 border-b shrink-0">
+        <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
           <div>
             <h2 class="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900">
               Answer Key
@@ -3552,8 +4250,18 @@ onMounted(async () => {
             @click="closeAnswerKey"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            <svg
+              class="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
         </div>
@@ -3561,32 +4269,70 @@ onMounted(async () => {
         <!-- Scrollable Content -->
         <div class="overflow-y-auto flex-1 px-6 py-4">
           <!-- Loading State -->
-          <div v-if="isLoadingAnswerKey" class="flex flex-col items-center justify-center py-12">
-            <svg class="animate-spin h-12 w-12 text-green-600 mb-4" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <div
+            v-if="isLoadingAnswerKey"
+            class="flex flex-col items-center justify-center py-12"
+          >
+            <svg
+              class="animate-spin h-12 w-12 text-green-600 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
             </svg>
             <p class="text-gray-600">Loading answer key...</p>
           </div>
 
           <!-- Answer Key Content -->
           <div v-else-if="answerKeyData && answerKeyData.answer_key">
-            <div v-if="answerKeyData.answer_key.length === 0" class="text-center py-8 text-gray-500">
-              <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <div
+              v-if="answerKeyData.answer_key.length === 0"
+              class="text-center py-8 text-gray-500"
+            >
+              <svg
+                class="mx-auto h-12 w-12 text-gray-400 mb-3"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
               <p>No answer key available for this version.</p>
-              <p class="text-sm mt-1">Make sure correct answers are set for the test questions.</p>
+              <p class="text-sm mt-1">
+                Make sure correct answers are set for the test questions.
+              </p>
             </div>
-            
+
             <!-- Answer Key Grid -->
-            <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div
+              v-else
+              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
+            >
               <div
                 v-for="answer in answerKeyData.answer_key"
                 :key="answer.question_number"
                 class="bg-green-50 border border-green-200 rounded-lg p-3 text-center"
               >
-                <div class="text-xl md:text-2xl lg:text-2xl font-bold text-green-700">
+                <div
+                  class="text-xl md:text-2xl lg:text-2xl font-bold text-green-700"
+                >
                   {{ answer.question_number }}.{{ answer.answer }}
                 </div>
               </div>
@@ -3595,7 +4341,7 @@ onMounted(async () => {
         </div>
 
         <!-- Footer (Fixed) -->
-        <div class="px-6 pt-4 pb-6 border-t flex justify-end shrink-0">
+        <div class="px-6 pt-4 pb-6 flex justify-end shrink-0">
           <button
             @click="closeAnswerKey"
             class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"

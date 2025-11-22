@@ -38,7 +38,8 @@ let originalSnapshot = {};
 const handleLogoUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+    if (file.size > 2 * 1024 * 1024) {
+      // 2MB limit
       errorMessage.value = "Logo file size must be less than 2MB";
       return;
     }
@@ -86,7 +87,10 @@ const loadTest = async () => {
       logoFile.value = null;
       logoChanged.value = false;
 
-      originalSnapshot = { ...form.value, header_logo_url: test.header_logo_url };
+      originalSnapshot = {
+        ...form.value,
+        header_logo_url: test.header_logo_url,
+      };
     }
   } catch (err) {
     console.error(err);
@@ -181,12 +185,14 @@ const closeModal = () => {
   <!-- BACKDROP -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-gray-600 bg-opacity-40 z-50 flex items-start justify-center overflow-y-auto"
+    class="fixed inset-0 bg-opacity-90 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto"
     @click="closeModal"
+    data-aos="fade-up"
+    data-aos-delay="300"
   >
     <!-- MODAL CARD -->
     <div
-      class="relative bg-white w-full max-w-xs md:max-w-lg lg:max-w-lg mt-24 p-6 rounded-lg shadow-lg"
+      class="relative bg-white w-full max-w-xs md:max-w-lg lg:max-w-lg mt-24 p-6 rounded-lg shadow-lg border border-gray-300"
       @click.stop
     >
       <!-- HEADER -->
@@ -200,7 +206,9 @@ const closeModal = () => {
       <!-- LOADING -->
       <div v-if="isLoading" class="text-center py-6">
         <div class="flex justify-center items-center space-x-2">
-          <span class="animate-spin h-5 w-5 border-2 border-t-transparent rounded-full"></span>
+          <span
+            class="animate-spin h-5 w-5 border-2 border-t-transparent rounded-full"
+          ></span>
           <span class="text-gray-600">Loading test...</span>
         </div>
       </div>
@@ -226,7 +234,9 @@ const closeModal = () => {
         <div class="space-y-4">
           <!-- Title -->
           <div>
-            <label class="block text-sm font-medium text-gray-700">Test Title *</label>
+            <label class="block text-sm font-medium text-gray-700"
+              >Test Title *</label
+            >
             <input
               v-model="form.title"
               type="text"
@@ -237,7 +247,9 @@ const closeModal = () => {
 
           <!-- Description -->
           <div>
-            <label class="block text-sm font-medium text-gray-700">Description</label>
+            <label class="block text-sm font-medium text-gray-700"
+              >Description</label
+            >
             <textarea
               v-model="form.description"
               rows="3"
@@ -253,8 +265,8 @@ const closeModal = () => {
             </label>
             <div v-if="logoPreview" class="mb-3">
               <div class="relative inline-block">
-                <img 
-                  :src="logoPreview" 
+                <img
+                  :src="logoPreview"
                   alt="Logo preview"
                   class="h-24 w-auto rounded-lg border-2 border-gray-300"
                 />
@@ -264,8 +276,18 @@ const closeModal = () => {
                   :disabled="isSaving || isUploadingLogo"
                   class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
                 >
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
@@ -278,7 +300,8 @@ const closeModal = () => {
               class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             />
             <p class="mt-1 text-xs text-gray-500">
-              PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam documents.
+              PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam
+              documents.
             </p>
           </div>
         </div>
