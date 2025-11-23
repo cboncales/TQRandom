@@ -27,7 +27,7 @@ const refreshTests = () => {
 };
 
 const manageQuestions = (testId) => {
-  router.push({ name: 'question-management', params: { id: testId } });
+  router.push({ name: "question-management", params: { id: testId } });
 };
 
 const confirmDelete = (testId) => {
@@ -53,7 +53,9 @@ const getStatusColor = (status) => {
 <template>
   <div class="bg-white shadow overflow-hidden sm:rounded-md">
     <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">Your Test Questionnaires</h3>
+      <h3 class="text-lg leading-6 font-medium text-gray-900">
+        Your Test Questionnaires
+      </h3>
       <p class="mt-1 max-w-2xl text-sm text-gray-500">
         Manage your test collection and questions
       </p>
@@ -62,10 +64,14 @@ const getStatusColor = (status) => {
     <ul class="divide-y divide-gray-200">
       <li v-for="test in tests" :key="test.id" class="px-4 py-4 sm:px-6">
         <!-- Mobile Layout: Stack vertically -->
-        <div class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between"
+        >
           <!-- Test Info -->
           <div class="flex-1 min-w-0">
-            <div class="flex items-center justify-between sm:justify-start sm:space-x-3">
+            <div
+              class="flex items-center justify-between sm:justify-start sm:space-x-3"
+            >
               <div class="flex-1 min-w-0">
                 <h4 class="text-lg font-medium text-gray-900 truncate">
                   {{ test.title }}
@@ -85,7 +91,9 @@ const getStatusColor = (status) => {
               {{ test.description }}
             </p>
 
-            <div class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4">
+            <div
+              class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4"
+            >
               <span class="flex items-center">
                 <svg
                   class="shrink-0 mr-1.5 h-4 w-4"
@@ -150,8 +158,18 @@ const getStatusColor = (status) => {
               class="p-2 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit test"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                />
               </svg>
             </button>
 
@@ -161,8 +179,18 @@ const getStatusColor = (status) => {
               class="p-2 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete test"
             >
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             </button>
           </div>
@@ -196,11 +224,13 @@ const getStatusColor = (status) => {
   <!-- Delete Confirmation Modal -->
   <div
     v-if="showDeleteConfirm"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
     @click="cancelDelete"
+    data-aos="fade-up"
+    data-aos-delay="300"
   >
     <div
-      class="relative top-20 mx-auto p-5 border w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
+      class="relative top-20 mx-auto p-5 w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white border border-gray-300"
       @click.stop
     >
       <div class="mt-3 text-center">

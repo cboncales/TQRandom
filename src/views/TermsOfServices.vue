@@ -123,18 +123,13 @@ onMounted(() => {
 
           <p class="text-gray-700 leading-relaxed">
             <a
-              href="mailto:joshuatubo4@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=tqrandom18@gmail.com"
+              target="_blank"
               class="text-blue-600 underline"
             >
-              joshuatubo4@gmail.com
+              tqrandom18@gmail.com
             </a>
-            ,
-            <a
-              href="mailto:clarkboncales115@gmail.com"
-              class="text-blue-600 underline"
-            >
-              clarkboncales115@gmail.com
-            </a>
+            .
           </p>
         </div>
       </div>
