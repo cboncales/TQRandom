@@ -95,7 +95,7 @@ const userDisplayName = computed(() => {
 
           <!-- Desktop Navigation -->
           <div class="hidden md:block">
-            <div class="ml-10 flex items-baseline space-x-4">
+            <div class="ml-10 flex items-center space-x-4">
               <button
                 @click="navigateTo('home')"
                 class="text-white hover:text-gray-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
@@ -116,19 +116,17 @@ const userDisplayName = computed(() => {
                 <div class="relative">
                   <button
                     @click="toggleUserDropdown"
-                    class="flex items-center text-white hover:text-gray-400 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+                    class="flex items-center text-white hover:text-gray-400 px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200"
                   >
-                    <svg
-                      class="w-4 h-3 mr-1"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <svg 
+                      class="text-white h-4 w-4" 
+                      viewBox="0 0 256 256" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
                     >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      <path 
+                        d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z" 
+                        fill="currentColor" 
                       />
                     </svg>
                     {{ userDisplayName }}
