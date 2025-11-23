@@ -66,8 +66,8 @@ export const useTutorialStore = defineStore('tutorial', () => {
     },
     {
       id: 'complete',
-      title: 'You\'re All Set!',
-      description: 'You\'re ready to start creating tests. Click "Finish" to close this tutorial. You can access it anytime from the help button.',
+      title: 'Finished Test Management Tutorial!',
+      description: 'You\'ve learned how to create tests. Click "Questions Button" to begin building your question bank or creating randomized tests.',
       target: null,
       position: 'center'
     }

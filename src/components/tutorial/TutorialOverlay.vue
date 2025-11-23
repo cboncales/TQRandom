@@ -343,7 +343,7 @@ onMounted(() => {
               @click="isLastStep ? tutorialStore.completeTutorial() : tutorialStore.nextStep()"
               class="tutorial-btn tutorial-btn-primary"
             >
-              {{ isLastStep ? 'Got it! Start Creating' : 'Next' }} →
+              {{ isLastStep ? 'Got it!' : 'Next' }} →
             </button>
           </div>
         </div>
