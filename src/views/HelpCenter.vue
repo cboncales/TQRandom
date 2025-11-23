@@ -11,7 +11,7 @@ onMounted(() => {
   <AppLayout>
     <section class="py-20 bg-gray-200">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-8 text-center">
           Help Center
         </h1>
 

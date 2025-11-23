@@ -10,7 +10,7 @@ onMounted(() => {
   <AppLayout>
     <section class="py-20 bg-gray-200">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-12 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-12 text-center">
           Contact Us
         </h1>
 
@@ -67,7 +67,7 @@ onMounted(() => {
           data-aos="fade-up"
           data-aos-delay="200"
         >
-          <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">
+          <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">
             Send Us a Message
           </h2>
 

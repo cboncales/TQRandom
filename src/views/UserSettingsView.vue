@@ -191,20 +191,18 @@ const goBack = () => {
             >
               <svg
                 class="w-6 h-6 text-white"
+                viewBox="0 0 256 256"
                 fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"
+                  fill="currentColor"
                 />
               </svg>
             </div>
             <div>
-              <h1 class="text-3xl font-bold text-gray-900">Account Settings</h1>
+              <h1 class="text-3xl font-bold text-gray-800">Account Settings</h1>
               <p class="text-sm text-gray-600">
                 Manage your account information and security
               </p>
@@ -226,20 +224,18 @@ const goBack = () => {
                 >
                   <svg
                     class="w-5 h-5 text-white"
+                    viewBox="0 0 256 256"
                     fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
                   >
                     <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                      d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"
+                      fill="currentColor"
                     />
-                  </svg>
+                 </svg>
                 </div>
                 <div>
-                  <h2 class="text-lg font-semibold text-gray-900">
+                  <h2 class="text-lg font-semibold text-gray-800">
                     Profile Information
                   </h2>
                   <p class="text-sm text-gray-600">
@@ -420,7 +416,7 @@ const goBack = () => {
             >
               <div class="flex items-center">
                 <div
-                  class="h-10 w-10 rounded-lg bg-purple-500 flex items-center justify-center mr-3"
+                  class="h-10 w-10 rounded-lg bg-blue-500 flex items-center justify-center mr-3"
                 >
                   <svg
                     class="w-5 h-5 text-white"
@@ -437,7 +433,7 @@ const goBack = () => {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-lg font-semibold text-gray-900">
+                  <h2 class="text-lg font-semibold text-gray-800">
                     Security Settings
                   </h2>
                   <p class="text-sm text-gray-600">
@@ -476,13 +472,56 @@ const goBack = () => {
                       </svg>
                     </div>
                     <input
-                      type="password"
+                      :type="showPassword ? 'text' : 'password'"
                       id="currentPassword"
                       v-model="currentPassword"
+                      placeholder="Enter your current password"
                       required
                       class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                       :disabled="isUpdatingPassword"
                     />
+                    <button
+                        type="button"
+                        @click="togglePasswordVisibility"
+                        :disabled="isUpdatingPassword"
+                        class="absolute inset-y-0 right-0 pr-3 flex items-center disabled:cursor-not-allowed"
+                        tabindex="-1"
+                      >
+                        <svg
+                          v-if="showPassword"
+                          class="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+                          />
+                        </svg>
+                        <svg
+                          v-else
+                          class="h-5 w-5 text-gray-400 hover:text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
                   </div>
                 </div>
 
@@ -500,6 +539,7 @@ const goBack = () => {
                         :type="showNewPassword ? 'text' : 'password'"
                         id="newPassword"
                         v-model="newPassword"
+                        placeholder="Enter your new password"
                         required
                         class="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
                         :disabled="isUpdatingPassword"
@@ -575,6 +615,7 @@ const goBack = () => {
                       <input
                         :type="showConfirmPassword ? 'text' : 'password'"
                         id="confirmPassword"
+                        placeholder="Confirm your new password"
                         v-model="confirmPassword"
                         required
                         class="w-full px-3 py-2.5 pr-10 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all"
@@ -669,7 +710,7 @@ const goBack = () => {
                   <button
                     type="submit"
                     :disabled="isUpdatingPassword"
-                    class="inline-flex items-center px-6 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
+                    class="inline-flex items-center px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
                   >
                     <svg
                       v-if="isUpdatingPassword"

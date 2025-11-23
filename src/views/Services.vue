@@ -9,7 +9,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
         data-aos="fade-up"
         data-aos-delay="200"
       >
-        <h1 class="text-4xl font-bold text-gray-900 mb-10 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-10 text-center">
           Our Services
         </h1>
 

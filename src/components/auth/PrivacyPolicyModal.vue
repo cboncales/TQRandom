@@ -30,8 +30,7 @@ const emit = defineEmits(["close"]);
 
                 <p class="text-gray-700 leading-relaxed mb-4">
                 This Privacy Notice for
-                <strong>__________________</strong> ("we," "us," or
-                "our"), describes how and why we might access, collect,
+                <strong>TQRandom</strong>, describe how and why we might access, collect,
                 store, use, and/or share ("process") your personal
                 information when you use our services ("Services"),
                 including when you:
