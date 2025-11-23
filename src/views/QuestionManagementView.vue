@@ -2,10 +2,17 @@
 import AppLayout from "@/components/layout/AppLayout.vue";
 import QuestionForm from "@/components/dashboard/QuestionForm.vue";
 import QuestionList from "@/components/dashboard/QuestionList.vue";
+import UploadDocumentModal from "@/components/dashboard/UploadDocumentModal.vue";
+import ImageAssignmentModal from "@/components/dashboard/ImageAssignmentModal.vue";
+import DownloadFormatSelectionModal from "@/components/dashboard/DownloadFormatSelectionModal.vue";
+import ProgressModal from "@/components/dashboard/ProgressModal.vue";
+import PreviewVersionModal from "@/components/dashboard/PreviewVersionModal.vue";
+import AnswerKeyModal from "@/components/dashboard/AnswerKeyModal.vue";
+import GenerateVersionsModal from "@/components/dashboard/GenerateVersionsModal.vue";
+import DeleteVersionConfirmationModal from "@/components/dashboard/DeleteVersionConfirmationModal.vue";
 import { ref, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTestStore } from "@/stores/testStore";
-import { uploadApi } from "@/services/api";
 import { jsPDF } from "jspdf";
 import JSZip from "jszip";
 import {
@@ -68,35 +75,27 @@ const activeTab = ref("questions"); // 'questions' or 'versions'
 // Version management
 const versions = ref([]);
 const showGenerateVersionModal = ref(false);
-const versionCount = ref(1);
-const questionsPerVersion = ref(50);
 const isGeneratingVersions = ref(false);
 const generationProgress = ref({ current: 0, total: 0, message: "" });
 const isLoadingVersions = ref(false);
 const isDownloadingAll = ref(false);
 const downloadProgress = ref({ current: 0, total: 0 });
 const showDownloadFormatModal = ref(false);
-const selectedDownloadFormat = ref("pdf"); // 'pdf' or 'docx'
-const downloadType = ref("all"); // 'all' or 'single'
+const downloadType = ref("all"); // 'all', 'selected', or 'single'
 const downloadingVersionId = ref(null);
 const showDeleteVersionConfirm = ref(null);
+const deleteVersionId = ref(null);
 const isDeletingVersions = ref(false);
 const deletionProgress = ref({ current: 0, total: 0, message: "" });
 const selectedVersions = ref([]); // For multiple version card selections
 const selectAll = ref(false); // For select all checkbox
 const showPreviewModal = ref(false);
-const previewVersion = ref(null);
-const isLoadingPreview = ref(false);
+const previewVersionId = ref(null);
 const showAnswerKeyModal = ref(false);
-const answerKeyData = ref(null);
-const isLoadingAnswerKey = ref(false);
+const answerKeyVersionId = ref(null);
 
 // File upload
 const showUploadModal = ref(false);
-const selectedFile = ref(false);
-const isUploadingFile = ref(false);
-const uploadProgress = ref(0);
-const answerKeyText = ref("");
 
 // Question selection for bulk operations
 const selectedQuestions = ref([]);
@@ -108,9 +107,6 @@ const questionDeletionProgress = ref({ current: 0, total: 0, message: "" });
 const showImageAssignmentModal = ref(false);
 const pendingQuestions = ref([]);
 const extractedImages = ref([]);
-const imageAssignments = ref({}); // { questionIndex: imageUrl }
-const answerChoiceImageAssignments = ref({}); // { `${questionIndex}-${choiceIndex}`: imageUrl }
-const imageAssignmentTab = ref("questions"); // 'questions' or 'answerChoices'
 const savedAnswerKeyMap = ref({}); // Store parsed answer key for later use
 
 const openQuestionForm = () => {
@@ -460,400 +456,38 @@ const goBackToDashboard = () => {
   router.push({ name: "dashboard" });
 };
 
-// UI-only functions (no backend functionality yet)
+
 const openUploadModal = () => {
   showUploadModal.value = true;
-  selectedFile.value = null;
-  answerKeyText.value = "";
 };
 
 const closeUploadModal = () => {
   showUploadModal.value = false;
-  selectedFile.value = null;
-  answerKeyText.value = "";
 };
 
-// Image assignment functions
-const assignImageToQuestion = (questionIndex, imageUrl) => {
-  if (imageAssignments.value[questionIndex] === imageUrl) {
-    // Unassign if clicking the same image
-    delete imageAssignments.value[questionIndex];
-  } else {
-    imageAssignments.value[questionIndex] = imageUrl;
-  }
+// Handle upload complete (no images)
+const handleUploadComplete = async (data) => {
+  await loadQuestions(true);
 };
 
-const getAssignedImage = (questionIndex) => {
-  return imageAssignments.value[questionIndex] || null;
+// Handle images extracted (show image assignment modal)
+const handleImagesExtracted = (data) => {
+  pendingQuestions.value = data.questions;
+  extractedImages.value = data.images;
+  savedAnswerKeyMap.value = data.answerKeyMap;
+  showImageAssignmentModal.value = true;
 };
 
-const clearAssignment = (questionIndex) => {
-  delete imageAssignments.value[questionIndex];
-};
-
-// Answer choice image assignment functions
-const assignImageToAnswerChoice = (questionIndex, choiceIndex, imageUrl) => {
-  const key = `${questionIndex}-${choiceIndex}`;
-  if (answerChoiceImageAssignments.value[key] === imageUrl) {
-    // Unassign if clicking the same image
-    delete answerChoiceImageAssignments.value[key];
-  } else {
-    answerChoiceImageAssignments.value[key] = imageUrl;
-  }
-};
-
-const getAssignedAnswerChoiceImage = (questionIndex, choiceIndex) => {
-  const key = `${questionIndex}-${choiceIndex}`;
-  return answerChoiceImageAssignments.value[key] || null;
-};
-
-const clearAnswerChoiceAssignment = (questionIndex, choiceIndex) => {
-  const key = `${questionIndex}-${choiceIndex}`;
-  delete answerChoiceImageAssignments.value[key];
+// Handle image assignment save complete
+const handleImageAssignmentComplete = async (data) => {
+  await loadQuestions(true);
 };
 
 const closeImageAssignmentModal = () => {
   showImageAssignmentModal.value = false;
   pendingQuestions.value = [];
   extractedImages.value = [];
-  imageAssignments.value = {};
-  answerChoiceImageAssignments.value = {};
-  imageAssignmentTab.value = "questions";
-  savedAnswerKeyMap.value = {}; // Clear saved answer key
-};
-
-const saveQuestionsWithImages = async () => {
-  isUploadingFile.value = true;
-  uploadProgress.value = 0;
-
-  try {
-    // Use the saved answer key map (was parsed before modal opened)
-    const answerKeyMap = savedAnswerKeyMap.value;
-    console.log("Using saved answer key map for assignment:", answerKeyMap);
-
-    let successCount = 0;
-    let failCount = 0;
-    let answerSetCount = 0;
-    const createdQuestions = []; // Store created questions for answer setting phase
-
-    // PHASE 1: Create all questions (0-60% progress)
-    for (let i = 0; i < pendingQuestions.value.length; i++) {
-      uploadProgress.value = Math.round(
-        ((i + 1) / pendingQuestions.value.length) * 60
-      );
-
-      const parsed = pendingQuestions.value[i];
-      const questionNumber = i + 1;
-
-      // Get manually assigned image or use auto-assigned
-      const assignedImageUrl =
-        imageAssignments.value[i] || parsed.question_image?.url || null;
-
-      // Convert answer_choices with manually assigned images
-      const answerChoices = parsed.answer_choices.map((choice, choiceIdx) => {
-        // Check for manually assigned answer choice image
-        const manuallyAssignedImage = getAssignedAnswerChoiceImage(
-          i,
-          choiceIdx
-        );
-
-        return {
-          text: typeof choice === "string" ? choice : choice.text,
-          imageUrl:
-            manuallyAssignedImage ||
-            (typeof choice === "object" ? choice.image?.url : null),
-        };
-      });
-
-      // Create the question with assigned image
-      const createResult = await testStore.createQuestion(
-        testId,
-        parsed.question_text,
-        answerChoices,
-        assignedImageUrl
-      );
-
-      if (createResult.error) {
-        console.error(
-          `Failed to create question ${questionNumber}:`,
-          createResult.error
-        );
-        failCount++;
-      } else {
-        successCount++;
-        createdQuestions.push({
-          questionId: createResult.data.id,
-          questionNumber: questionNumber,
-          correctAnswerLetter: answerKeyMap[questionNumber],
-        });
-      }
-    }
-
-    // PHASE 2: Set correct answers (60-100% progress)
-    if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
-      uploadProgress.value = 65;
-
-      // Fetch all questions once
-      const questionsResult = await testStore.getTestQuestions(testId, true);
-
-      if (questionsResult.data) {
-        for (let i = 0; i < createdQuestions.length; i++) {
-          uploadProgress.value = Math.round(
-            65 + ((i + 1) / createdQuestions.length) * 35
-          );
-
-          const { questionId, questionNumber, correctAnswerLetter } =
-            createdQuestions[i];
-
-          if (correctAnswerLetter) {
-            const createdQuestion = questionsResult.data.find(
-              (q) => q.id === questionId
-            );
-
-            if (createdQuestion && createdQuestion.answer_choices) {
-              const choiceIndex =
-                correctAnswerLetter.charCodeAt(0) - "A".charCodeAt(0);
-              const correctChoice = createdQuestion.answer_choices[choiceIndex];
-
-              if (correctChoice) {
-                const answerResult = await testStore.storeCorrectAnswer(
-                  questionId,
-                  correctChoice.id,
-                  testId
-                );
-                if (!answerResult.error) {
-                  answerSetCount++;
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Close modal and reload
-    closeImageAssignmentModal();
-    await loadQuestions(true);
-
-    // Show summary
-    let message = `Upload complete!\n\n`;
-    message += `Questions created: ${successCount}\n`;
-    if (failCount > 0) message += `Failed: ${failCount}\n`;
-    if (answerSetCount > 0) message += `Correct answers set: ${answerSetCount}`;
-
-    alert(message);
-  } catch (error) {
-    console.error("Error saving questions:", error);
-    alert(`Error: ${error.message}`);
-  } finally {
-    isUploadingFile.value = false;
-    uploadProgress.value = 0;
-  }
-};
-
-const handleFileSelect = (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    selectedFile.value = file;
-  }
-};
-
-/**
- * Parse answer key text into a map of question number to answer letter
- * Format: "1. A" or "1) A" or "1 A"
- */
-const parseAnswerKey = (text) => {
-  const answerMap = {};
-  if (!text || !text.trim()) {
-    return answerMap;
-  }
-
-  const lines = text.split("\n");
-  const pattern = /^(\d+)[\.\):\s]+([A-H])\s*$/i;
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    const match = trimmed.match(pattern);
-    if (match) {
-      const questionNumber = parseInt(match[1]);
-      const answerLetter = match[2].toUpperCase();
-      answerMap[questionNumber] = answerLetter;
-    }
-  }
-
-  return answerMap;
-};
-
-const handleFileUpload = async () => {
-  if (!selectedFile.value) {
-    return;
-  }
-
-  isUploadingFile.value = true;
-  uploadProgress.value = 0;
-
-  try {
-    // Parse answer key if provided
-    const answerKeyMap = parseAnswerKey(answerKeyText.value);
-    console.log("Parsed answer key:", answerKeyMap);
-
-    // Upload and parse the document
-    const result = await uploadApi.uploadDocument(selectedFile.value);
-
-    if (result.error) {
-      alert(`Upload failed: ${result.error}`);
-      isUploadingFile.value = false;
-      return;
-    }
-
-    const parsedQuestions = result.data.data;
-    const stats = result.data.stats;
-    console.log(
-      `Successfully parsed ${parsedQuestions.length} questions from document`
-    );
-    console.log(
-      `Images extracted: ${stats.images_extracted}, uploaded: ${stats.total_images}`
-    );
-
-    // Check if images were extracted
-    if (stats.total_images > 0) {
-      // Store for manual assignment
-      pendingQuestions.value = parsedQuestions;
-      extractedImages.value = result.data.images || [];
-      imageAssignments.value = {};
-
-      // IMPORTANT: Save the answer key map BEFORE closing the modal (which clears answerKeyText)
-      savedAnswerKeyMap.value = answerKeyMap;
-      console.log("Saved answer key map:", savedAnswerKeyMap.value);
-
-      // Initialize assignments from already-assigned images
-      parsedQuestions.forEach((q, idx) => {
-        if (q.question_image?.url) {
-          imageAssignments.value[idx] = q.question_image.url;
-        }
-      });
-
-      // Close upload modal and show image assignment modal
-      closeUploadModal();
-      showImageAssignmentModal.value = true;
-      return;
-    }
-
-    // No images - proceed with normal upload
-    let successCount = 0;
-    let failCount = 0;
-    let answerSetCount = 0;
-    const createdQuestions = []; // Store for answer setting phase
-
-    // PHASE 1: Create all questions (0-60% progress)
-    for (let i = 0; i < parsedQuestions.length; i++) {
-      uploadProgress.value = Math.round(
-        ((i + 1) / parsedQuestions.length) * 60
-      );
-
-      const parsed = parsedQuestions[i];
-      const questionNumber = i + 1;
-
-      // Convert answer_choices array to the format expected by createQuestion
-      const answerChoices = parsed.answer_choices.map((choice) => ({
-        text: typeof choice === "string" ? choice : choice.text,
-        imageUrl: typeof choice === "object" ? choice.image?.url : null,
-      }));
-
-      // Extract question image URL if present
-      const questionImageUrl = parsed.question_image?.url || null;
-
-      // Create the question (with optional image)
-      const createResult = await testStore.createQuestion(
-        testId,
-        parsed.question_text,
-        answerChoices,
-        questionImageUrl
-      );
-
-      if (createResult.error) {
-        console.error(
-          `Failed to create question ${questionNumber}:`,
-          createResult.error
-        );
-        failCount++;
-      } else {
-        successCount++;
-        createdQuestions.push({
-          questionId: createResult.data.id,
-          questionNumber: questionNumber,
-          correctAnswerLetter: answerKeyMap[questionNumber],
-        });
-      }
-    }
-
-    // PHASE 2: Set correct answers (60-100% progress)
-    if (createdQuestions.length > 0 && Object.keys(answerKeyMap).length > 0) {
-      uploadProgress.value = 65;
-
-      // Fetch all questions once
-      const questionsResult = await testStore.getTestQuestions(testId, true);
-
-      if (questionsResult.data) {
-        for (let i = 0; i < createdQuestions.length; i++) {
-          uploadProgress.value = Math.round(
-            65 + ((i + 1) / createdQuestions.length) * 35
-          );
-
-          const { questionId, questionNumber, correctAnswerLetter } =
-            createdQuestions[i];
-
-          if (correctAnswerLetter) {
-            const createdQuestion = questionsResult.data.find(
-              (q) => q.id === questionId
-            );
-
-            if (createdQuestion && createdQuestion.answer_choices) {
-              const choiceIndex =
-                correctAnswerLetter.charCodeAt(0) - "A".charCodeAt(0);
-              const correctChoice = createdQuestion.answer_choices[choiceIndex];
-
-              if (correctChoice) {
-                const answerResult = await testStore.storeCorrectAnswer(
-                  questionId,
-                  correctChoice.id,
-                  testId
-                );
-                if (!answerResult.error) {
-                  answerSetCount++;
-                  console.log(
-                    `Set correct answer for Q${questionNumber}: ${correctAnswerLetter}`
-                  );
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-
-    // Close modal and reload questions (force refresh to show images)
-    closeUploadModal();
-    await loadQuestions(true);
-
-    // Show summary
-    let message = `Upload complete!\n\nSuccessfully added: ${successCount} questions`;
-    if (failCount > 0) {
-      message += `\nFailed: ${failCount} questions`;
-    }
-    if (answerSetCount > 0) {
-      message += `\nCorrect answers set: ${answerSetCount}`;
-    }
-    alert(message);
-  } catch (error) {
-    console.error("Upload error:", error);
-    alert(`An error occurred during upload: ${error.message}`);
-  } finally {
-    isUploadingFile.value = false;
-    uploadProgress.value = 0;
-  }
+  savedAnswerKeyMap.value = {};
 };
 
 const loadVersions = async (forceRefresh = false) => {
@@ -884,51 +518,34 @@ const loadVersions = async (forceRefresh = false) => {
 
 const openGenerateVersionModal = () => {
   showGenerateVersionModal.value = true;
-  versionCount.value = 1;
-  questionsPerVersion.value = questions.value.length;
 };
 
 const closeGenerateVersionModal = () => {
   showGenerateVersionModal.value = false;
 };
 
-const handleGenerateVersions = async () => {
-  if (versionCount.value < 1 || versionCount.value > 100) {
-    alert("Please enter a version count between 1 and 100");
-    return;
-  }
-
-  if (
-    questionsPerVersion.value < 1 ||
-    questionsPerVersion.value > questions.value.length
-  ) {
-    alert(
-      `Please enter questions per version between 1 and ${questions.value.length}`
-    );
-    return;
-  }
-
+const handleGenerateVersions = async ({ versionCount, questionsPerVersion }) => {
   isGeneratingVersions.value = true;
   generationProgress.value = {
     current: 0,
-    total: versionCount.value,
+    total: versionCount,
     message: "Initializing version generation...",
   };
 
   try {
     // Simulate progress updates (since generation happens on backend)
     const progressInterval = setInterval(() => {
-      if (generationProgress.value.current < versionCount.value) {
+      if (generationProgress.value.current < versionCount) {
         generationProgress.value.current++;
-        generationProgress.value.message = `Generating version ${generationProgress.value.current} of ${versionCount.value}...`;
+        generationProgress.value.message = `Generating version ${generationProgress.value.current} of ${versionCount}...`;
       }
     }, 800); // Update progress every 800ms
 
     // Use testStore to generate versions
     const result = await testStore.generateVersions(
       testId,
-      versionCount.value,
-      questionsPerVersion.value
+      versionCount,
+      questionsPerVersion
     );
 
     clearInterval(progressInterval);
@@ -939,7 +556,7 @@ const handleGenerateVersions = async () => {
     }
 
     // Complete progress
-    generationProgress.value.current = versionCount.value;
+    generationProgress.value.current = versionCount;
     generationProgress.value.message = "Finalizing...";
 
     closeGenerateVersionModal();
@@ -949,7 +566,7 @@ const handleGenerateVersions = async () => {
     await loadVersions();
 
     // result.data is the array directly, not nested
-    const count = result.data?.length || versionCount.value;
+    const count = result.data?.length || versionCount;
     alert(
       `Successfully generated ${count} randomized version(s) using Fisher-Yates algorithm!`
     );
@@ -1354,69 +971,31 @@ const updateSelectAllState = () => {
 };
 
 // Preview version
-const openPreview = async (version) => {
-  isLoadingPreview.value = true;
+const openPreview = (version) => {
+  previewVersionId.value = version.id;
   showPreviewModal.value = true;
-  previewVersion.value = null;
-
-  try {
-    const result = await testStore.getVersion(version.id);
-
-    if (result.error) {
-      alert(`Failed to load version: ${result.error}`);
-      showPreviewModal.value = false;
-      return;
-    }
-
-    previewVersion.value = result.data;
-  } catch (error) {
-    console.error("Preview error:", error);
-    alert(`An error occurred: ${error.message}`);
-    showPreviewModal.value = false;
-  } finally {
-    isLoadingPreview.value = false;
-  }
 };
 
 const closePreview = () => {
   showPreviewModal.value = false;
-  previewVersion.value = null;
+  previewVersionId.value = null;
 };
 
 // Answer key functions
-const openAnswerKey = async (version) => {
-  isLoadingAnswerKey.value = true;
+const openAnswerKey = (version) => {
+  answerKeyVersionId.value = version.id;
   showAnswerKeyModal.value = true;
-
-  try {
-    const result = await testStore.getVersionAnswerKey(version.id);
-
-    if (result.error) {
-      alert(`Failed to load answer key: ${result.error}`);
-      showAnswerKeyModal.value = false;
-      return;
-    }
-
-    answerKeyData.value = result.data;
-  } catch (error) {
-    console.error("Answer key error:", error);
-    alert(`An error occurred: ${error.message}`);
-    showAnswerKeyModal.value = false;
-  } finally {
-    isLoadingAnswerKey.value = false;
-  }
 };
 
 const closeAnswerKey = () => {
   showAnswerKeyModal.value = false;
-  answerKeyData.value = null;
+  answerKeyVersionId.value = null;
 };
 
 // Open format selection modal
 const openDownloadFormatModal = (type, versionId = null) => {
   downloadType.value = type;
   downloadingVersionId.value = versionId;
-  selectedDownloadFormat.value = "pdf"; // Default to PDF
   showDownloadFormatModal.value = true;
 };
 
@@ -1426,16 +1005,13 @@ const closeDownloadFormatModal = () => {
   downloadingVersionId.value = null;
 };
 
-const confirmDownload = async () => {
+const handleDownloadConfirm = async (format) => {
   if (downloadType.value === "all") {
-    await downloadAllVersions(selectedDownloadFormat.value);
+    await downloadAllVersions(format);
   } else if (downloadType.value === "selected") {
-    await downloadSelectedVersionsZip(selectedDownloadFormat.value);
+    await downloadSelectedVersionsZip(format);
   } else if (downloadType.value === "single" && downloadingVersionId.value) {
-    await downloadVersion(
-      downloadingVersionId.value,
-      selectedDownloadFormat.value
-    );
+    await downloadVersion(downloadingVersionId.value, format);
   }
   closeDownloadFormatModal();
 };
@@ -1572,21 +1148,23 @@ const downloadAllVersions = async (format = "pdf") => {
 };
 
 const confirmDeleteVersion = (versionId) => {
-  showDeleteVersionConfirm.value = versionId;
+  deleteVersionId.value = versionId;
+  showDeleteVersionConfirm.value = true;
 };
 
 const cancelDeleteVersion = () => {
-  showDeleteVersionConfirm.value = null;
+  showDeleteVersionConfirm.value = false;
+  deleteVersionId.value = null;
 };
 
-const deleteVersion = async (versionId) => {
+const handleDeleteVersionConfirm = async (versionId) => {
   try {
     // Use testStore to delete version
     const result = await testStore.deleteVersion(versionId, testId);
 
     if (result.error) {
       alert(`Failed to delete version: ${result.error}`);
-      showDeleteVersionConfirm.value = null;
+      cancelDeleteVersion();
       return;
     }
 
@@ -1597,12 +1175,12 @@ const deleteVersion = async (versionId) => {
 
     // Reload versions (force refresh to get updated list)
     await loadVersions(true);
-    showDeleteVersionConfirm.value = null;
+    cancelDeleteVersion();
     alert("Version deleted successfully");
   } catch (error) {
     console.error("Delete error:", error);
     alert(`An error occurred: ${error.message}`);
-    showDeleteVersionConfirm.value = null;
+    cancelDeleteVersion();
   }
 };
 
@@ -1784,10 +1362,10 @@ const deleteSelectedVersions = async () => {
 
   // Show result
   if (failCount === 0) {
-    alert(`✅ Successfully deleted ${successCount} ${versionText}!`);
+    alert(`Successfully deleted ${successCount} ${versionText}!`);
   } else {
     alert(
-      `⚠️ Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`
+      `Deleted ${successCount} ${versionText}. Failed to delete ${failCount} ${versionText}.`
     );
   }
 
@@ -2545,8 +2123,9 @@ onMounted(async () => {
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Question Form Modal -->
+    <!-- Question Form Modal -->
       <QuestionForm
         :is-open="showQuestionForm"
         :editing-question="editingQuestion"
@@ -2556,1801 +2135,97 @@ onMounted(async () => {
       />
 
       <!-- Upload Document Modal -->
-      <div
-        v-if="showUploadModal"
-        class="fixed inset-0 z-50 overflow-y-auto"
-        aria-labelledby="modal-title"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-          data-aos="fade-up"
-          data-aos-delay="300"
-        >
-          <!-- Background overlay -->
-          <div
-            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-            @click="closeUploadModal"
-          ></div>
-
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
-
-          <div
-            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
-          >
-            <div>
-              <div
-                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100"
-              >
-                <svg
-                  class="h-6 w-6 text-green-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                  />
-                </svg>
-              </div>
-              <div class="mt-3 text-center sm:mt-5">
-                <h3
-                  class="text-lg leading-6 font-medium text-gray-900"
-                  id="modal-title"
-                >
-                  Upload Document
-                </h3>
-                <div class="mt-2 space-y-3">
-                  <p class="text-sm text-gray-500">
-                    Upload a PDF or Word document to extract questions
-                    automatically.
-                  </p>
-
-                  <!-- Format Instructions -->
-                  <div
-                    class="bg-green-50 border border-green-200 rounded-md p-4 text-left"
-                  >
-                    <p class="text-sm font-semibold text-green-800 mb-2">
-                      Required Format:
-                    </p>
-                    <div class="space-y-2 text-xs text-green-700">
-                      <div>
-                        <p class="font-medium mb-1">
-                          Questions must be numbered:
-                        </p>
-                        <div
-                          class="bg-white rounded px-3 py-2 font-mono text-gray-700"
-                        >
-                          1. What is the capital of France?<br />
-                          2. What is 2 + 2?
-                        </div>
-                      </div>
-                      <div>
-                        <p class="font-medium mb-1">
-                          Answer choices must use letters:
-                        </p>
-                        <div
-                          class="bg-white rounded px-3 py-2 font-mono text-gray-700"
-                        >
-                          A. Paris<br />
-                          B. London<br />
-                          C. Berlin<br />
-                          D. Madrid
-                        </div>
-                      </div>
-                      <div class="bg-green-100 rounded px-3 py-2">
-                        <p class="font-semibold">Tips:</p>
-                        <ul class="mt-1 space-y-1 list-disc list-inside">
-                          <li>Use <strong>1., 2., 3.</strong> for questions</li>
-                          <li>
-                            Use <strong>A., B., C., D.</strong> for answers
-                          </li>
-                          <li>
-                            Images extraction for
-                            <strong>Word files only</strong>
-                          </li>
-                        </ul>
-                      </div>
-                      <div
-                        class="bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2"
-                      >
-                        <p class="text-xs text-yellow-800">
-                          <strong>Note:</strong> PDF image extraction is
-                          temporarily unavailable. Please use Word files (.doc,
-                          .docx) for documents with images.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- File Types -->
-                  <div
-                    class="bg-blue-50 border border-blue-200 rounded-md p-3 text-left"
-                  >
-                    <p class="text-xs font-semibold text-blue-800 mb-1">
-                      Supported Files:
-                    </p>
-                    <p class="text-xs text-blue-700">
-                      <strong>PDF</strong> (.pdf) or
-                      <strong>Word</strong> (.doc, .docx) - Max 10MB
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div class="mt-5">
-              <!-- File Upload Area -->
-              <div
-                class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-gray-400 transition-colors"
-              >
-                <input
-                  type="file"
-                  @change="handleFileSelect"
-                  accept=".pdf,.doc,.docx"
-                  class="hidden"
-                  id="fileInput"
-                />
-                <label for="fileInput" class="cursor-pointer">
-                  <svg
-                    class="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <div class="mt-2">
-                    <span
-                      class="text-sm font-medium text-blue-600 hover:text-blue-500"
-                    >
-                      Click to upload
-                    </span>
-                    <span class="text-sm text-gray-500"> or drag and drop</span>
-                  </div>
-                  <p class="text-xs text-gray-500 mt-1">
-                    PDF, DOC, DOCX up to 10MB
-                  </p>
-                </label>
-              </div>
-
-              <!-- Selected File Display -->
-              <div v-if="selectedFile" class="mt-4 p-3 bg-gray-50 rounded-md">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center">
-                    <svg
-                      class="h-5 w-5 text-gray-400 mr-2"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                    <span class="text-sm text-gray-900">{{
-                      selectedFile.name
-                    }}</span>
-                  </div>
-                  <button
-                    @click="selectedFile = null"
-                    class="text-red-600 hover:text-red-700"
-                  >
-                    <svg
-                      class="h-5 w-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Answer Key Input -->
-              <div class="mt-5">
-                <label
-                  for="answerKey"
-                  class="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Answer Key (Optional)
-                  <span class="text-xs font-normal text-gray-500 ml-1">
-                    - Paste answer key to automatically set correct answers
-                  </span>
-                </label>
-                <textarea
-                  id="answerKey"
-                  v-model="answerKeyText"
-                  rows="6"
-                  placeholder="1. A&#10;2. C&#10;3. A&#10;4. C&#10;5. C&#10;..."
-                  class="block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500 font-mono"
-                  :disabled="isUploadingFile"
-                ></textarea>
-                <p class="mt-1 text-xs text-gray-500">
-                  <svg
-                    class="inline w-3 h-3 mr-1"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fill-rule="evenodd"
-                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                      clip-rule="evenodd"
-                    />
-                  </svg>
-                  Format: "1. A" or "1) A" (one per line). Letters A-H
-                  supported.
-                </p>
-              </div>
-            </div>
-
-            <!-- Upload Progress -->
-            <div v-if="isUploadingFile" class="mt-5">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700"
-                  >Processing...</span
-                >
-                <span class="text-sm font-medium text-gray-700"
-                  >{{ uploadProgress }}%</span
-                >
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2.5">
-                <div
-                  class="bg-green-600 h-2.5 rounded-full transition-all duration-300"
-                  :style="{ width: uploadProgress + '%' }"
-                ></div>
-              </div>
-              <p class="mt-2 text-xs text-gray-500 text-center">
-                Uploading and adding questions to your test...
-              </p>
-            </div>
-
-            <div
-              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
-            >
-              <button
-                type="button"
-                @click="handleFileUpload"
-                :disabled="!selectedFile || isUploadingFile"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <svg
-                  v-if="isUploadingFile"
-                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                {{ isUploadingFile ? "Processing..." : "Upload & Extract" }}
-              </button>
-              <button
-                type="button"
-                @click="closeUploadModal"
-                :disabled="isUploadingFile"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Download Format Selection Modal -->
-      <div
-        v-if="showDownloadFormatModal"
-        class="fixed inset-0 z-50 overflow-y-auto"
-        aria-labelledby="modal-title"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
-          <!-- Background overlay -->
-          <div
-            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-            @click="closeDownloadFormatModal"
-          ></div>
-
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
-
-          <div
-            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
-            data-aos="fade-up"
-            data-aos-delay="300"
-          >
-            <div>
-              <div
-                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-blue-100"
-              >
-                <svg
-                  class="h-6 w-6 text-blue-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                  />
-                </svg>
-              </div>
-              <div class="mt-3 text-center sm:mt-5">
-                <h3
-                  class="text-lg leading-6 font-medium text-gray-900"
-                  id="modal-title"
-                >
-                  Select Download Format
-                </h3>
-                <div class="mt-2">
-                  <p class="text-xs md:text-sm lg:text-sm text-gray-500">
-                    Choose the file format for downloading
-                    <template v-if="downloadType === 'all'"
-                      >all versions</template
-                    >
-                    <template v-else-if="downloadType === 'selected'"
-                      >{{ selectedVersions.length }} selected version{{
-                        selectedVersions.length > 1 ? "s" : ""
-                      }}</template
-                    >
-                    <template v-else>this version</template>.
-                  </p>
-                </div>
-                <div class="mt-6 space-y-3">
-                  <!-- PDF Option -->
-                  <label
-                    class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
-                    :class="
-                      selectedDownloadFormat === 'pdf'
-                        ? 'border-blue-600 ring-2 ring-blue-600'
-                        : ''
-                    "
-                  >
-                    <input
-                      type="radio"
-                      name="download-format"
-                      value="pdf"
-                      v-model="selectedDownloadFormat"
-                      class="sr-only"
-                    />
-                    <div class="flex flex-1 items-center">
-                      <div class="flex items-center">
-                        <svg
-                          class="h-8 w-8 text-red-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <div class="ml-3 text-left">
-                          <span class="block text-sm font-medium text-gray-900"
-                            >PDF Format</span
-                          >
-                          <span class="block text-xs text-gray-500"
-                            >Portable Document Format - Universal
-                            compatibility</span
-                          >
-                        </div>
-                      </div>
-                    </div>
-                    <svg
-                      v-if="selectedDownloadFormat === 'pdf'"
-                      class="h-5 w-5 text-blue-600 shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </label>
-
-                  <!-- Word Option -->
-                  <label
-                    class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
-                    :class="
-                      selectedDownloadFormat === 'docx'
-                        ? 'border-blue-600 ring-2 ring-blue-600'
-                        : ''
-                    "
-                  >
-                    <input
-                      type="radio"
-                      name="download-format"
-                      value="docx"
-                      v-model="selectedDownloadFormat"
-                      class="sr-only"
-                    />
-                    <div class="flex flex-1 items-center">
-                      <div class="flex items-center">
-                        <svg
-                          class="h-8 w-8 text-blue-600"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                          />
-                        </svg>
-                        <div class="ml-3 text-left">
-                          <span class="block text-sm font-medium text-gray-900"
-                            >Word Format (DOCX)</span
-                          >
-                          <span class="block text-xs text-gray-500"
-                            >Editable document - Microsoft Word compatible</span
-                          >
-                        </div>
-                      </div>
-                    </div>
-                    <svg
-                      v-if="selectedDownloadFormat === 'docx'"
-                      class="h-5 w-5 text-blue-600 shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd"
-                      />
-                    </svg>
-                  </label>
-                </div>
-              </div>
-            </div>
-            <div
-              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
-            >
-              <button
-                type="button"
-                @click="confirmDownload"
-                :disabled="isDownloadingAll"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-sm md:text-base lg:text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <svg
-                  v-if="isDownloadingAll"
-                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                {{ isDownloadingAll ? "Downloading..." : "Download" }}
-              </button>
-              <button
-                type="button"
-                @click="closeDownloadFormatModal"
-                :disabled="isDownloadingAll"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UploadDocumentModal
+        :isOpen="showUploadModal"
+        :testId="testId"
+        @close="closeUploadModal"
+        @upload-complete="handleUploadComplete"
+        @images-extracted="handleImagesExtracted"
+      />
 
       <!-- Image Assignment Modal -->
-      <div
-        v-if="showImageAssignmentModal"
-        class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75"
-        aria-labelledby="modal-title"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div class="flex items-center justify-center min-h-screen p-4">
-          <div
-            class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
-          >
-            <!-- Header -->
-            <div
-              class="px-6 py-4 border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0"
-            >
-              <div>
-                <h3
-                  class="text-md md:text-xl lg:text-xl font-semibold text-white"
-                >
-                  Assign Images to Questions
-                </h3>
-                <p class="text-xs md:text-sm lg:text-sm text-blue-100 mt-1">
-                  Click on an image to assign it to a question. Click again to
-                  unassign.
-                </p>
-              </div>
-              <button
-                @click="closeImageAssignmentModal"
-                class="text-white hover:text-gray-200 transition-colors"
-              >
-                <svg
-                  class="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
+      <ImageAssignmentModal
+        :isOpen="showImageAssignmentModal"
+        :testId="testId"
+        :pendingQuestions="pendingQuestions"
+        :extractedImages="extractedImages"
+        :answerKeyMap="savedAnswerKeyMap"
+        @close="closeImageAssignmentModal"
+        @save-complete="handleImageAssignmentComplete"
+      />
 
-            <!-- Content -->
-            <div class="flex-1 overflow-y-auto p-6">
-              <!-- Extracted Images -->
-              <div class="mb-6">
-                <h4
-                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
-                >
-                  Extracted Images ({{ extractedImages.length }})
-                </h4>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div
-                    v-for="(image, idx) in extractedImages"
-                    :key="idx"
-                    class="border-2 rounded-lg p-2 hover:shadow-md transition-shadow"
-                    :class="
-                      Object.values(imageAssignments).includes(image.url) ||
-                      Object.values(answerChoiceImageAssignments).includes(
-                        image.url
-                      )
-                        ? 'border-green-500 bg-green-50'
-                        : 'border-gray-300'
-                    "
-                  >
-                    <img
-                      :src="image.url"
-                      :alt="`Image ${idx + 1}`"
-                      class="w-full h-32 object-contain rounded"
-                    />
-                    <p class="text-xs text-center mt-1 text-gray-600">
-                      Image {{ idx + 1 }}
-                      <span
-                        v-if="
-                          Object.values(imageAssignments).includes(image.url) ||
-                          Object.values(answerChoiceImageAssignments).includes(
-                            image.url
-                          )
-                        "
-                        class="text-green-600 font-semibold"
-                      >
-                        ✓ Assigned
-                      </span>
-                    </p>
-                  </div>
-                </div>
-              </div>
 
-              <!-- Tabs -->
-              <div class="mb-6 border-gray-200">
-                <nav class="-mb-px flex space-x-8">
-                  <button
-                    @click="imageAssignmentTab = 'questions'"
-                    class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
-                    :class="
-                      imageAssignmentTab === 'questions'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    "
-                  >
-                    Questions
-                  </button>
-                  <button
-                    @click="imageAssignmentTab = 'answerChoices'"
-                    class="border-b-2 py-3 px-1 text-sm font-medium transition-colors"
-                    :class="
-                      imageAssignmentTab === 'answerChoices'
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    "
-                  >
-                    Answer Choices
-                  </button>
-                </nav>
-              </div>
+      <!-- Download Format Selection Modal -->
+      <DownloadFormatSelectionModal
+        :isOpen="showDownloadFormatModal"
+        :downloadType="downloadType"
+        :selectedCount="selectedVersions.length"
+        :isDownloading="isDownloadingAll"
+        @close="closeDownloadFormatModal"
+        @confirm="handleDownloadConfirm"
+      />
 
-              <!-- Questions Tab Content -->
-              <div v-if="imageAssignmentTab === 'questions'">
-                <h4
-                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
-                >
-                  Assign Images to Questions ({{ pendingQuestions.length }})
-                </h4>
-                <div class="space-y-4">
-                  <div
-                    v-for="(question, qIdx) in pendingQuestions"
-                    :key="qIdx"
-                    class="border border-gray-300 rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
-                  >
-                    <div class="flex items-start gap-4">
-                      <!-- Question Number -->
-                      <div class="shrink-0">
-                        <span
-                          class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm"
-                        >
-                          {{ qIdx + 1 }}
-                        </span>
-                      </div>
-
-                      <!-- Question Text -->
-                      <div class="flex-1">
-                        <p class="text-gray-900 font-medium">
-                          {{ question.question_text.substring(0, 100)
-                          }}{{
-                            question.question_text.length > 100 ? "..." : ""
-                          }}
-                        </p>
-
-                        <!-- Assigned Image Preview -->
-                        <div v-if="getAssignedImage(qIdx)" class="mt-3">
-                          <div class="relative inline-block">
-                            <img
-                              :src="getAssignedImage(qIdx)"
-                              alt="Assigned image"
-                              class="h-24 w-auto rounded border-2 border-green-500"
-                            />
-                            <button
-                              @click="clearAssignment(qIdx)"
-                              class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
-                            >
-                              <svg
-                                class="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  stroke-linecap="round"
-                                  stroke-linejoin="round"
-                                  stroke-width="2"
-                                  d="M6 18L18 6M6 6l12 12"
-                                />
-                              </svg>
-                            </button>
-                          </div>
-                        </div>
-
-                        <!-- Image Selector -->
-                        <div class="mt-3">
-                          <label
-                            class="block text-sm font-medium text-gray-700 mb-2"
-                          >
-                            Select image:
-                          </label>
-                          <div class="flex flex-wrap gap-2">
-                            <button
-                              v-for="(image, imgIdx) in extractedImages"
-                              :key="imgIdx"
-                              @click="assignImageToQuestion(qIdx, image.url)"
-                              class="relative border-2 rounded p-1 hover:shadow-md transition-all"
-                              :class="
-                                getAssignedImage(qIdx) === image.url
-                                  ? 'border-green-500 bg-green-50 ring-2 ring-green-500'
-                                  : 'border-gray-300 hover:border-blue-400'
-                              "
-                            >
-                              <img
-                                :src="image.url"
-                                :alt="`Image ${imgIdx + 1}`"
-                                class="h-16 w-auto rounded"
-                              />
-                              <span
-                                v-if="getAssignedImage(qIdx) === image.url"
-                                class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
-                              >
-                                <svg
-                                  class="w-3 h-3"
-                                  fill="currentColor"
-                                  viewBox="0 0 20 20"
-                                >
-                                  <path
-                                    fill-rule="evenodd"
-                                    d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                    clip-rule="evenodd"
-                                  />
-                                </svg>
-                              </span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Answer Choices Tab Content -->
-              <div v-if="imageAssignmentTab === 'answerChoices'">
-                <h4
-                  class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
-                >
-                  Assign Images to Answer Choices
-                </h4>
-                <div class="space-y-6">
-                  <div
-                    v-for="(question, qIdx) in pendingQuestions"
-                    :key="qIdx"
-                    class="border border-gray-300 rounded-lg p-4 bg-white"
-                  >
-                    <!-- Question Header -->
-                    <div
-                      class="flex items-start gap-3 mb-4 pb-3 border-gray-200"
-                    >
-                      <span
-                        class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 text-white font-semibold text-sm shrink-0"
-                      >
-                        {{ qIdx + 1 }}
-                      </span>
-                      <p class="text-gray-900 font-medium text-sm">
-                        {{ question.question_text.substring(0, 80)
-                        }}{{ question.question_text.length > 80 ? "..." : "" }}
-                      </p>
-                    </div>
-
-                    <!-- Answer Choices -->
-                    <div class="space-y-3">
-                      <div
-                        v-for="(choice, choiceIdx) in question.answer_choices"
-                        :key="choiceIdx"
-                        class="pl-4"
-                      >
-                        <div class="flex items-start gap-3">
-                          <span
-                            class="text-sm font-semibold text-gray-600 shrink-0 mt-1"
-                          >
-                            {{ String.fromCharCode(65 + choiceIdx) }}.
-                          </span>
-                          <div class="flex-1">
-                            <p class="text-sm text-gray-800 mb-2">
-                              {{
-                                typeof choice === "string"
-                                  ? choice
-                                  : choice.text
-                              }}
-                            </p>
-
-                            <!-- Assigned Image Preview -->
-                            <div
-                              v-if="
-                                getAssignedAnswerChoiceImage(qIdx, choiceIdx)
-                              "
-                              class="mb-2"
-                            >
-                              <div class="relative inline-block">
-                                <img
-                                  :src="
-                                    getAssignedAnswerChoiceImage(
-                                      qIdx,
-                                      choiceIdx
-                                    )
-                                  "
-                                  alt="Assigned choice image"
-                                  class="h-20 w-auto rounded border-2 border-green-500"
-                                />
-                                <button
-                                  @click="
-                                    clearAnswerChoiceAssignment(qIdx, choiceIdx)
-                                  "
-                                  class="absolute -top-1 -right-1 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700"
-                                >
-                                  <svg
-                                    class="w-2.5 h-2.5"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                  >
-                                    <path
-                                      stroke-linecap="round"
-                                      stroke-linejoin="round"
-                                      stroke-width="2"
-                                      d="M6 18L18 6M6 6l12 12"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
-                            </div>
-
-                            <!-- Image Selector -->
-                            <div class="flex flex-wrap gap-2">
-                              <button
-                                v-for="(image, imgIdx) in extractedImages"
-                                :key="imgIdx"
-                                @click="
-                                  assignImageToAnswerChoice(
-                                    qIdx,
-                                    choiceIdx,
-                                    image.url
-                                  )
-                                "
-                                class="relative border-2 rounded p-1 hover:shadow-md transition-all"
-                                :class="
-                                  getAssignedAnswerChoiceImage(
-                                    qIdx,
-                                    choiceIdx
-                                  ) === image.url
-                                    ? 'border-green-500 bg-green-50 ring-2 ring-green-500'
-                                    : 'border-gray-300 hover:border-blue-400'
-                                "
-                              >
-                                <img
-                                  :src="image.url"
-                                  :alt="`Image ${imgIdx + 1}`"
-                                  class="h-14 w-auto rounded"
-                                />
-                                <span
-                                  v-if="
-                                    getAssignedAnswerChoiceImage(
-                                      qIdx,
-                                      choiceIdx
-                                    ) === image.url
-                                  "
-                                  class="absolute -top-1 -right-1 bg-green-500 text-white rounded-full p-0.5"
-                                >
-                                  <svg
-                                    class="w-2.5 h-2.5"
-                                    fill="currentColor"
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path
-                                      fill-rule="evenodd"
-                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                      clip-rule="evenodd"
-                                    />
-                                  </svg>
-                                </span>
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Footer -->
-            <div
-              class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0"
-            >
-              <div class="text-sm text-gray-600 mb-3 md:mb-0 lg:mb-0">
-                <span class="text-xs sm:font-medium">Questions:</span>
-                {{ Object.keys(imageAssignments).length }}/{{
-                  pendingQuestions.length
-                }}
-                | <span class="text-xs sm:font-medium">Answer Choices:</span>
-                {{ Object.keys(answerChoiceImageAssignments).length }}
-              </div>
-              <div class="flex gap-3">
-                <button
-                  type="button"
-                  @click="closeImageAssignmentModal"
-                  class="px-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm lg:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  @click="saveQuestionsWithImages"
-                  :disabled="isUploadingFile"
-                  class="px-6 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm lg:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
-                >
-                  <svg
-                    v-if="isUploadingFile"
-                    class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      class="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      stroke-width="4"
-                    ></circle>
-                    <path
-                      class="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
-                  {{
-                    isUploadingFile
-                      ? `Saving... ${uploadProgress}%`
-                      : "Save All Questions"
-                  }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- Progress Modal for Generation -->
-      <div
-        v-if="isGeneratingVersions && generationProgress.total > 0"
-        class="fixed inset-0 z-60 overflow-y-auto"
-        aria-labelledby="progress-modal"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
-          <!-- Background overlay - non-clickable -->
-          <div
-            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-          ></div>
-
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
-
-          <div
-            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border border-gray-300"
-            data-aos="fade-up"
-            data-aos-delay="300"
-          >
-            <div>
-              <!-- Spinner Icon -->
-              <div
-                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-blue-100"
-              >
-                <svg
-                  class="animate-spin h-10 w-10 text-blue-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-
-              <!-- Title -->
-              <div class="mt-4 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Generating Versions
-                </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-600">
-                    {{ generationProgress.message }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Progress Bar -->
-              <div class="mt-4">
-                <div class="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span
-                    >{{ generationProgress.current }} /
-                    {{ generationProgress.total }}</span
-                  >
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    class="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{
-                      width: `${
-                        (generationProgress.current /
-                          generationProgress.total) *
-                        100
-                      }%`,
-                    }"
-                  ></div>
-                </div>
-              </div>
-
-              <!-- Info text -->
-              <div class="mt-4 text-center">
-                <p class="text-xs text-gray-500">
-                  Please wait while we generate your randomized versions...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProgressModal
+        :isOpen="isGeneratingVersions"
+        title="Generating Versions"
+        :message="generationProgress.message"
+        :current="generationProgress.current"
+        :total="generationProgress.total"
+        type="generation"
+      />
 
       <!-- Progress Modal for Question Deletion -->
-      <div
-        v-if="isDeletingQuestions && questionDeletionProgress.total > 0"
-        class="fixed inset-0 z-60 overflow-y-auto"
-        aria-labelledby="question-deletion-progress-modal"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
-          <!-- Background overlay - non-clickable -->
-          <div
-            class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
-            aria-hidden="true"
-          ></div>
-
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
-
-          <div
-            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6"
-          >
-            <div>
-              <!-- Spinner Icon -->
-              <div
-                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100"
-              >
-                <svg
-                  class="animate-spin h-10 w-10 text-red-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-
-              <!-- Title -->
-              <div class="mt-4 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Deleting Questions
-                </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-600">
-                    {{ questionDeletionProgress.message }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Progress Bar -->
-              <div class="mt-4">
-                <div class="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span
-                    >{{ questionDeletionProgress.current }} /
-                    {{ questionDeletionProgress.total }}</span
-                  >
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{
-                      width: `${
-                        (questionDeletionProgress.current /
-                          questionDeletionProgress.total) *
-                        100
-                      }%`,
-                    }"
-                  ></div>
-                </div>
-              </div>
-
-              <!-- Info text -->
-              <div class="mt-4 text-center">
-                <p class="text-xs text-gray-500">
-                  Please wait while we delete the selected questions...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProgressModal
+        :isOpen="isDeletingQuestions"
+        title="Deleting Questions"
+        :message="questionDeletionProgress.message"
+        :current="questionDeletionProgress.current"
+        :total="questionDeletionProgress.total"
+        type="deletion"
+      />
 
       <!-- Progress Modal for Version Deletion -->
-      <div
-        v-if="isDeletingVersions && deletionProgress.total > 0"
-        class="fixed inset-0 z-60 overflow-y-auto"
-        aria-labelledby="deletion-progress-modal"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
-          <!-- Background overlay - non-clickable -->
-          <div
-            class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity"
-            aria-hidden="true"
-          ></div>
-
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
-
-          <div
-            class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6"
-          >
-            <div>
-              <!-- Spinner Icon -->
-              <div
-                class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100"
-              >
-                <svg
-                  class="animate-spin h-10 w-10 text-red-600"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              </div>
-
-              <!-- Title -->
-              <div class="mt-4 text-center">
-                <h3 class="text-lg leading-6 font-medium text-gray-900">
-                  Deleting Versions
-                </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-600">
-                    {{ deletionProgress.message }}
-                  </p>
-                </div>
-              </div>
-
-              <!-- Progress Bar -->
-              <div class="mt-4">
-                <div class="flex justify-between text-xs text-gray-600 mb-1">
-                  <span>Progress</span>
-                  <span
-                    >{{ deletionProgress.current }} /
-                    {{ deletionProgress.total }}</span
-                  >
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    class="bg-red-600 h-2.5 rounded-full transition-all duration-300"
-                    :style="{
-                      width: `${
-                        (deletionProgress.current / deletionProgress.total) *
-                        100
-                      }%`,
-                    }"
-                  ></div>
-                </div>
-              </div>
-
-              <!-- Info text -->
-              <div class="mt-4 text-center">
-                <p class="text-xs text-gray-500">
-                  Please wait while we delete the selected versions...
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ProgressModal
+        :isOpen="isDeletingVersions"
+        title="Deleting Versions"
+        :message="deletionProgress.message"
+        :current="deletionProgress.current"
+        :total="deletionProgress.total"
+        type="deletion"
+      />
 
       <!-- Generate Versions Modal -->
-      <div
-        v-if="showGenerateVersionModal"
-        class="fixed inset-0 z-50 overflow-y-auto"
-        aria-labelledby="modal-title"
-        role="dialog"
-        aria-modal="true"
-      >
-        <div
-          class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0"
-        >
-          <!-- Background overlay -->
-          <div
-            class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity"
-            aria-hidden="true"
-            @click="closeGenerateVersionModal"
-          ></div>
+      <GenerateVersionsModal
+        :isOpen="showGenerateVersionModal"
+        :totalQuestions="questions.length"
+        :isGenerating="isGeneratingVersions"
+        @close="closeGenerateVersionModal"
+        @generate="handleGenerateVersions"
+      />
 
-          <!-- Center modal -->
-          <span
-            class="hidden sm:inline-block sm:align-middle sm:h-screen"
-            aria-hidden="true"
-            >&#8203;</span
-          >
+      <!-- Delete Version Confirmation Modal -->
+      <DeleteVersionConfirmationModal
+        :isOpen="showDeleteVersionConfirm"
+        :versionId="deleteVersionId"
+        @close="cancelDeleteVersion"
+        @confirm="handleDeleteVersionConfirm"
+      />
 
-          <div
-            class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
-            data-aos="fade-up"
-            data-aos-delay="300"
-          >
-            <div>
-              <div
-                class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-purple-100"
-              >
-                <svg
-                  class="h-6 w-6 text-gray-800"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-              </div>
-              <div class="mt-3 text-center sm:mt-5">
-                <h3
-                  class="text-lg leading-6 font-medium text-gray-900"
-                  id="modal-title"
-                >
-                  Generate Randomized Versions
-                </h3>
-                <div class="mt-2">
-                  <p class="text-sm text-gray-500">
-                    Create randomized test versions using the Fisher-Yates
-                    shuffle algorithm.
-                  </p>
-                </div>
-              </div>
-            </div>
+      <!-- Preview Version Modal -->
+      <PreviewVersionModal
+        :isOpen="showPreviewModal"
+        :versionId="previewVersionId"
+        @close="closePreview"
+      />
 
-            <div class="mt-5 space-y-4">
-              <!-- Number of Versions -->
-              <div>
-                <label
-                  for="versionCount"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Number of Versions
-                </label>
-                <input
-                  type="number"
-                  id="versionCount"
-                  v-model.number="versionCount"
-                  min="1"
-                  max="100"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
-                />
-                <p class="mt-1 text-xs text-gray-500">
-                  Generate between 1 and 100 randomized versions
-                </p>
-              </div>
-
-              <!-- Questions per Version -->
-              <div>
-                <label
-                  for="questionsPerVersion"
-                  class="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Questions per Version
-                </label>
-                <input
-                  type="number"
-                  id="questionsPerVersion"
-                  v-model.number="questionsPerVersion"
-                  :min="1"
-                  :max="questions.length"
-                  class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
-                />
-                <p class="mt-1 text-xs text-gray-500">
-                  Available questions: {{ questions.length }}
-                </p>
-              </div>
-
-              <!-- Algorithm Info -->
-              <div class="bg-blue-50 rounded-md p-4">
-                <div class="flex">
-                  <svg
-                    class="h-5 w-5 text-blue-400 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  <div class="text-sm text-blue-700">
-                    <p class="font-medium">Fisher-Yates Algorithm</p>
-                    <p class="mt-1 text-xs">
-                      Each version will have questions in a unique randomized
-                      order with equal probability distribution.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense"
-            >
-              <button
-                type="button"
-                @click="handleGenerateVersions"
-                :disabled="isGeneratingVersions"
-                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 text-sm md:text-base lg:text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
-              >
-                <svg
-                  v-if="isGeneratingVersions"
-                  class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    class="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    stroke-width="4"
-                  ></circle>
-                  <path
-                    class="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                {{ isGeneratingVersions ? "Generating..." : "Generate" }}
-              </button>
-              <button
-                type="button"
-                @click="closeGenerateVersionModal"
-                :disabled="isGeneratingVersions"
-                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Delete Version Confirmation Modal -->
-    <div
-      v-if="showDeleteVersionConfirm"
-      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
-      @click="cancelDeleteVersion"
-      data-aos="fade-up"
-      data-aos-delay="300"
-    >
-      <div
-        class="relative top-50 mx-auto p-5 border border-gray-300 w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
-        @click.stop
-      >
-        <div class="mt-3 text-center">
-          <div
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
-          >
-            <svg
-              class="h-6 w-6 text-red-600"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"
-              />
-            </svg>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mt-2">
-            Delete Test Version
-          </h3>
-          <p class="mt-2 text-sm text-gray-500">
-            Are you sure you want to delete this randomized version? This action
-            cannot be undone.
-          </p>
-          <div class="mt-4 flex justify-center space-x-3">
-            <button
-              @click="deleteVersion(showDeleteVersionConfirm)"
-              class="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Delete
-            </button>
-            <button
-              @click="cancelDeleteVersion"
-              class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Preview Version Modal -->
-    <div
-      v-if="showPreviewModal"
-      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
-      @click="closePreview"
-      data-aos="fade-up"
-      data-aos-delay="300"
-    >
-      <div
-        class="relative w-full max-w-4xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
-        @click.stop
-      >
-        <!-- Header (Fixed) -->
-        <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
-          <div>
-            <h2 class="text-2xl font-bold text-gray-900">
-              {{ previewVersion?.test_title || "Loading..." }}
-            </h2>
-            <p class="text-xs md:text-sm lg:text-sm text-gray-600 mt-1">
-              Version {{ previewVersion?.version_number }} •
-              {{ previewVersion?.questions?.length || 0 }} questions • Generated
-              {{
-                previewVersion
-                  ? new Date(previewVersion.created_at).toLocaleDateString()
-                  : ""
-              }}
-            </p>
-          </div>
-          <button
-            @click="closePreview"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Scrollable Content -->
-        <div class="overflow-y-auto flex-1 px-6 py-4">
-          <!-- Loading State -->
-          <div
-            v-if="isLoadingPreview"
-            class="flex flex-col items-center justify-center py-12"
-          >
-            <svg
-              class="animate-spin h-12 w-12 text-purple-600 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <p class="text-gray-600">Loading version preview...</p>
-          </div>
-
-          <!-- Content -->
-          <div v-else-if="previewVersion" class="space-y-6">
-            <div
-              v-for="(question, qIndex) in previewVersion.questions"
-              :key="question.question_id"
-              class="bg-gray-50 rounded-lg p-5 border border-gray-200"
-            >
-              <!-- Question -->
-              <div class="mb-4">
-                <div class="flex items-start">
-                  <span
-                    class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3"
-                  >
-                    {{ question.question_number }}
-                  </span>
-                  <p class="text-lg text-gray-900 font-medium">
-                    {{ question.question_text }}
-                  </p>
-                </div>
-
-                <!-- Question Image -->
-                <div v-if="question.question_image_url" class="ml-11 mt-3">
-                  <img
-                    :src="question.question_image_url"
-                    alt="Question image"
-                    class="max-w-md h-auto rounded-lg border border-gray-300 shadow-sm"
-                  />
-                </div>
-              </div>
-
-              <!-- Answer Choices -->
-              <div class="ml-11 space-y-2">
-                <div
-                  v-for="(choice, cIndex) in question.answer_choices"
-                  :key="choice.id"
-                  class="p-3 rounded-md bg-white border border-gray-200"
-                >
-                  <div class="flex items-start">
-                    <span
-                      class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]"
-                    >
-                      {{ String.fromCharCode(65 + cIndex) }}.
-                    </span>
-                    <div class="flex-1">
-                      <p class="text-gray-800">{{ choice.text }}</p>
-
-                      <!-- Answer Choice Image -->
-                      <div v-if="choice.image_url" class="mt-2">
-                        <img
-                          :src="choice.image_url"
-                          alt="Answer choice image"
-                          class="max-w-xs h-auto rounded border border-gray-300"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer (Fixed) -->
-        <div class="px-6 pt-4 pb-6 flex justify-end shrink-0">
-          <button
-            @click="closePreview"
-            class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Answer Key Modal -->
-    <div
-      v-if="showAnswerKeyModal"
-      class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-hidden h-full w-full z-50 flex items-center justify-center p-4"
-      @click="closeAnswerKey"
-      data-aos="fade-up"
-      data-aos-delay="300"
-    >
-      <div
-        class="relative w-full max-w-2xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
-        @click.stop
-      >
-        <!-- Header (Fixed) -->
-        <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
-          <div>
-            <h2 class="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900">
-              Answer Key
-            </h2>
-            <p v-if="answerKeyData" class="text-sm text-gray-600 mt-1">
-              Version {{ answerKeyData.version_number }}
-            </p>
-          </div>
-          <button
-            @click="closeAnswerKey"
-            class="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <svg
-              class="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
-        </div>
-
-        <!-- Scrollable Content -->
-        <div class="overflow-y-auto flex-1 px-6 py-4">
-          <!-- Loading State -->
-          <div
-            v-if="isLoadingAnswerKey"
-            class="flex flex-col items-center justify-center py-12"
-          >
-            <svg
-              class="animate-spin h-12 w-12 text-green-600 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                class="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                stroke-width="4"
-              ></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            <p class="text-gray-600">Loading answer key...</p>
-          </div>
-
-          <!-- Answer Key Content -->
-          <div v-else-if="answerKeyData && answerKeyData.answer_key">
-            <div
-              v-if="answerKeyData.answer_key.length === 0"
-              class="text-center py-8 text-gray-500"
-            >
-              <svg
-                class="mx-auto h-12 w-12 text-gray-400 mb-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-              <p>No answer key available for this version.</p>
-              <p class="text-sm mt-1">
-                Make sure correct answers are set for the test questions.
-              </p>
-            </div>
-
-            <!-- Answer Key Grid -->
-            <div
-              v-else
-              class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-            >
-              <div
-                v-for="answer in answerKeyData.answer_key"
-                :key="answer.question_number"
-                class="bg-green-50 border border-green-200 rounded-lg p-3 text-center"
-              >
-                <div
-                  class="text-xl md:text-2xl lg:text-2xl font-bold text-green-700"
-                >
-                  {{ answer.question_number }}.{{ answer.answer }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Footer (Fixed) -->
-        <div class="px-6 pt-4 pb-6 flex justify-end shrink-0">
-          <button
-            @click="closeAnswerKey"
-            class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    </div>
+      <!-- Answer Key Modal -->
+      <AnswerKeyModal
+        :isOpen="showAnswerKeyModal"
+        :versionId="answerKeyVersionId"
+        @close="closeAnswerKey"
+      />
   </AppLayout>
 </template>
 

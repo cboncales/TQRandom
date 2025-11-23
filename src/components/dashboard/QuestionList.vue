@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed } from "vue";
+import DeleteConfirmationModal from "./DeleteConfirmationModal.vue";
 
 const props = defineProps({
   questions: {
@@ -15,22 +16,25 @@ const props = defineProps({
 const emit = defineEmits(["edit-question", "delete-question", "toggle-selection"]);
 
 const showDeleteConfirm = ref(null);
+const deleteQuestionId = ref(null);
 
 const editQuestion = (question) => {
   emit("edit-question", question);
 };
 
 const confirmDelete = (questionId) => {
-  showDeleteConfirm.value = questionId;
+  deleteQuestionId.value = questionId;
+  showDeleteConfirm.value = true;
 };
 
-const deleteQuestion = (questionId) => {
+const handleDeleteConfirm = (questionId) => {
   emit("delete-question", questionId);
-  showDeleteConfirm.value = null;
+  cancelDelete();
 };
 
 const cancelDelete = () => {
-  showDeleteConfirm.value = null;
+  showDeleteConfirm.value = false;
+  deleteQuestionId.value = null;
 };
 
 const getCorrectAnswers = (options) => {
@@ -224,55 +228,14 @@ const toggleSelection = (question) => {
   </div>
 
   <!-- Delete Confirmation Modal -->
-  <div
-    v-if="showDeleteConfirm"
-    class="fixed inset-0 bg-gray-transparent bg-opacity-50 overflow-y-auto h-full w-full z-50"
-    @click="cancelDelete"
-  >
-    <div
-      class="relative top-20 mx-auto p-4 sm:p-5 border border-gray-300 w-11/12 max-w-sm sm:max-w-md shadow-lg rounded-md bg-white"
-      @click.stop
-    >
-      <div class="mt-3 text-center">
-        <div
-          class="mx-auto flex items-center justify-center h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-red-100"
-        >
-          <svg
-            class="h-5 w-5 sm:h-6 sm:w-6 text-red-600"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.084 16.5c-.77.833.192 2.5 1.732 2.5z"
-            />
-          </svg>
-        </div>
-        <h3 class="text-base sm:text-lg font-medium text-gray-900 mt-2">Delete Question</h3>
-        <p class="mt-2 text-xs sm:text-sm text-gray-500">
-          Are you sure you want to delete this question? This action cannot be
-          undone.
-        </p>
-        <div class="mt-4 flex justify-center gap-2 sm:gap-3">
-          <button
-            @click="deleteQuestion(showDeleteConfirm)"
-            class="bg-red-600 text-white hover:bg-red-700 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium"
-          >
-            Delete
-          </button>
-          <button
-            @click="cancelDelete"
-            class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm font-medium"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <DeleteConfirmationModal
+    :isOpen="showDeleteConfirm"
+    :itemId="deleteQuestionId"
+    title="Delete Question"
+    message="Are you sure you want to delete this question? This action cannot be undone."
+    @close="cancelDelete"
+    @confirm="handleDeleteConfirm"
+  />
 </template>
 
 <style scoped>
