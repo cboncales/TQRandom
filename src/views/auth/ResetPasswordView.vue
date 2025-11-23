@@ -193,8 +193,7 @@ const handleResetPassword = async () => {
                     type="button"
                     @click="togglePasswordVisibility"
                     :disabled="isLoading"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center disabled:cursor-not-allowed"
-                    tabindex="-1"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center disabled:cursor-not-allowed z-10"
                   >
                     <svg
                       v-if="showPassword"
@@ -257,8 +256,7 @@ const handleResetPassword = async () => {
                     type="button"
                     @click="toggleConfirmPasswordVisibility"
                     :disabled="isLoading"
-                    class="absolute inset-y-0 right-0 pr-3 flex items-center disabled:cursor-not-allowed"
-                    tabindex="-1"
+                    class="absolute inset-y-0 right-0 pr-3 flex items-center disabled:cursor-not-allowed z-10"
                   >
                     <svg
                       v-if="showConfirmPassword"
