@@ -26,7 +26,8 @@ const errorMessage = ref("");
 const handleLogoUpload = (event) => {
   const file = event.target.files[0];
   if (file) {
-    if (file.size > 2 * 1024 * 1024) { // 2MB limit
+    if (file.size > 2 * 1024 * 1024) {
+      // 2MB limit
       errorMessage.value = "Logo file size must be less than 2MB";
       return;
     }
@@ -56,7 +57,7 @@ const handleSubmit = async () => {
 
   try {
     let logoUrl = null;
-    
+
     // Upload logo if provided
     if (logoFile.value) {
       isUploadingLogo.value = true;
@@ -69,7 +70,7 @@ const handleSubmit = async () => {
     }
 
     const result = await testStore.createTest(
-      title.value, 
+      title.value,
       description.value.trim(),
       logoUrl
     );
@@ -84,7 +85,8 @@ const handleSubmit = async () => {
       resetForm();
     }
   } catch (error) {
-    errorMessage.value = error.message || "An unexpected error occurred. Please try again.";
+    errorMessage.value =
+      error.message || "An unexpected error occurred. Please try again.";
     console.error("Create test error:", error);
   } finally {
     isLoading.value = false;
@@ -110,12 +112,14 @@ const closeModal = () => {
   <!-- Modal backdrop -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+    class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-y-auto h-full w-full z-50"
     @click="closeModal"
+    data-aos="fade-up"
+    data-aos-delay="300"
   >
     <!-- Modal content -->
     <div
-      class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white"
+      class="relative top-20 mx-auto p-5 border border-gray-300 w-full max-w-md shadow-lg rounded-md bg-white"
       @click.stop
     >
       <!-- Close button -->
@@ -212,8 +216,8 @@ const closeModal = () => {
           </label>
           <div v-if="logoPreview" class="mb-3">
             <div class="relative inline-block">
-              <img 
-                :src="logoPreview" 
+              <img
+                :src="logoPreview"
                 alt="Logo preview"
                 class="h-24 w-auto rounded-lg border-2 border-gray-300"
               />
@@ -223,8 +227,18 @@ const closeModal = () => {
                 :disabled="isLoading || isUploadingLogo"
                 class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -237,7 +251,8 @@ const closeModal = () => {
             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <p class="mt-1 text-xs text-gray-500">
-            PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam documents.
+            PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam
+            documents.
           </p>
         </div>
 
@@ -256,8 +271,7 @@ const closeModal = () => {
             class="bg-blue-600 text-white hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
             :disabled="!title.trim() || isLoading"
             :class="{
-              'opacity-50 cursor-not-allowed':
-                !title.trim() || isLoading,
+              'opacity-50 cursor-not-allowed': !title.trim() || isLoading,
             }"
           >
             <span v-if="isLoading" class="w-4 h-4 mr-2 animate-spin">

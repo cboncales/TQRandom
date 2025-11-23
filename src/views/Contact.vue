@@ -1,14 +1,15 @@
 <script setup>
 import AppLayout from "@/components/layout/AppLayout.vue";
+import { onMounted } from "vue";
+
+onMounted(() => {
+  window.scrollTo(0, 0);
+});
 </script>
 <template>
   <AppLayout>
     <section class="py-20 bg-gray-200">
-      <div
-        class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8"
-        data-aos="fade-up"
-        data-aos-delay="200"
-      >
+      <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <h1 class="text-4xl font-bold text-gray-900 mb-12 text-center">
           Contact Us
         </h1>
@@ -70,13 +71,33 @@ import AppLayout from "@/components/layout/AppLayout.vue";
             Send Us a Message
           </h2>
 
-          <form class="space-y-6 max-w-3xl mx-auto">
+          <form
+            action="https://api.web3forms.com/submit"
+            method="POST"
+            class="space-y-6 max-w-3xl mx-auto"
+          >
             <div>
               <label class="block text-gray-700 font-medium mb-1"
                 >Your Name</label
               >
+
+              <!--Access key in localhost-->
+              <input
+                type="hidden"
+                name="access_key"
+                value="38a77f8e-7add-4dae-b90c-b25cc8724694"
+              />
+
+              <!--Access key in https://tq-random.vercel.app/contact
+              <input
+                type="hidden"
+                name="access_key"
+                value="5c15cf8e-50a4-438b-9af5-30c32af0c2b0"
+              />-->
+
               <input
                 type="text"
+                name="name"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your name"
               />
@@ -88,6 +109,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
               >
               <input
                 type="email"
+                name="email"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your email"
               />
@@ -99,6 +121,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
               >
               <textarea
                 rows="5"
+                name="message"
                 class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Write your message here"
               ></textarea>

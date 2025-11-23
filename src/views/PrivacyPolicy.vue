@@ -29,10 +29,10 @@ onMounted(() => {
           </p>
 
           <p class="text-gray-700 leading-relaxed mb-4">
-            This Privacy Notice for <strong>__________________</strong> ("we,"
-            "us," or "our"), describes how and why we might access, collect,
-            store, use, and/or share ("process") your personal information when
-            you use our services ("Services"), including when you:
+            This Privacy Notice for <strong>TQRandom</strong>, describes how and
+            why we might access, collect, store, use, and/or share ("process")
+            your personal information when you use our services ("Services"),
+            including when you:
           </p>
 
           <ul class="list-disc pl-6 text-gray-700 leading-relaxed mb-4">
@@ -64,18 +64,13 @@ onMounted(() => {
 
           <p class="text-gray-700 leading-relaxed">
             <a
-              href="mailto:joshuatubo4@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=tqrandom18@gmail.com"
+              target="_blank"
               class="text-blue-600 underline"
             >
-              joshuatubo4@gmail.com
+              tqrandom18@gmail.com
             </a>
-            ,
-            <a
-              href="mailto:clarkboncales115@gmail.com"
-              class="text-blue-600 underline"
-            >
-              clarkboncales115@gmail.com
-            </a>
+            .
           </p>
         </div>
         <!-- Summary of Key Points -->
@@ -102,9 +97,9 @@ onMounted(() => {
             When you visit, use, or navigate our Services, we may process
             personal information depending on how you interact with us and the
             Services, the choices you make, and the products and features you
-            use.
+            use. Learn more about
             <a href="#personal-information" class="text-blue-600 underline">
-              Learn more about personal information you disclose to us.
+              personal information you disclose to us.
             </a>
           </p>
 
@@ -127,9 +122,10 @@ onMounted(() => {
             Services, communicate with you, ensure security and fraud
             prevention, and comply with the law. We may also process your
             information for other purposes with your consent. We process your
-            information only when we have a valid legal reason to do so.
+            information only when we have a valid legal reason to do so. Learn
+            more about
             <a href="#how-we-process" class="text-blue-600 underline">
-              Learn more about how we process your information.
+              how we process your information.
             </a>
           </p>
 
@@ -139,10 +135,9 @@ onMounted(() => {
               information?</strong
             >
             We may share personal information in specific situations and with
-            specific third parties.
+            specific third parties. Learn more about
             <a href="#share-information" class="text-blue-600 underline">
-              Learn more about when and with whom we share your personal
-              information.
+              when and with whom we share your personal information.
             </a>
           </p>
 
@@ -151,18 +146,18 @@ onMounted(() => {
             We use organizational and technical measures to protect your
             information. However, no electronic transmission or storage system
             is 100% secure, and we cannot guarantee that unauthorized parties
-            will never access your data.
+            will never access your data. Learn more about
             <a href="#information-safety" class="text-blue-600 underline">
-              Learn more about how we keep your information safe.
+              how we keep your information safe.
             </a>
           </p>
 
           <p class="text-gray-700 leading-relaxed mb-4">
             <strong>What are your rights?</strong>
             Privacy laws in your region may give you certain rights regarding
-            your personal information.
+            your personal information. Learn more about
             <a href="#privacy-rights" class="text-blue-600 underline">
-              Learn more about your privacy rights.
+              your privacy rights.
             </a>
           </p>
 
@@ -186,7 +181,7 @@ onMounted(() => {
         <!-- TABLE OF CONTENTS -->
         <div
           id="table-of-contents"
-          class="bg-white p-8 rounded-2xl shadow mb-10"
+          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="350"
         >
@@ -197,8 +192,9 @@ onMounted(() => {
           <ol class="list-decimal pl-6 text-gray-700 space-y-2 leading-relaxed">
             <li>
               <a
+                id="full-notice"
                 href="#what-information-we-collect"
-                class="text-blue-600 underline"
+                class="text-blue-600 underline b-10 scroll-mt-20"
               >
                 WHAT INFORMATION DO WE COLLECT?
               </a>
@@ -336,7 +332,10 @@ onMounted(() => {
             contact us.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p
+            id="personal-information"
+            class="text-gray-700 leading-relaxed mb-10 scroll-mt-25"
+          >
             <strong>Personal Information Provided by You.</strong> The personal
             information that we collect depends on the context of your
             interactions with us and the Services, the choices you make, and the
@@ -385,7 +384,10 @@ onMounted(() => {
             2. HOW DO WE PROCESS YOUR INFORMATION?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p
+            id="how-we-process"
+            class="text-gray-700 leading-relaxed mb-10 scroll-mt-25"
+          >
             <strong>In Short:</strong> We process your information to provide,
             improve, and administer our Services, communicate with you, for
             security and fraud prevention, and to comply with law. We may also
@@ -421,7 +423,10 @@ onMounted(() => {
           data-aos="fade-up"
           data-aos-delay="450"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2
+            id="share-information"
+            class="text-2xl font-semibold text-gray-800 mb-10 scroll-mt-25"
+          >
             3. WHEN AND WITH WHOM DO WE SHARE YOUR PERSONAL INFORMATION?
           </h2>
 
@@ -781,16 +786,11 @@ onMounted(() => {
             If you have questions or comments about this notice, you may email
             us at
             <a
-              href="mailto:clarkboncales115@gmail.com"
+              href="https://mail.google.com/mail/?view=cm&fs=1&to=tqrandom18@gmail.com"
+              target="_blank"
               class="text-blue-600 underline"
-              >clarkboncales115@gmail.com</a
-            >,
-            <a
-              href="mailto:joshuatubo4@gmail.com"
-              class="text-blue-600 underline"
-              >joshuatubo4@gmail.com</a
+              >tqrandom18@gmail.com</a
             >
-            or contact us by post at:
           </p>
 
           <p class="text-gray-700 leading-relaxed">
