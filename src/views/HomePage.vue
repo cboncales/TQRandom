@@ -73,7 +73,7 @@ onBeforeUnmount(() => {
   <AppLayout>
     <!-- HERO CAROUSEL SECTION -->
     <!-- Background: Dark Blue #1e2939 -->
-    <section class="w-full bg-[#1e2939] text-white relative overflow-hidden">
+    <section class="w-full bg-gray-100 dark:bg-[#1e2939] text-gray-800 dark:text-white relative overflow-hidden">
       <!-- Subtle background pattern/overlay for visual interest -->
       <div
         class="absolute inset-0 opacity-10"
@@ -129,7 +129,7 @@ onBeforeUnmount(() => {
                     Fair Tests, Zero Effort.
                   </h1>
                   <!-- Text Color: Off-White #ebe6e7 -->
-                  <p class="text-xl md:text-2xl mb-10 text-[#ebe6e7]">
+                  <p class="text-xl md:text-2xl mb-10 text-gray-800 dark:text-[#ebe6e7]">
                     Instantly generate multiple, unique, and randomized test
                     versions. Boosting integrity while cutting your workload.
                   </p>
@@ -146,7 +146,7 @@ onBeforeUnmount(() => {
                     <!-- Secondary Button: Border Accent, Text Off-White, Hover Dark Blue #193cb8 -->
                     <button
                       @click="navigateTo('learn-more')"
-                      class="border-2 border-[#155dfc] text-[#ebe6e7] hover:bg-[#193cb8] hover:border-[#193cb8] font-semibold py-4 px-10 rounded-xl transition-colors duration-300 transform hover:text-white"
+                      class="border-2 border-[#155dfc] text-gray-800 dark:text-[#ebe6e7] hover:bg-[#193cb8] hover:border-[#193cb8] font-semibold py-4 px-10 rounded-xl transition-colors duration-300 transform hover:text-white"
                     >
                       How It Works
                     </button>
@@ -208,7 +208,7 @@ onBeforeUnmount(() => {
                     <span class="text-[#155dfc]">Effortless</span> Preparation.
                   </h1>
                   <!-- Text Color: Off-White #ebe6e7 -->
-                  <p class="text-xl md:text-2xl mb-10 text-[#ebe6e7]">
+                  <p class="text-xl md:text-2xl mb-10 text-gray-800 dark:text-[#ebe6e7]">
                     Quickly import existing material and generate unique
                     versions for every student to maximize test integrity and
                     save countless hours of manual work.
@@ -226,7 +226,7 @@ onBeforeUnmount(() => {
                     <!-- Secondary Button: Border Accent, Text Off-White, Hover Dark Blue #193cb8 -->
                     <button
                       @click="navigateTo('features')"
-                      class="border-2 border-[#155dfc] text-[#ebe6e7] hover:bg-[#193cb8] hover:border-[#193cb8] font-semibold py-4 px-10 rounded-xl transition-colors duration-300 transform hover:text-white"
+                      class="border-2 border-[#155dfc] text-gray-800 dark:text-[#ebe6e7] hover:bg-[#193cb8] hover:border-[#193cb8] font-semibold py-4 px-10 rounded-xl transition-colors duration-300 transform hover:text-white"
                     >
                       View Detailed Features
                     </button>
