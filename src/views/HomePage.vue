@@ -157,7 +157,7 @@ onBeforeUnmount(() => {
                 <!-- Background: Dark Blue #1e2939, Border: Blue #155dfc -->
                 <div class="hidden lg:block lg:w-4/12 mt-12 lg:mt-0">
                   <div
-                    class="relative p-6 bg-[#1e2939] rounded-2xl shadow-2xl border border-[#155dfc]/50"
+                    class="relative p-6 dark:bg-[#1e2939] bg-gray-100 rounded-2xl shadow-2xl border border-[#155dfc]/50"
                   >
                     <!-- Accent Text: Blue #155dfc -->
                     <p class="text-sm font-mono text-[#155dfc] mb-4">
@@ -237,7 +237,7 @@ onBeforeUnmount(() => {
                 <!-- Background: Dark Blue #1e2939, Border: Blue #155dfc -->
                 <div class="hidden lg:block lg:w-4/12 mt-12 lg:mt-0">
                   <div
-                    class="relative p-6 bg-[#1e2939] rounded-2xl shadow-2xl border border-[#155dfc]/50"
+                    class="relative p-6 dark:bg-[#1e2939] bg-gray-100 rounded-2xl shadow-2xl border border-[#155dfc]/50"
                   >
                     <!-- Accent Text: Blue #155dfc -->
                     <p class="text-sm font-mono text-[#155dfc] mb-4">
@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
               resetAutoAdvance();
             "
             aria-label="Previous slide"
-            class="p-2 rounded-full text-gray-400 hover:text-white bg-[#1e2939] hover:bg-[#193cb8] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#155dfc]"
+            class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-white dark:bg-[#1e2939] bg-gray-100 hover:bg-gray-400 border border-gray-500 dark:border-gray-400 transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#155dfc]"
           >
             <!-- SVG for Left Arrow -->
             <svg
@@ -363,7 +363,7 @@ onBeforeUnmount(() => {
               resetAutoAdvance();
             "
             aria-label="Next slide"
-            class="p-2 rounded-full text-gray-400 hover:text-white bg-[#1e2939] hover:bg-[#193cb8] transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#155dfc]"
+            class="p-2 rounded-full text-gray-600 dark:text-gray-400 hover:text-white dark:bg-[#1e2939] bg-gray-100 hover:bg-gray-400 border border-gray-500 dark:border-gray-400 transition-colors duration-200 shadow-md focus:outline-none focus:ring-2 focus:ring-[#155dfc]"
           >
             <!-- SVG for Right Arrow -->
             <svg
