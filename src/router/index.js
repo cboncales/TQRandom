@@ -103,6 +103,12 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
+    path: "/features",
+    name: "features",
+    component: () => import("@/views/Features.vue"),
+    meta: { requiresAuth: false },
+  },
+  {
     path: "/403",
     name: "forbidden",
     component: () => import("@/views/errors/ForbiddenView.vue"),
