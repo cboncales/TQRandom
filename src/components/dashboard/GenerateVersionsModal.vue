@@ -98,7 +98,7 @@ const handleClose = () => {
       >
 
       <div
-        class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
+        class="relative z-10 inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
         data-aos="fade-up"
         data-aos-delay="300"
       >
@@ -122,13 +122,13 @@ const handleClose = () => {
           </div>
           <div class="mt-3 text-center sm:mt-5">
             <h3
-              class="text-lg leading-6 font-medium text-gray-900"
+              class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
               id="modal-title"
             >
               Generate Randomized Versions
             </h3>
             <div class="mt-2">
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-gray-500 dark:text-gray-100">
                 Create randomized test versions using the Fisher-Yates shuffle
                 algorithm.
               </p>
@@ -141,7 +141,7 @@ const handleClose = () => {
           <div>
             <label
               for="versionCount"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1"
             >
               Number of Versions
             </label>
@@ -153,7 +153,7 @@ const handleClose = () => {
               max="100"
               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
             />
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-100">
               Generate between 1 and 100 randomized versions
             </p>
           </div>
@@ -162,7 +162,7 @@ const handleClose = () => {
           <div>
             <label
               for="questionsPerVersion"
-              class="block text-sm font-medium text-gray-700 mb-1"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1"
             >
               Questions per Version
             </label>
@@ -174,13 +174,13 @@ const handleClose = () => {
               :max="totalQuestions"
               class="block w-full rounded-md border-gray-300 shadow-sm focus:border-purple-500 focus:ring-purple-500 sm:text-sm px-3 py-2 border"
             />
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-100">
               Available questions: {{ totalQuestions }}
             </p>
           </div>
 
           <!-- Algorithm Info -->
-          <div class="bg-blue-50 rounded-md p-4">
+          <div class="bg-blue-50 dark:bg-gray-900 border border-blue-200 dark:border-blue-700 rounded-md p-4">
             <div class="flex">
               <svg
                 class="h-5 w-5 text-blue-400 mr-2"
@@ -213,11 +213,11 @@ const handleClose = () => {
             type="button"
             @click="handleGenerate"
             :disabled="isGenerating"
-            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 text-sm md:text-base lg:text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-gray-800 dark:bg-gray-800 text-sm md:text-base lg:text-base font-medium text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 sm:col-start-2 sm:text-sm disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
           >
             <svg
               v-if="isGenerating"
-              class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+              class="animate-spin -ml-1 mr-2 h-4 w-4 text-white dark:text-gray-100"
               fill="none"
               viewBox="0 0 24 24"
             >
@@ -241,7 +241,7 @@ const handleClose = () => {
             type="button"
             @click="handleClose"
             :disabled="isGenerating"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-sm md:text-base lg:text-base font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

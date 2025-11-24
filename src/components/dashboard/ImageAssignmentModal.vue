@@ -238,19 +238,19 @@ const saveQuestionsWithImages = async () => {
   >
     <div class="flex items-center justify-center min-h-screen p-4">
       <div
-        class="relative bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+        class="relative bg-white dark:bg-gray-900 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col"
       >
         <!-- Header -->
         <div
-          class="px-6 py-4 border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 to-blue-700 shrink-0"
+          class="px-6 py-4 border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 dark:from-blue-900 to-blue-700 dark:to-blue-900 shrink-0"
         >
           <div>
             <h3
-              class="text-md md:text-xl lg:text-xl font-semibold text-white"
+              class="text-md md:text-xl lg:text-xl font-semibold text-white dark:text-gray-100"
             >
               Assign Images to Questions
             </h3>
-            <p class="text-xs md:text-sm lg:text-sm text-blue-100 mt-1">
+            <p class="text-xs md:text-sm lg:text-sm text-blue-100 dark:text-blue-100 mt-1">
               Click on an image to assign it to a question. Click again to
               unassign.
             </p>
@@ -280,7 +280,7 @@ const saveQuestionsWithImages = async () => {
           <!-- Extracted Images -->
           <div class="mb-6">
             <h4
-              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3"
             >
               Extracted Images ({{ extractedImages.length }})
             </h4>
@@ -303,7 +303,7 @@ const saveQuestionsWithImages = async () => {
                   :alt="`Image ${idx + 1}`"
                   class="w-full h-32 object-contain rounded"
                 />
-                <p class="text-xs text-center mt-1 text-gray-600">
+                <p class="text-xs text-center mt-1 text-gray-600 dark:text-gray-100">
                   Image {{ idx + 1 }}
                   <span
                     v-if="
@@ -330,7 +330,7 @@ const saveQuestionsWithImages = async () => {
                 :class="
                   imageAssignmentTab === 'questions'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 dark:text-gray-100 hover:text-gray-700 hover:border-gray-300'
                 "
               >
                 Questions
@@ -341,7 +341,7 @@ const saveQuestionsWithImages = async () => {
                 :class="
                   imageAssignmentTab === 'answerChoices'
                     ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    : 'border-transparent text-gray-500 dark:text-gray-100 hover:text-gray-700 hover:border-gray-300'
                 "
               >
                 Answer Choices
@@ -352,7 +352,7 @@ const saveQuestionsWithImages = async () => {
           <!-- Questions Tab Content -->
           <div v-if="imageAssignmentTab === 'questions'">
             <h4
-              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3"
             >
               Assign Images to Questions ({{ pendingQuestions.length }})
             </h4>
@@ -360,7 +360,7 @@ const saveQuestionsWithImages = async () => {
               <div
                 v-for="(question, qIdx) in pendingQuestions"
                 :key="qIdx"
-                class="border border-gray-300 rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+                class="border border-gray-300 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900 hover:shadow-md transition-shadow"
               >
                 <div class="flex items-start gap-4">
                   <!-- Question Number -->
@@ -374,7 +374,7 @@ const saveQuestionsWithImages = async () => {
 
                   <!-- Question Text -->
                   <div class="flex-1">
-                    <p class="text-gray-900 font-medium">
+                    <p class="text-gray-900 dark:text-gray-100 font-medium">
                       {{ question.question_text.substring(0, 100)
                       }}{{
                         question.question_text.length > 100 ? '...' : ''
@@ -413,7 +413,7 @@ const saveQuestionsWithImages = async () => {
                     <!-- Image Selector -->
                     <div class="mt-3">
                       <label
-                        class="block text-sm font-medium text-gray-700 mb-2"
+                        class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
                       >
                         Select image:
                       </label>
@@ -462,7 +462,7 @@ const saveQuestionsWithImages = async () => {
           <!-- Answer Choices Tab Content -->
           <div v-if="imageAssignmentTab === 'answerChoices'">
             <h4
-              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 mb-3"
+              class="text-md md:text-lg lg:text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3"
             >
               Assign Images to Answer Choices
             </h4>
@@ -470,7 +470,7 @@ const saveQuestionsWithImages = async () => {
               <div
                 v-for="(question, qIdx) in pendingQuestions"
                 :key="qIdx"
-                class="border border-gray-300 rounded-lg p-4 bg-white"
+                class="border border-gray-300 dark:border-gray-700 rounded-lg p-4 bg-white dark:bg-gray-900"
               >
                 <!-- Question Header -->
                 <div
@@ -481,7 +481,7 @@ const saveQuestionsWithImages = async () => {
                   >
                     {{ qIdx + 1 }}
                   </span>
-                  <p class="text-gray-900 font-medium text-sm">
+                  <p class="text-gray-900 dark:text-gray-100 font-medium text-sm">
                     {{ question.question_text.substring(0, 80)
                     }}{{ question.question_text.length > 80 ? '...' : '' }}
                   </p>
@@ -496,12 +496,12 @@ const saveQuestionsWithImages = async () => {
                   >
                     <div class="flex items-start gap-3">
                       <span
-                        class="text-sm font-semibold text-gray-600 shrink-0 mt-1"
+                        class="text-sm font-semibold text-gray-600 dark:text-gray-100 shrink-0 mt-1"
                       >
                         {{ String.fromCharCode(65 + choiceIdx) }}.
                       </span>
                       <div class="flex-1">
-                        <p class="text-sm text-gray-800 mb-2">
+                        <p class="text-sm text-gray-800 dark:text-gray-100 mb-2">
                           {{
                             typeof choice === 'string'
                               ? choice
@@ -611,9 +611,9 @@ const saveQuestionsWithImages = async () => {
 
         <!-- Footer -->
         <div
-          class="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0"
+          class="px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col md:flex-row md:justify-between md:items-center lg:flex-row lg:justify-between lg:items-center shrink-0"
         >
-          <div class="text-sm text-gray-600 mb-3 md:mb-0 lg:mb-0">
+          <div class="text-sm text-gray-600 dark:text-gray-100 mb-3 md:mb-0 lg:mb-0">
             <span class="text-xs sm:font-medium">Questions:</span>
             {{ Object.keys(imageAssignments).length }}/{{
               pendingQuestions.length
@@ -625,7 +625,7 @@ const saveQuestionsWithImages = async () => {
             <button
               type="button"
               @click="closeModal"
-              class="px-4 py-2 border border-gray-300 rounded-md text-xs md:text-sm lg:text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+              class="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md text-xs md:text-sm lg:text-sm font-medium text-gray-700 dark:text-gray-100 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700"
             >
               Cancel
             </button>
@@ -633,11 +633,11 @@ const saveQuestionsWithImages = async () => {
               type="button"
               @click="saveQuestionsWithImages"
               :disabled="isUploadingFile"
-              class="px-6 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm lg:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center"
+              class="px-6 py-2 border border-transparent rounded-md shadow-sm text-xs md:text-sm lg:text-sm font-medium text-white dark:text-gray-100 bg-blue-600 hover:bg-blue-700 focus:outline-none disabled:bg-gray-400 dark:disabled:bg-gray-700 disabled:cursor-not-allowed flex items-center"
             >
               <svg
                 v-if="isUploadingFile"
-                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                class="animate-spin -ml-1 mr-2 h-4 w-4 text-white dark:text-gray-100"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"

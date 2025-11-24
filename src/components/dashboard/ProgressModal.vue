@@ -92,7 +92,7 @@ const defaultInfoText = computed(() => {
       >
 
       <div
-        class="relative inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6 border border-gray-300"
+        class="relative inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6"
         data-aos="fade-up"
         data-aos-delay="300"
       >
@@ -128,11 +128,11 @@ const defaultInfoText = computed(() => {
 
           <!-- Title -->
           <div class="mt-4 text-center">
-            <h3 class="text-lg leading-6 font-medium text-gray-900">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
               {{ title }}
             </h3>
             <div class="mt-2">
-              <p class="text-sm text-gray-600">
+              <p class="text-sm text-gray-600 dark:text-gray-100">
                 {{ message }}
               </p>
             </div>
@@ -140,11 +140,11 @@ const defaultInfoText = computed(() => {
 
           <!-- Progress Bar -->
           <div class="mt-4">
-            <div class="flex justify-between text-xs text-gray-600 mb-1">
+            <div class="flex justify-between text-xs text-gray-600 dark:text-gray-100 mb-1">
               <span>Progress</span>
               <span>{{ current }} / {{ total }}</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="w-full bg-gray-200 dark:bg-gray-800 rounded-full h-2.5">
               <div
                 :class="[
                   'h-2.5 rounded-full transition-all duration-300',
@@ -157,7 +157,7 @@ const defaultInfoText = computed(() => {
 
           <!-- Info text -->
           <div class="mt-4 text-center">
-            <p class="text-xs text-gray-500">
+            <p class="text-xs text-gray-500 dark:text-gray-100">
               {{ defaultInfoText }}
             </p>
           </div>

@@ -387,15 +387,15 @@ onBeforeUnmount(() => {
 
     <!-- Features Section (updated colors) -->
     <!-- Background: Off-White #ebe6e7 -->
-    <section class="py-16 bg-[#ebe6e7]">
+    <section class="py-16 bg-[#ebe6e7] dark:bg-gray-900">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-12" data-aos="fade-up" data-aos-delay="300">
           <!-- Text Color: Dark Blue #1e2939 -->
-          <h2 class="text-3xl md:text-4xl font-bold text-[#1e2939] mb-4">
+          <h2 class="text-3xl md:text-4xl font-bold text-[#1e2939] dark:text-gray-100 mb-4">
             Why Choose TQRandom?
           </h2>
           <!-- Text Color: Gray (using gray-600 for contrast) -->
-          <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p class="text-lg text-gray-600 dark:text-gray-100 max-w-2xl mx-auto">
             Our platform provides reliable and secure randomization solutions
             for various applications
           </p>
@@ -404,7 +404,7 @@ onBeforeUnmount(() => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
           <!-- Feature 1 -->
           <div
-            class="text-center p-6 bg-white rounded-lg shadow-lg"
+            class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
             data-aos="fade-up"
             data-aos-delay="100"
           >
@@ -427,8 +427,8 @@ onBeforeUnmount(() => {
               </svg>
             </div>
             <!-- Text Color: Dark Blue #1e2939 -->
-            <h3 class="text-xl font-semibold text-[#1e2939] mb-2">Reliable</h3>
-            <p class="text-gray-600">
+            <h3 class="text-xl font-semibold text-[#1e2939] dark:text-gray-100 mb-2">Reliable</h3>
+            <p class="text-gray-600 dark:text-gray-200">
               Our system ensures consistent and dependable randomization results
               every time
             </p>
@@ -436,7 +436,7 @@ onBeforeUnmount(() => {
 
           <!-- Feature 2 -->
           <div
-            class="text-center p-6 bg-white rounded-lg shadow-lg"
+            class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
             data-aos="fade-up"
             data-aos-delay="200"
           >
@@ -459,8 +459,8 @@ onBeforeUnmount(() => {
               </svg>
             </div>
             <!-- Text Color: Dark Blue #1e2939 -->
-            <h3 class="text-xl font-semibold text-[#1e2939] mb-2">Secure</h3>
-            <p class="text-gray-600">
+            <h3 class="text-xl font-semibold text-[#1e2939] dark:text-gray-100 mb-2">Secure</h3>
+            <p class="text-gray-600 dark:text-gray-200">
               Advanced security measures protect your data and ensure fair
               randomization
             </p>
@@ -468,7 +468,7 @@ onBeforeUnmount(() => {
 
           <!-- Feature 3 -->
           <div
-            class="text-center p-6 bg-white rounded-lg shadow-lg"
+            class="text-center p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg"
             data-aos="fade-up"
             data-aos-delay="300"
           >
@@ -491,8 +491,8 @@ onBeforeUnmount(() => {
               </svg>
             </div>
             <!-- Text Color: Dark Blue #1e2939 -->
-            <h3 class="text-xl font-semibold text-[#1e2939] mb-2">Fast</h3>
-            <p class="text-gray-600">
+            <h3 class="text-xl font-semibold text-[#1e2939] dark:text-gray-100 mb-2">Fast</h3>
+            <p class="text-gray-600 dark:text-gray-200">
               Quick processing and immediate results for all your randomization
               needs
             </p>

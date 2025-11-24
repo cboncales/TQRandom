@@ -158,7 +158,7 @@ const goBack = () => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 py-8">
+    <div class="min-h-screen bg-linear-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 py-8">
       <div
         class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8"
         data-aos="fade-up"
@@ -168,7 +168,7 @@ const goBack = () => {
         <div class="mb-8">
           <button
             @click="goBack"
-            class="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+            class="inline-flex items-center text-sm text-gray-600 dark:text-gray-300 hover:text-gray-900 mb-4 transition-colors"
           >
             <svg
               class="w-4 h-4 mr-1"
@@ -190,7 +190,7 @@ const goBack = () => {
               class="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-blue-600 flex items-center justify-center"
             >
               <svg
-                class="w-6 h-6 text-white"
+                class="w-6 h-6 text-white dark:text-gray-100"
                 viewBox="0 0 256 256"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -202,8 +202,8 @@ const goBack = () => {
               </svg>
             </div>
             <div>
-              <h1 class="text-3xl font-bold text-gray-800">Account Settings</h1>
-              <p class="text-sm text-gray-600">
+              <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Account Settings</h1>
+              <p class="text-sm text-gray-600 dark:text-gray-300">
                 Manage your account information and security
               </p>
             </div>
@@ -213,10 +213,10 @@ const goBack = () => {
         <div class="space-y-6">
           <!-- Profile Settings Card -->
           <div
-            class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200"
+            class="bg-white dark:bg-gray-900 shadow-sm rounded-xl overflow-hidden border border-gray-200"
           >
             <div
-              class="bg-linear-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-200"
+              class="bg-linear-to-r from-gray-900 to-gray-700 dark:from-gray-500 dark:to-gray-700 px-6 py-4 border-b border-gray-200"
             >
               <div class="flex items-center">
                 <div
@@ -235,10 +235,10 @@ const goBack = () => {
                  </svg>
                 </div>
                 <div>
-                  <h2 class="text-lg font-semibold text-gray-800">
+                  <h2 class="text-lg font-semibold text-gray-200 dark:text-gray-100">
                     Profile Information
                   </h2>
-                  <p class="text-sm text-gray-600">
+                  <p class="text-sm text-gray-200 dark:text-gray-300">
                     Update your personal details
                   </p>
                 </div>
@@ -302,7 +302,7 @@ const goBack = () => {
                   <div>
                     <label
                       for="firstName"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-100"
                     >
                       First Name <span class="text-red-500">*</span>
                     </label>
@@ -320,7 +320,7 @@ const goBack = () => {
                   <div>
                     <label
                       for="lastName"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-gray-700 mb-2 dark:text-gray-100"
                     >
                       Last Name
                     </label>
@@ -409,10 +409,10 @@ const goBack = () => {
 
           <!-- Password Settings Card -->
           <div
-            class="bg-white shadow-sm rounded-xl overflow-hidden border border-gray-200"
+            class="bg-white dark:bg-gray-900 shadow-sm rounded-xl overflow-hidden border border-gray-200"
           >
             <div
-              class="bg-linear-to-r from-purple-50 to-pink-50 px-6 py-4 border-b border-gray-200"
+              class="bg-linear-to-r from-gray-900 to-gray-700 dark:from-gray-500 dark:to-gray-700 px-6 py-4 border-b border-gray-200"
             >
               <div class="flex items-center">
                 <div
@@ -433,10 +433,10 @@ const goBack = () => {
                   </svg>
                 </div>
                 <div>
-                  <h2 class="text-lg font-semibold text-gray-800">
+                  <h2 class="text-lg font-semibold text-gray-200 dark:text-gray-100">
                     Security Settings
                   </h2>
-                  <p class="text-sm text-gray-600">
+                  <p class="text-sm text-gray-200 dark:text-gray-300">
                     Update your password to keep your account secure
                   </p>
                 </div>
@@ -449,7 +449,7 @@ const goBack = () => {
                 <div>
                   <label
                     for="currentPassword"
-                    class="block text-sm font-medium text-gray-700 mb-2"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
                   >
                     Current Password <span class="text-red-500">*</span>
                   </label>
@@ -530,7 +530,7 @@ const goBack = () => {
                   <div>
                     <label
                       for="newPassword"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
                     >
                       New Password <span class="text-red-500">*</span>
                     </label>
@@ -607,7 +607,7 @@ const goBack = () => {
                   <div>
                     <label
                       for="confirmPassword"
-                      class="block text-sm font-medium text-gray-700 mb-2"
+                      class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
                     >
                       Confirm Password <span class="text-red-500">*</span>
                     </label>

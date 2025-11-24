@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed inset-0 bg-white flex items-center justify-center z-[9999] transition-transform duration-[1500ms] ease-in-out"
+    class="fixed inset-0 bg-gray-800 flex items-center justify-center z-[9999] transition-transform duration-[1500ms] ease-in-out"
     :class="{ 'translate-y-[-100%] opacity-0': hide }"
   >
     <img src="/favicon.png" class="w-28 animate-pulseRotate" />

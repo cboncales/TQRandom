@@ -209,10 +209,10 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
 <template>
   <AppLayout>
     <div
-      class="min-h-screen flex items-center justify-center bg-gray-200 py-12 px-4 sm:px-6 lg:px-8"
+      class="min-h-screen flex items-center justify-center bg-gray-200 dark:bg-gray-800 py-12 px-4 sm:px-6 lg:px-8"
     >
       <div
-        class="max-w-md w-full bg-gray-50 rounded-2xl shadow-lg p-8 space-y-8"
+        class="max-w-md w-full bg-gray-50 dark:bg-gray-900 rounded-2xl shadow-lg p-8 space-y-8"
       >
         <div class="max-w-md w-full space-y-8">
           <div>
@@ -231,10 +231,10 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
                 />
               </svg>
             </div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-800">
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-800 dark:text-gray-100">
               Create your account
             </h2>
-            <p class="mt-2 text-center text-sm text-gray-600">
+            <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
               Or
               <router-link
                 to="/login"
@@ -301,7 +301,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
                 <div>
                   <label
                     for="firstName"
-                    class="block text-sm font-medium text-gray-700"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                     >First name</label
                   >
                   <input
@@ -320,7 +320,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
                 <div>
                   <label
                     for="lastName"
-                    class="block text-sm font-medium text-gray-700"
+                    class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                     >Last name</label
                   >
                   <input
@@ -341,7 +341,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
               <div>
                 <label
                   for="email"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                   >Email address</label
                 >
                 <input
@@ -360,7 +360,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
               <div>
                 <label
                   for="password"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                   >Password</label
                 >
                 <div class="mt-1 relative">
@@ -430,7 +430,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
               <div>
                 <label
                   for="confirmPassword"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                   >Confirm password</label
                 >
                 <div class="mt-1 relative">
@@ -526,7 +526,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
                 :disabled="isLoading"
                 class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-1 disabled:cursor-not-allowed"
               />
-              <label for="agree-terms" class="ml-2 block text-sm text-gray-900">
+              <label for="agree-terms" class="ml-2 block text-sm text-gray-900 dark:text-gray-100">
                 I agree to the
                 <a
                   href="#"
@@ -583,7 +583,7 @@ const openPrivacyModal = () => (showPrivacyModal.value = true);
                   <div class="w-full border-t border-gray-300" />
                 </div>
                 <div class="relative flex justify-center text-sm">
-                  <span class="px-2 bg-gray-50 text-gray-500"
+                  <span class="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-100"
                     >Or continue with</span
                   >
                 </div>

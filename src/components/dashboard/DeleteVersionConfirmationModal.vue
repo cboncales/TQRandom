@@ -31,7 +31,7 @@ const handleClose = () => {
     data-aos-delay="300"
   >
     <div
-      class="relative top-50 mx-auto p-5 border border-gray-300 w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white"
+      class="relative top-50 mx-auto p-5 border border-gray-300 dark:border-gray-700 w-80 md:w-96 lg:w-96 shadow-lg rounded-md bg-white dark:bg-gray-900"
       @click.stop
     >
       <div class="mt-3 text-center">
@@ -52,10 +52,10 @@ const handleClose = () => {
             />
           </svg>
         </div>
-        <h3 class="text-lg font-medium text-gray-900 mt-2">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mt-2">
           Delete Test Version
         </h3>
-        <p class="mt-2 text-sm text-gray-500">
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-100">
           Are you sure you want to delete this randomized version? This action
           cannot be undone.
         </p>
@@ -68,7 +68,7 @@ const handleClose = () => {
           </button>
           <button
             @click="handleClose"
-            class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium"
+            class="bg-gray-300 dark:bg-gray-800 text-gray-700 dark:text-gray-100 hover:bg-gray-400 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-sm font-medium"
           >
             Cancel
           </button>

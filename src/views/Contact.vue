@@ -8,9 +8,9 @@ onMounted(() => {
 </script>
 <template>
   <AppLayout>
-    <section class="py-20 bg-gray-200">
+    <section class="py-20 bg-gray-200 dark:bg-gray-900">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-bold text-gray-800 mb-12 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-12 text-center">
           Contact Us
         </h1>
 
@@ -18,17 +18,17 @@ onMounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Clark Card -->
           <div
-            class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+            class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all"
             data-aos="fade-up"
             data-aos-delay="300"
           >
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
               Clark G. Boncales
             </h2>
-            <p class="text-gray-600 mb-4">Developer</p>
+            <p class="text-gray-600 dark:text-gray-100 mb-4">Developer</p>
 
             <div class="mt-4">
-              <p class="text-gray-700 font-medium">Email:</p>
+              <p class="text-gray-700 dark:text-gray-100 font-medium">Email:</p>
               <a
                 href="mailto:clarkboncales115@gmail.com"
                 class="text-blue-600 hover:underline break-all"
@@ -40,17 +40,17 @@ onMounted(() => {
 
           <!-- Joshua Card -->
           <div
-            class="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all"
+            class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all"
             data-aos="fade-up"
             data-aos-delay="300"
           >
-            <h2 class="text-2xl font-semibold text-gray-800 mb-2">
+            <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-2">
               Joshua T. Tubo
             </h2>
-            <p class="text-gray-600 mb-4">Developer</p>
+            <p class="text-gray-600 dark:text-gray-100 mb-4">Developer</p>
 
             <div class="mt-4">
-              <p class="text-gray-700 font-medium">Email:</p>
+              <p class="text-gray-700 dark:text-gray-100 font-medium">Email:</p>
               <a
                 href="mailto:joshuatubo4@gmail.com"
                 class="text-blue-600 hover:underline break-all"
@@ -63,11 +63,11 @@ onMounted(() => {
 
         <!-- Contact Form (Modern) -->
         <div
-          class="bg-white p-10 rounded-2xl shadow-lg mt-16"
+          class="bg-white dark:bg-gray-800 p-10 rounded-2xl shadow-lg mt-16"
           data-aos="fade-up"
           data-aos-delay="200"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-6 text-center">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-6 text-center">
             Send Us a Message
           </h2>
 
@@ -77,7 +77,7 @@ onMounted(() => {
             class="space-y-6 max-w-3xl mx-auto"
           >
             <div>
-              <label class="block text-gray-700 font-medium mb-1"
+              <label class="block text-gray-700 dark:text-gray-100 font-medium mb-1"
                 >Your Name</label
               >
 
@@ -98,13 +98,13 @@ onMounted(() => {
               <input
                 type="text"
                 name="name"
-                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="Enter your name"
               />
             </div>
 
             <div>
-              <label class="block text-gray-700 font-medium mb-1"
+              <label class="block text-gray-700 dark:text-gray-100 font-medium mb-1"
                 >Your Email</label
               >
               <input
@@ -116,7 +116,7 @@ onMounted(() => {
             </div>
 
             <div>
-              <label class="block text-gray-700 font-medium mb-1"
+              <label class="block text-gray-700 dark:text-gray-100 font-medium mb-1"
                 >Message</label
               >
               <textarea
@@ -130,7 +130,7 @@ onMounted(() => {
             <div class="text-center">
               <button
                 type="submit"
-                class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
+                class="bg-blue-600 dark:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition"
               >
                 Send Message
               </button>

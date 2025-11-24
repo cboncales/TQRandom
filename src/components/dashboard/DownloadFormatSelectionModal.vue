@@ -79,7 +79,7 @@ const getDownloadDescription = () => {
       >
 
       <div
-        class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6 border border-gray-300"
+        class="relative z-10 inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
         data-aos="fade-up"
         data-aos-delay="300"
       >
@@ -103,20 +103,20 @@ const getDownloadDescription = () => {
           </div>
           <div class="mt-3 text-center sm:mt-5">
             <h3
-              class="text-lg leading-6 font-medium text-gray-900"
+              class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
               id="modal-title"
             >
               Select Download Format
             </h3>
             <div class="mt-2">
-              <p class="text-xs md:text-sm lg:text-sm text-gray-500">
+              <p class="text-xs md:text-sm lg:text-sm text-gray-500 dark:text-gray-100">
                 Choose the file format for downloading {{ getDownloadDescription() }}.
               </p>
             </div>
             <div class="mt-6 space-y-3">
               <!-- PDF Option -->
               <label
-                class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
+                class="relative flex cursor-pointer rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm focus:outline-none hover:border-blue-500"
                 :class="
                   selectedFormat === 'pdf'
                     ? 'border-blue-600 ring-2 ring-blue-600'
@@ -146,10 +146,10 @@ const getDownloadDescription = () => {
                       />
                     </svg>
                     <div class="ml-3 text-left">
-                      <span class="block text-sm font-medium text-gray-900"
+                      <span class="block text-sm font-medium text-gray-900 dark:text-gray-100"
                         >PDF Format</span
                       >
-                      <span class="block text-xs text-gray-500"
+                      <span class="block text-xs text-gray-500 dark:text-gray-100"
                         >Portable Document Format - Universal
                         compatibility</span
                       >
@@ -172,7 +172,7 @@ const getDownloadDescription = () => {
 
               <!-- Word Option -->
               <label
-                class="relative flex cursor-pointer rounded-lg border border-gray-300 bg-white p-4 shadow-sm focus:outline-none hover:border-blue-500"
+                class="relative flex cursor-pointer rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-sm focus:outline-none hover:border-blue-500"
                 :class="
                   selectedFormat === 'docx'
                     ? 'border-blue-600 ring-2 ring-blue-600'
@@ -202,10 +202,10 @@ const getDownloadDescription = () => {
                       />
                     </svg>
                     <div class="ml-3 text-left">
-                      <span class="block text-sm font-medium text-gray-900"
+                      <span class="block text-sm font-medium text-gray-900 dark:text-gray-100"
                         >Word Format (DOCX)</span
                       >
-                      <span class="block text-xs text-gray-500"
+                      <span class="block text-xs text-gray-500 dark:text-gray-100"
                         >Editable document - Microsoft Word compatible</span
                       >
                     </div>
@@ -262,7 +262,7 @@ const getDownloadDescription = () => {
             type="button"
             @click="handleClose"
             :disabled="isDownloading"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm md:text-base lg:text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-sm md:text-base lg:text-base font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 dark:disabled:bg-gray-700 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

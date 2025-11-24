@@ -89,9 +89,9 @@ const handleResetPassword = async () => {
 <template>
   <AppLayout>
     <div
-      class="min-h-screen flex items-center justify-center bg-gray-200 py-12 px-4 sm:px-6 lg:px-8"
+      class="min-h-screen flex items-center justify-center bg-gray-200 dark:bg-gray-900 py-12 px-4 sm:px-6 lg:px-8"
     >
-      <div class="max-w-md w-full bg-gray-50 rounded-2xl shadow-lg p-8 space-y-8">
+      <div class="max-w-md w-full bg-gray-50 dark:bg-gray-800 rounded-2xl shadow-lg p-8 space-y-8">
         <div class="max-w-md w-full space-y-8">
           <div>
             <div
@@ -111,10 +111,10 @@ const handleResetPassword = async () => {
                 />
               </svg>
             </div>
-            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-gray-100">
               Reset your password
             </h2>
-            <p class="mt-2 text-center text-sm text-gray-600">
+            <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-100">
               Enter your new password below
             </p>
           </div>
@@ -122,7 +122,7 @@ const handleResetPassword = async () => {
           <!-- Error Message -->
           <div
             v-if="errorMessage"
-            class="bg-red-50 border border-red-200 rounded-md p-4"
+            class="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-800 rounded-md p-4"
           >
             <div class="flex">
               <div class="shrink-0">
@@ -139,7 +139,7 @@ const handleResetPassword = async () => {
                 </svg>
               </div>
               <div class="ml-3">
-                <p class="text-sm text-red-800">{{ errorMessage }}</p>
+                <p class="text-sm text-red-800 dark:text-red-200">{{ errorMessage }}</p>
               </div>
             </div>
           </div>
@@ -147,7 +147,7 @@ const handleResetPassword = async () => {
           <!-- Success Message -->
           <div
             v-if="successMessage"
-            class="bg-green-50 border border-green-200 rounded-md p-4"
+            class="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 rounded-md p-4"
           >
             <div class="flex">
               <div class="shrink-0">
@@ -164,7 +164,7 @@ const handleResetPassword = async () => {
                 </svg>
               </div>
               <div class="ml-3">
-                <p class="text-sm text-green-800">{{ successMessage }}</p>
+                <p class="text-sm text-green-800 dark:text-green-200">{{ successMessage }}</p>
               </div>
             </div>
           </div>
@@ -174,7 +174,7 @@ const handleResetPassword = async () => {
               <div>
                 <label
                   for="new-password"
-                  class="block text-sm font-medium text-gray-700"
+                  class="block text-sm font-medium text-gray-700 dark:text-gray-100"
                 >
                   New Password
                 </label>
@@ -342,7 +342,7 @@ const handleResetPassword = async () => {
 
           <!-- If no token, show error and link back to login -->
           <div v-else class="text-center space-y-4">
-            <p class="text-sm text-gray-600">
+            <p class="text-sm text-gray-600 dark:text-gray-100">
               This reset link is invalid or has expired.
             </p>
             <router-link

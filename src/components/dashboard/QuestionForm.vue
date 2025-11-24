@@ -105,11 +105,12 @@ const cancelDeleteOption = () => {
 };
 
 const toggleCorrectAnswer = (optionId) => {
-  const option = options.value.find((o) => o.id === optionId);
-  if (option) {
-    option.isCorrect = !option.isCorrect;
-  }
+  options.value = options.value.map((o) => ({
+    ...o,
+    isCorrect: o.id === optionId, // only this option becomes true
+  }));
 };
+
 
 // Image handling functions
 const handleQuestionImageUpload = (event) => {
@@ -256,19 +257,19 @@ const hasCorrectAnswer = () => {
   >
     <!-- Modal content -->
     <div
-      class="relative w-full max-w-2xl bg-white rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+      class="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
       <div class="overflow-y-auto flex-1 p-5">
         <!-- Header -->
         <div class="flex justify-between items-center mb-4 sm:mb-6">
-          <h3 class="text-base sm:text-lg font-medium text-gray-900">
+          <h3 class="text-base sm:text-lg font-medium text-gray-900 dark:text-gray-100">
             {{ props.editingQuestion ? "Edit Question" : "Add New Question" }}
           </h3>
           <button
             @click="closeModal"
             :disabled="props.isLoading"
-            class="text-gray-400 hover:text-gray-600 disabled:cursor-not-allowed"
+            class="text-gray-400 dark:text-gray-100 hover:text-gray-600 disabled:cursor-not-allowed"
           >
             <svg
               class="w-5 h-5 sm:w-6 sm:h-6"
@@ -317,7 +318,7 @@ const hasCorrectAnswer = () => {
           <div>
             <label
               for="question-text"
-              class="block text-xs sm:text-sm font-medium text-gray-700 mb-2"
+              class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
             >
               Question Text *
             </label>
@@ -327,7 +328,7 @@ const hasCorrectAnswer = () => {
               rows="3"
               required
               :disabled="props.isLoading"
-              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
               placeholder="Enter your question here..."
             />
           </div>
@@ -335,7 +336,7 @@ const hasCorrectAnswer = () => {
           <!-- Question Image Upload -->
           <div>
             <label
-              class="block text-xs sm:text-sm font-medium text-gray-700 mb-2"
+              class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
             >
               Question Image (Optional)
             </label>
@@ -349,7 +350,7 @@ const hasCorrectAnswer = () => {
                 <button
                   type="button"
                   @click="removeQuestionImage"
-                  class="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                  class="absolute top-1 right-1 sm:top-2 sm:right-2 bg-red-600 text-white dark:text-gray-100 rounded-full p-1 hover:bg-red-700"
                 >
                   <svg
                     class="w-3 h-3 sm:w-4 sm:h-4"
@@ -372,9 +373,9 @@ const hasCorrectAnswer = () => {
               accept="image/*"
               @change="handleQuestionImageUpload"
               :disabled="props.isLoading || isUploadingImage"
-              class="block w-full text-xs sm:text-sm text-gray-500 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              class="block w-full text-xs sm:text-sm text-gray-500 dark:text-gray-300 file:mr-2 sm:file:mr-4 file:py-1.5 sm:file:py-2 file:px-3 sm:file:px-4 file:rounded-md file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
-            <p class="mt-1 text-xs text-gray-500">PNG, JPG, GIF up to 5MB</p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">PNG, JPG, GIF up to 5MB</p>
           </div>
 
           <!-- Multiple Choice Options -->
@@ -382,13 +383,13 @@ const hasCorrectAnswer = () => {
             <div
               class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4"
             >
-              <h4 class="text-xs sm:text-sm font-medium text-gray-700">
+              <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100">
                 Answer Options
               </h4>
               <button
                 type="button"
                 @click="addOption"
-                class="bg-green-600 text-white hover:bg-green-700 px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+                class="bg-blue-600 text-white hover:bg-blue-700 px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center justify-center"
               >
                 <svg
                   class="w-3 h-3 sm:w-4 sm:h-4 mr-1"
@@ -414,8 +415,8 @@ const hasCorrectAnswer = () => {
                 class="p-2 sm:p-3 border rounded-lg"
                 :class="
                   option.isCorrect
-                    ? 'bg-green-50 border-green-200'
-                    : 'bg-gray-50 border-gray-200'
+                    ? 'bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-700'
+                    : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                 "
               >
                 <!-- Option Header with controls -->
@@ -425,7 +426,7 @@ const hasCorrectAnswer = () => {
                   <div class="flex items-center gap-2 flex-1">
                     <!-- Option Letter -->
                     <span
-                      class="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-gray-200 flex items-center justify-center text-xs sm:text-sm font-medium"
+                      class="shrink-0 h-6 w-6 sm:h-8 sm:w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-xs sm:text-sm font-medium"
                     >
                       {{ String.fromCharCode(65 + index) }}
                     </span>
@@ -449,7 +450,7 @@ const hasCorrectAnswer = () => {
                         class="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
                       />
                       <span
-                        class="ml-1.5 sm:ml-2 text-xs sm:text-sm text-gray-700"
+                        class="ml-1.5 sm:ml-2 text-xs sm:text-sm text-gray-700 dark:text-gray-100"
                         >Correct</span
                       >
                     </label>
@@ -490,7 +491,7 @@ const hasCorrectAnswer = () => {
                       <button
                         type="button"
                         @click="removeOptionImage(option.id)"
-                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
+                        class="absolute top-1 right-1 bg-red-600 text-white dark:text-gray-100 rounded-full p-1 hover:bg-red-700"
                       >
                         <svg
                           class="w-2.5 h-2.5 sm:w-3 sm:h-3"
@@ -513,7 +514,7 @@ const hasCorrectAnswer = () => {
                     accept="image/*"
                     @change="(e) => handleOptionImageUpload(e, option.id)"
                     :disabled="props.isLoading || isUploadingImage"
-                    class="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 sm:file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    class="block w-full text-xs text-gray-500 dark:text-gray-300 file:mr-2 file:py-1 file:px-2 sm:file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
               </div>
@@ -521,7 +522,7 @@ const hasCorrectAnswer = () => {
 
             <!-- Validation Warning (removed - correct answer is now optional) -->
             <div v-if="!hasCorrectAnswer()" class="mt-2 text-sm text-red-600">
-              ⚠️ Please mark at least one correct answer
+              Please mark at least one correct answer
             </div>
           </div>
         </form>
@@ -529,13 +530,13 @@ const hasCorrectAnswer = () => {
 
       <!-- Form Actions (Fixed Footer) -->
       <div
-        class="flex justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 pb-4 sm:pb-5 px-4 sm:px-5 border-t bg-white shrink-0"
+        class="flex justify-end gap-2 sm:gap-3 pt-3 sm:pt-4 pb-4 sm:pb-5 px-4 sm:px-5 border-t bg-white dark:bg-gray-900 shrink-0"
       >
         <button
           type="button"
           @click="closeModal"
           :disabled="props.isLoading"
-          class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+          class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-100 hover:bg-gray-400 px-4 sm:px-6 py-1.5 sm:py-2 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
         >
           Cancel
         </button>

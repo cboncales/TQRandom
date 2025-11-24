@@ -75,22 +75,22 @@ const handleClose = () => {
     data-aos-delay="300"
   >
     <div
-      class="relative w-full max-w-2xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+      class="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
       <!-- Header (Fixed) -->
       <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
         <div>
-          <h2 class="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900">
+          <h2 class="text-xl md:text-2xl lg:text-2xl font-bold text-gray-900 dark:text-gray-100">
             Answer Key
           </h2>
-          <p v-if="answerKeyData" class="text-sm text-gray-600 mt-1">
+          <p v-if="answerKeyData" class="text-sm text-gray-600 dark:text-gray-100 mt-1">
             Version {{ answerKeyData.version_number }}
           </p>
         </div>
         <button
           @click="handleClose"
-          class="text-gray-400 hover:text-gray-600 transition-colors"
+          class="text-gray-400 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <svg
             class="w-6 h-6"
@@ -134,14 +134,14 @@ const handleClose = () => {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <p class="text-gray-600">Loading answer key...</p>
+          <p class="text-gray-600 dark:text-gray-100">Loading answer key...</p>
         </div>
 
         <!-- Answer Key Content -->
         <div v-else-if="answerKeyData && answerKeyData.answer_key">
           <div
             v-if="answerKeyData.answer_key.length === 0"
-            class="text-center py-8 text-gray-500"
+            class="text-center py-8 text-gray-500 dark:text-gray-100"
           >
             <svg
               class="mx-auto h-12 w-12 text-gray-400 mb-3"

@@ -1409,9 +1409,9 @@ onMounted(async () => {
 
 <template>
   <AppLayout>
-    <div class="min-h-screen bg-gray-200">
+    <div class="min-h-screen bg-gray-200 dark:bg-gray-800">
       <!-- Header -->
-      <div class="bg-white shadow">
+      <div class="bg-white dark:bg-gray-800 shadow">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div class="py-6">
             <div
@@ -1420,7 +1420,7 @@ onMounted(async () => {
               <div class="flex items-center">
                 <button
                   @click="goBackToDashboard"
-                  class="mr-4 text-gray-600 hover:text-gray-900"
+                  class="mr-4 text-gray-600 dark:text-gray-300 hover:text-gray-900"
                 >
                   <svg
                     class="w-6 h-6"
@@ -1437,7 +1437,7 @@ onMounted(async () => {
                   </svg>
                 </button>
                 <div>
-                  <h1 class="text-xl sm:text-2xl font-bold text-gray-800">
+                  <h1 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100">
                     {{ test.title }}
                   </h1>
                 </div>
@@ -1547,7 +1547,7 @@ onMounted(async () => {
                   <button
                     @click="openGenerateVersionModal"
                     :disabled="questions.length === 0"
-                    class="bg-gray-800 text-white shadow hover:bg-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                    class="bg-gray-800 dark:bg-gray-900 text-white shadow hover:bg-gray-500 disabled:bg-gray-400 disabled:cursor-not-allowed px-3 sm:px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                     title="Generate Versions"
                   >
                     <svg
@@ -1580,7 +1580,7 @@ onMounted(async () => {
                 :class="[
                   activeTab === 'questions'
                     ? 'border-blue-500 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300',
                   'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center',
                 ]"
               >
@@ -1606,7 +1606,7 @@ onMounted(async () => {
                 :class="[
                   activeTab === 'versions'
                     ? 'border-blue-500 text-blue-700'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300',
+                    : 'border-transparent text-gray-500 dark:text-gray-300 hover:text-gray-700 hover:border-gray-300',
                   'whitespace-nowrap py-3 sm:py-4 px-1 border-b-2 font-medium text-xs sm:text-sm transition-colors duration-200 flex items-center',
                 ]"
               >
@@ -1687,7 +1687,7 @@ onMounted(async () => {
                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
               ></path>
             </svg>
-            <span class="text-gray-600">Loading test and questions...</span>
+            <span class="text-gray-600 dark:text-gray-300">Loading test and questions...</span>
           </div>
         </div>
 
@@ -1695,12 +1695,12 @@ onMounted(async () => {
           <!-- Questions Tab Content -->
           <div v-if="activeTab === 'questions'">
             <!-- Test Info Card -->
-            <div class="bg-white shadow rounded-lg p-6 mb-8">
-              <h3 class="text-lg font-medium text-gray-900 mb-2">
+            <div class="bg-white dark:bg-gray-900 shadow rounded-lg p-6 mb-8">
+              <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
                 Test Information
               </h3>
-              <p class="text-gray-600 mb-4">{{ test.description }}</p>
-              <div class="flex items-center space-x-6 text-sm text-gray-500">
+              <p class="text-gray-600 dark:text-gray-300 mb-4">{{ test.description }}</p>
+              <div class="flex items-center space-x-6 text-sm text-gray-500 dark:text-gray-300">
                 <span class="flex items-center">
                   <svg
                     class="w-4 h-4 mr-1"
@@ -1724,7 +1724,7 @@ onMounted(async () => {
             <!-- Select All and Bulk Actions -->
             <div
               v-if="questions.length > 0"
-              class="mb-4 bg-white p-4 rounded-lg shadow"
+              class="mb-4 bg-white dark:bg-gray-900 p-4 rounded-lg shadow"
             >
               <div class="flex items-center justify-between">
                 <div class="flex items-center">
@@ -1737,7 +1737,7 @@ onMounted(async () => {
                   />
                   <label
                     for="select-all-questions"
-                    class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
+                    class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-100 cursor-pointer select-none"
                   >
                     Select All ({{ questions.length }} question{{
                       questions.length !== 1 ? "s" : ""
@@ -1748,7 +1748,7 @@ onMounted(async () => {
                 <button
                   v-if="selectedQuestions.length > 0"
                   @click="deleteSelectedQuestions"
-                  class="bg-gray-100 text-red-500 shadow hover:bg-gray-200 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  class="bg-gray-100 dark:bg-gray-800 text-red-500 shadow hover:bg-gray-500 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                 >
                   <svg
                     class="w-4 h-4 mr-2"
@@ -1771,7 +1771,7 @@ onMounted(async () => {
 
               <div
                 v-if="selectedQuestions.length > 0"
-                class="mt-2 text-xs text-gray-500"
+                class="mt-2 text-xs text-gray-500 dark:text-gray-300"
               >
                 {{ selectedQuestions.length }} of
                 {{ questions.length }} question{{
@@ -1807,10 +1807,10 @@ onMounted(async () => {
                   d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <h3 class="mt-2 text-sm font-medium text-gray-900">
+              <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
                 No versions generated
               </h3>
-              <p class="mt-1 text-sm text-gray-500">
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-300">
                 Generate randomized versions of your test using the Fisher-Yates
                 algorithm.
               </p>
@@ -1871,7 +1871,7 @@ onMounted(async () => {
                   v-for="version in versions"
                   :key="version.id"
                   @click="toggleVersionSelection(version)"
-                  class="bg-white overflow-hidden shadow rounded-lg transition-all duration-200 cursor-pointer"
+                  class="bg-white dark:bg-gray-900 overflow-hidden shadow rounded-lg transition-all duration-200 cursor-pointer"
                   :class="[
                     isVersionSelected(version.id)
                       ? 'ring-3 ring-blue-500 shadow-xl scale-[1.02]'
@@ -1882,16 +1882,16 @@ onMounted(async () => {
                     <!-- Left side: Version info -->
                     <div class="flex-1 min-w-0">
                       <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                           {{ version.name }}
                         </h3>
                         <span
-                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-blue-800"
+                          class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 dark:bg-purple-900 text-blue-800 dark:text-blue-100"
                         >
                           Randomized
                         </span>
                       </div>
-                      <div class="space-y-2 text-sm text-gray-500">
+                      <div class="space-y-2 text-sm text-gray-500 dark:text-gray-100">
                         <div class="flex items-center">
                           <svg
                             class="w-4 h-4 mr-2"
@@ -1934,7 +1934,7 @@ onMounted(async () => {
                     >
                       <button
                         @click.stop="openAnswerKey(version)"
-                        class="p-2 bg-gray-100 text-green-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        class="p-2 bg-gray-100 dark:bg-gray-800 text-green-600 shadow hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
                         title="Answer Key"
                       >
                         <svg
@@ -1953,7 +1953,7 @@ onMounted(async () => {
                       </button>
                       <button
                         @click.stop="openPreview(version)"
-                        class="p-2 bg-gray-100 text-gray-800 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        class="p-2 bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-100 shadow hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
                         title="Preview version"
                       >
                         <svg
@@ -1980,7 +1980,7 @@ onMounted(async () => {
                         @click.stop="
                           openDownloadFormatModal('single', version.id)
                         "
-                        class="p-2 bg-gray-100 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        class="p-2 bg-gray-100 dark:bg-gray-800 text-blue-600 shadow hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
                         title="Download version"
                       >
                         <svg
@@ -1999,7 +1999,7 @@ onMounted(async () => {
                       </button>
                       <button
                         @click.stop="confirmDeleteVersion(version.id)"
-                        class="p-2 bg-gray-100 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+                        class="p-2 bg-gray-100 dark:bg-gray-800 text-red-600 shadow hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors duration-200"
                         title="Delete version"
                       >
                         <svg

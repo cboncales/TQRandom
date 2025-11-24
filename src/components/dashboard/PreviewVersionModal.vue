@@ -75,16 +75,16 @@ const handleClose = () => {
     data-aos-delay="300"
   >
     <div
-      class="relative w-full max-w-4xl bg-white border border-gray-300 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+      class="relative w-full max-w-4xl bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
       <!-- Header (Fixed) -->
       <div class="flex justify-between items-center px-6 pt-6 pb-4 shrink-0">
         <div>
-          <h2 class="text-2xl font-bold text-gray-900">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {{ previewVersion?.test_title || 'Loading...' }}
           </h2>
-          <p class="text-xs md:text-sm lg:text-sm text-gray-600 mt-1">
+          <p class="text-xs md:text-sm lg:text-sm text-gray-600 dark:text-gray-100 mt-1">
             Version {{ previewVersion?.version_number }} •
             {{ previewVersion?.questions?.length || 0 }} questions • Generated
             {{
@@ -96,7 +96,7 @@ const handleClose = () => {
         </div>
         <button
           @click="handleClose"
-          class="text-gray-400 hover:text-gray-600 transition-colors"
+          class="text-gray-400 dark:text-gray-100 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
         >
           <svg
             class="w-6 h-6"
@@ -140,7 +140,7 @@ const handleClose = () => {
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             ></path>
           </svg>
-          <p class="text-gray-600">Loading version preview...</p>
+          <p class="text-gray-600 dark:text-gray-100">Loading version preview...</p>
         </div>
 
         <!-- Content -->
@@ -148,7 +148,7 @@ const handleClose = () => {
           <div
             v-for="(question, qIndex) in previewVersion.questions"
             :key="question.question_id"
-            class="bg-gray-50 rounded-lg p-5 border border-gray-200"
+            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700"
           >
             <!-- Question -->
             <div class="mb-4">
@@ -158,7 +158,7 @@ const handleClose = () => {
                 >
                   {{ question.question_number }}
                 </span>
-                <p class="text-lg text-gray-900 font-medium">
+                <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">
                   {{ question.question_text }}
                 </p>
               </div>
@@ -178,16 +178,16 @@ const handleClose = () => {
               <div
                 v-for="(choice, cIndex) in question.answer_choices"
                 :key="choice.id"
-                class="p-3 rounded-md bg-white border border-gray-200"
+                class="p-3 rounded-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
               >
                 <div class="flex items-start">
                   <span
-                    class="shrink-0 font-medium text-gray-700 mr-3 min-w-[24px]"
+                    class="shrink-0 font-medium text-gray-700 dark:text-gray-100 mr-3 min-w-[24px]"
                   >
                     {{ String.fromCharCode(65 + cIndex) }}.
                   </span>
                   <div class="flex-1">
-                    <p class="text-gray-800">{{ choice.text }}</p>
+                    <p class="text-gray-800 dark:text-gray-100">{{ choice.text }}</p>
 
                     <!-- Answer Choice Image -->
                     <div v-if="choice.image_url" class="mt-2">

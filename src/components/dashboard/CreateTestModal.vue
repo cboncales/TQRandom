@@ -119,13 +119,13 @@ const closeModal = () => {
   >
     <!-- Modal content -->
     <div
-      class="relative top-20 mx-auto p-5 border border-gray-300 w-full max-w-md shadow-lg rounded-md bg-white"
+      class="relative top-20 mx-auto p-5 border border-gray-300 w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-900"
       @click.stop
     >
       <!-- Close button -->
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-lg font-medium text-gray-900">Create New Test</h3>
-        <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Create New Test</h3>
+        <button @click="closeModal" class="text-gray-400 dark:text-gray-100 hover:text-gray-600">
           <svg
             class="w-6 h-6"
             fill="none"
@@ -173,7 +173,7 @@ const closeModal = () => {
         <div>
           <label
             for="test-title"
-            class="block text-sm font-medium text-gray-700"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-100"
           >
             Test Title *
           </label>
@@ -192,7 +192,7 @@ const closeModal = () => {
         <div>
           <label
             for="test-description"
-            class="block text-sm font-medium text-gray-700"
+            class="block text-sm font-medium text-gray-700 dark:text-gray-100"
           >
             Description
           </label>
@@ -204,14 +204,14 @@ const closeModal = () => {
             class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
             placeholder="Enter test description (optional)"
           />
-          <p class="mt-1 text-xs text-gray-500">
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
             Provide a brief description of what this test covers
           </p>
         </div>
 
         <!-- Header Logo Upload -->
         <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">
             Header Logo (Optional)
           </label>
           <div v-if="logoPreview" class="mb-3">
@@ -248,9 +248,9 @@ const closeModal = () => {
             accept="image/*"
             @change="handleLogoUpload"
             :disabled="isLoading || isUploadingLogo"
-            class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            class="block w-full text-sm text-gray-500 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
           />
-          <p class="mt-1 text-xs text-gray-500">
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
             PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam
             documents.
           </p>
@@ -262,7 +262,7 @@ const closeModal = () => {
             type="button"
             @click="closeModal"
             :disabled="isLoading"
-            class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+            class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-100 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

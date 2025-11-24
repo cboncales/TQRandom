@@ -51,10 +51,10 @@ const toggleSelection = (question) => {
 </script>
 
 <template>
-  <div class="bg-white shadow overflow-hidden sm:rounded-md">
+  <div class="bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-md">
     <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900">Questions</h3>
-      <p class="mt-1 max-w-2xl text-xs sm:text-sm text-gray-500">
+      <h3 class="text-base sm:text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">Questions</h3>
+      <p class="mt-1 max-w-2xl text-xs sm:text-sm text-gray-500 dark:text-gray-300">
         Manage questions for this test
       </p>
     </div>
@@ -64,7 +64,7 @@ const toggleSelection = (question) => {
         v-for="(question, index) in questions"
         :key="question.id"
         class="px-3 sm:px-4 py-4 sm:py-6 transition-colors duration-200"
-        :class="isQuestionSelected(question) ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''"
+        :class="isQuestionSelected(question) ? 'bg-blue-50 border-l-4 border-l-blue-500 dark:bg-gray-700 dark:border-l-blue-800' : ''"
       >
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
           <div class="flex-1 min-w-0">
@@ -83,7 +83,7 @@ const toggleSelection = (question) => {
                 {{ index + 1 }}
               </span>
               <div class="flex-1">
-                <h4 class="text-sm sm:text-base md:text-lg font-medium text-gray-900 mb-2 sm:mb-3">
+                <h4 class="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">
                   {{ question.question }}
                 </h4>
 
@@ -99,14 +99,14 @@ const toggleSelection = (question) => {
 
                 <!-- Question Type Badge -->
                 <span
-                  class="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 mb-2 sm:mb-3"
+                  class="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 mb-2 sm:mb-3"
                 >
                   {{ question.type }}
                 </span>
 
                 <!-- Multiple Choice Options -->
                 <div v-if="question.type === 'multiple-choice'" class="mb-3 sm:mb-4">
-                  <h5 class="text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                  <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">
                     Answer Options:
                   </h5>
                   <div class="space-y-2">
@@ -116,8 +116,8 @@ const toggleSelection = (question) => {
                       class="flex items-start p-2 rounded border"
                       :class="
                         option.isCorrect
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-gray-50 border-gray-200'
+                          ? 'bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-700'
+                          : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                       "
                     >
                       <span
@@ -144,8 +144,8 @@ const toggleSelection = (question) => {
                           class="text-xs sm:text-sm"
                           :class="
                             option.isCorrect
-                              ? 'text-green-800 font-medium'
-                              : 'text-gray-700'
+                              ? 'text-green-800 font-medium dark:text-green-100'
+                              : 'text-gray-700 dark:text-gray-100'
                           "
                         >
                           {{ option.text }}
@@ -163,9 +163,9 @@ const toggleSelection = (question) => {
                   </div>
 
                   <!-- Correct Answer Summary -->
-                  <div class="mt-3 text-xs sm:text-sm text-gray-600">
+                  <div class="mt-3 text-xs sm:text-sm text-gray-600 dark:text-gray-100">
                     <strong>Correct answer(s): </strong>
-                    <span class="text-green-600 font-medium">
+                    <span class="text-green-600 font-medium dark:text-green-400">
                       {{
                         getCorrectAnswers(question.options)
                           .map((opt) => opt.text)
@@ -182,7 +182,7 @@ const toggleSelection = (question) => {
           <div class="flex items-center gap-2 sm:ml-4 ml-0 self-end sm:self-start">
             <button
               @click="editQuestion(question)"
-              class="p-1.5 sm:p-2 bg-gray-100 text-blue-500 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-1.5 sm:p-2 bg-gray-100 text-blue-500 shadow hover:bg-gray-200 dark:bg-gray-800 dark:text-blue-400 rounded-md transition-colors duration-200"
               title="Edit question"
             >
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,7 +191,7 @@ const toggleSelection = (question) => {
             </button>
             <button
               @click="confirmDelete(question.id)"
-              class="p-1.5 sm:p-2 bg-gray-100 text-red-500 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-1.5 sm:p-2 bg-gray-100 text-red-500 shadow hover:bg-gray-200 dark:bg-gray-800 dark:text-red-400 rounded-md transition-colors duration-200"
               title="Delete question"
             >
               <svg class="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,9 +204,9 @@ const toggleSelection = (question) => {
 
       <!-- Empty State -->
       <li v-if="questions.length === 0" class="px-4 py-8 sm:px-6 text-center">
-        <div class="text-gray-500">
+        <div class="text-gray-500 dark:text-gray-100">
           <svg
-            class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400"
+            class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-100"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -218,8 +218,8 @@ const toggleSelection = (question) => {
               d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
             />
           </svg>
-          <h3 class="mt-2 text-xs sm:text-sm font-medium text-gray-900">No questions</h3>
-          <p class="mt-1 text-xs sm:text-sm text-gray-500">
+          <h3 class="mt-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">No questions</h3>
+          <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-100">
             Get started by adding your first question.
           </p>
         </div>

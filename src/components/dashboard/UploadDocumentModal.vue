@@ -77,7 +77,6 @@ const handleFileUpload = async () => {
   try {
     // Parse answer key if provided
     const answerKeyMap = parseAnswerKey(answerKeyText.value);
-    console.log('Parsed answer key:', answerKeyMap);
 
     // Upload and parse the document
     const result = await uploadApi.uploadDocument(selectedFile.value);
@@ -90,12 +89,6 @@ const handleFileUpload = async () => {
 
     const parsedQuestions = result.data.data;
     const stats = result.data.stats;
-    console.log(
-      `Successfully parsed ${parsedQuestions.length} questions from document`
-    );
-    console.log(
-      `Images extracted: ${stats.images_extracted}, uploaded: ${stats.total_images}`
-    );
 
     // Check if images were extracted
     if (stats.total_images > 0) {
@@ -264,7 +257,7 @@ const closeModal = () => {
       >
 
       <div
-        class="relative z-10 inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+        class="relative z-10 inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700                                                   rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
       >
         <div>
           <div
@@ -286,31 +279,31 @@ const closeModal = () => {
           </div>
           <div class="mt-3 text-center sm:mt-5">
             <h3
-              class="text-lg leading-6 font-medium text-gray-900"
+              class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100"
               id="modal-title"
             >
               Upload Document
             </h3>
             <div class="mt-2 space-y-3">
-              <p class="text-sm text-gray-500">
+              <p class="text-sm text-gray-500 dark:text-gray-100">
                 Upload a PDF or Word document to extract questions
                 automatically.
               </p>
 
               <!-- Format Instructions -->
               <div
-                class="bg-green-50 border border-green-200 rounded-md p-4 text-left"
+                class="bg-gray-50 border border-gray-200 dark:bg-gray-900 dark:border-gray-700 rounded-md p-4 text-left"
               >
-                <p class="text-sm font-semibold text-green-800 mb-2">
+                <p class="text-sm font-semibold text-green-800 dark:text-green-100 mb-2">
                   Required Format:
                 </p>
-                <div class="space-y-2 text-xs text-green-700">
+                <div class="space-y-2 text-xs text-green-700 dark:text-green-100">
                   <div>
                     <p class="font-medium mb-1">
                       Questions must be numbered:
                     </p>
                     <div
-                      class="bg-white rounded px-3 py-2 font-mono text-gray-700"
+                      class="bg-white dark:bg-gray-800 rounded px-3 py-2 font-mono text-gray-700 dark:text-gray-100"
                     >
                       1. What is the capital of France?<br />
                       2. What is 2 + 2?
@@ -321,7 +314,7 @@ const closeModal = () => {
                       Answer choices must use letters:
                     </p>
                     <div
-                      class="bg-white rounded px-3 py-2 font-mono text-gray-700"
+                      class="bg-white dark:bg-gray-800 rounded px-3 py-2 font-mono text-gray-700 dark:text-gray-100"
                     >
                       A. Paris<br />
                       B. London<br />
@@ -329,7 +322,7 @@ const closeModal = () => {
                       D. Madrid
                     </div>
                   </div>
-                  <div class="bg-green-100 rounded px-3 py-2">
+                  <div class="bg-green-100 dark:bg-green-900 rounded px-3 py-2">
                     <p class="font-semibold">Tips:</p>
                     <ul class="mt-1 space-y-1 list-disc list-inside">
                       <li>Use <strong>1., 2., 3.</strong> for questions</li>
@@ -384,7 +377,7 @@ const closeModal = () => {
             />
             <label for="fileInput" class="cursor-pointer">
               <svg
-                class="mx-auto h-12 w-12 text-gray-400"
+                class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-100"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -402,9 +395,9 @@ const closeModal = () => {
                 >
                   Click to upload
                 </span>
-                <span class="text-sm text-gray-500"> or drag and drop</span>
+                <span class="text-sm text-gray-500 dark:text-gray-100"> or drag and drop</span>
               </div>
-              <p class="text-xs text-gray-500 mt-1">
+              <p class="text-xs text-gray-500 dark:text-gray-100 mt-1">
                 PDF, DOC, DOCX up to 10MB
               </p>
             </label>
@@ -454,10 +447,10 @@ const closeModal = () => {
           <div class="mt-5">
             <label
               for="answerKey"
-              class="block text-sm font-medium text-gray-700 mb-2"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
             >
               Answer Key (Optional)
-              <span class="text-xs font-normal text-gray-500 ml-1">
+              <span class="text-xs font-normal text-gray-500 dark:text-gray-100 ml-1">
                 - Paste answer key to automatically set correct answers
               </span>
             </label>
@@ -469,7 +462,7 @@ const closeModal = () => {
               class="block w-full rounded-md border border-gray-300 shadow-sm px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500 font-mono"
               :disabled="isUploadingFile"
             ></textarea>
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-100">
               <svg
                 class="inline w-3 h-3 mr-1"
                 fill="currentColor"
@@ -490,10 +483,10 @@ const closeModal = () => {
         <!-- Upload Progress -->
         <div v-if="isUploadingFile" class="mt-5">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-medium text-gray-700"
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-100"
               >Processing...</span
             >
-            <span class="text-sm font-medium text-gray-700"
+            <span class="text-sm font-medium text-gray-700 dark:text-gray-100"
               >{{ uploadProgress }}%</span
             >
           </div>
@@ -503,7 +496,7 @@ const closeModal = () => {
               :style="{ width: uploadProgress + '%' }"
             ></div>
           </div>
-          <p class="mt-2 text-xs text-gray-500 text-center">
+          <p class="mt-2 text-xs text-gray-500 dark:text-gray-100 text-center">
             Uploading and adding questions to your test...
           </p>
         </div>
@@ -543,7 +536,7 @@ const closeModal = () => {
             type="button"
             @click="closeModal"
             :disabled="isUploadingFile"
-            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
+            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:col-start-1 sm:text-sm disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

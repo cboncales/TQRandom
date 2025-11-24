@@ -96,10 +96,10 @@ onMounted(async () => {
 <template>
   <AppLayout>
     <div
-      class="min-h-screen bg-gray-200 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
+      class="min-h-screen bg-gray-200 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8"
     >
       <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+        <div class="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <div class="text-center">
             <!-- Loading State -->
             <div v-if="isLoading" class="space-y-4">
@@ -124,10 +124,10 @@ onMounted(async () => {
                   ></path>
                 </svg>
               </div>
-              <h2 class="text-lg font-medium text-gray-900">
+              <h2 class="text-lg font-medium text-gray-900 dark:text-gray-100">
                 Completing sign in...
               </h2>
-              <p class="text-sm text-gray-600">
+              <p class="text-sm text-gray-600 dark:text-gray-100">
                 Please wait while we process your authentication.
               </p>
             </div>

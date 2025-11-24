@@ -192,14 +192,26 @@ const closeModal = () => {
   >
     <!-- MODAL CARD -->
     <div
-      class="relative bg-white w-full max-w-xs md:max-w-lg lg:max-w-lg mt-24 p-6 rounded-lg shadow-lg border border-gray-300"
+      class="relative bg-white dark:bg-gray-900 w-full max-w-xs md:max-w-lg lg:max-w-lg mt-24 p-6 rounded-lg shadow-lg border border-gray-300"
       @click.stop
     >
       <!-- HEADER -->
       <div class="flex justify-between items-center mb-4">
-        <h2 class="text-xl font-semibold text-gray-800">Edit Test</h2>
-        <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-          ✕
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Edit Test</h2>
+        <button @click="closeModal" class="text-gray-400 dark:text-gray-100 hover:text-gray-600">
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
         </button>
       </div>
 
@@ -209,7 +221,7 @@ const closeModal = () => {
           <span
             class="animate-spin h-5 w-5 border-2 border-t-transparent rounded-full"
           ></span>
-          <span class="text-gray-600">Loading test...</span>
+          <span class="text-gray-600 dark:text-gray-100">Loading test...</span>
         </div>
       </div>
 
@@ -234,7 +246,7 @@ const closeModal = () => {
         <div class="space-y-4">
           <!-- Title -->
           <div>
-            <label class="block text-sm font-medium text-gray-700"
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-100"
               >Test Title *</label
             >
             <input
@@ -247,7 +259,7 @@ const closeModal = () => {
 
           <!-- Description -->
           <div>
-            <label class="block text-sm font-medium text-gray-700"
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-100"
               >Description</label
             >
             <textarea
@@ -260,7 +272,7 @@ const closeModal = () => {
 
           <!-- Header Logo Upload -->
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">
               Header Logo (Optional)
             </label>
             <div v-if="logoPreview" class="mb-3">
@@ -297,9 +309,9 @@ const closeModal = () => {
               accept="image/*"
               @change="handleLogoUpload"
               :disabled="isSaving || isUploadingLogo"
-              class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              class="block w-full text-sm text-gray-500 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             />
-            <p class="mt-1 text-xs text-gray-500">
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
               PNG, JPG, GIF up to 2MB. Will be displayed at the top of exam
               documents.
             </p>
@@ -310,7 +322,7 @@ const closeModal = () => {
         <div class="flex justify-end space-x-3 mt-6">
           <button
             @click="closeModal"
-            class="bg-gray-300 text-gray-700 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
+            class="bg-gray-300 dark:bg-gray-700 text-gray-700 dark:text-gray-100 hover:bg-gray-400 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 disabled:cursor-not-allowed"
             :disabled="isSaving"
           >
             Cancel

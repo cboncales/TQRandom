@@ -2,9 +2,11 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthUserStore } from "@/stores/authUser";
+import { useThemeStore } from "@/stores/themeStore";
 
 const router = useRouter();
 const authStore = useAuthUserStore();
+const themeStore = useThemeStore();
 const isMenuOpen = ref(false);
 const isUserDropdownOpen = ref(false);
 
@@ -79,12 +81,20 @@ const userDisplayName = computed(() => {
 
   return "User";
 });
+
+// Dark mode toggle
+const toggleDarkMode = () => {
+  themeStore.toggleTheme();
+};
+
+// Make isDarkMode reactive for template
+const isDarkMode = computed(() => themeStore.isDarkMode);
 </script>
 
 <template>
   <div class="min-h-screen flex flex-col bg-gray-50">
     <!-- Navbar -->
-    <nav class="bg-gray-800 shadow-lg">
+    <nav class="bg-gray-900 shadow-lg">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center h-16">
           <!-- Logo/Brand -->
@@ -148,12 +158,12 @@ const userDisplayName = computed(() => {
                   <!-- Dropdown Menu -->
                   <div
                     v-show="isUserDropdownOpen"
-                    class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                    class="absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black dark:ring-gray-700 ring-opacity-5 z-50"
                   >
                     <div class="py-1">
                       <button
                         @click="navigateTo('settings')"
-                        class="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-200"
+                        class="flex items-center w-full px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                       >
                         <svg
                           class="w-4 h-4 mr-3"
@@ -178,7 +188,7 @@ const userDisplayName = computed(() => {
                       </button>
                       <button
                         @click="handleLogout"
-                        class="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
+                        class="flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
                       >
                         <svg
                           class="w-4 h-4 mr-3"
@@ -215,6 +225,44 @@ const userDisplayName = computed(() => {
                   Get Started
                 </button>
               </template>
+
+              <!-- Dark Mode Toggle Button - ALWAYS VISIBLE -->
+              <button
+                @click="toggleDarkMode"
+                class="flex items-center justify-center w-8 h-8 text-white hover:text-gray-400 rounded-md transition-colors duration-200 ml-2"
+                :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+              >
+                <!-- Sun Icon (Light Mode) -->
+                <svg
+                  v-if="isDarkMode"
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
+                </svg>
+                <!-- Moon Icon (Dark Mode) -->
+                <svg
+                  v-else
+                  class="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                  />
+                </svg>
+              </button>
             </div>
           </div>
 
@@ -252,7 +300,7 @@ const userDisplayName = computed(() => {
         <!-- Mobile Navigation Menu -->
         <div v-show="isMenuOpen" class="md:hidden">
           <div
-            class="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200"
+            class="px-2 pt-2 pb-3 space-y-1 sm:px-3 border-t border-gray-200 dark:border-gray-700"
           >
             <button
               @click="navigateTo('home')"
@@ -263,8 +311,45 @@ const userDisplayName = computed(() => {
 
             <!-- Authenticated Mobile Navigation -->
             <template v-if="isAuthenticated">
-              <div class="px-3 py-2 text-base font-medium text-white">
-                Welcome, {{ userDisplayName }}
+              <div class="px-3 py-2 text-base font-medium text-white flex items-center justify-between">
+                <span>Welcome, {{ userDisplayName }}</span>
+                <!-- Dark Mode Toggle Button (Mobile) -->
+                <button
+                  @click="toggleDarkMode"
+                  class="flex items-center justify-center w-8 h-8 text-white hover:text-gray-400 rounded-md transition-colors duration-200"
+                  :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                >
+                  <!-- Sun Icon (Light Mode) -->
+                  <svg
+                    v-if="isDarkMode"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <!-- Moon Icon (Dark Mode) -->
+                  <svg
+                    v-else
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                </button>
               </div>
 
               <button
@@ -291,6 +376,47 @@ const userDisplayName = computed(() => {
 
             <!-- Unauthenticated Mobile Navigation -->
             <template v-else>
+              <!-- Dark Mode Toggle for Unauthenticated Users (Mobile) -->
+              <div class="px-3 py-2 flex items-center justify-between">
+                <span class="text-white text-base font-medium">Theme</span>
+                <button
+                  @click="toggleDarkMode"
+                  class="flex items-center justify-center w-8 h-8 text-white hover:text-gray-400 rounded-md transition-colors duration-200"
+                  :title="isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'"
+                >
+                  <!-- Sun Icon (Light Mode) -->
+                  <svg
+                    v-if="isDarkMode"
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+                    />
+                  </svg>
+                  <!-- Moon Icon (Dark Mode) -->
+                  <svg
+                    v-else
+                    class="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+                    />
+                  </svg>
+                </button>
+              </div>
+
               <button
                 @click="navigateTo('login')"
                 class="text-white hover:text-blue-600 block px-3 py-2 rounded-md text-base font-medium w-full text-left transition-colors duration-200"
@@ -315,7 +441,7 @@ const userDisplayName = computed(() => {
     </main>
 
     <!-- Footer -->
-    <footer class="bg-gray-800 text-white">
+    <footer class="bg-gray-800 dark:bg-gray-900 text-white">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div
           class="grid grid-cols-1 md:grid-cols-4 gap-8"
@@ -469,7 +595,7 @@ const userDisplayName = computed(() => {
         </div>
 
         <!-- Copyright -->
-        <div class="border-t border-gray-700 mt-8 pt-8 text-center">
+        <div class="border-t border-gray-700 dark:border-gray-800 mt-8 pt-8 text-center">
           <p class="text-gray-300">
             &copy; {{ new Date().getFullYear() }} TQRandom. All rights reserved.
           </p>

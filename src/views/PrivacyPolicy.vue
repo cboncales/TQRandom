@@ -8,34 +8,34 @@ onMounted(() => {
 </script>
 <template>
   <AppLayout>
-    <section class="py-20 bg-gray-200">
+    <section class="py-20 bg-gray-200 dark:bg-gray-900">
       <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-8 text-center">
           Privacy Policy
         </h1>
 
         <!-- Overview -->
         <div
-          class="bg-white p-8 rounded-2xl shadow mb-10"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10"
           data-aos="fade-up"
           data-aos-delay="300"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Privacy Policy
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>Last updated November 19, 2025</strong>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             This Privacy Notice for <strong>TQRandom</strong>, describes how and
             why we might access, collect, store, use, and/or share ("process")
             your personal information when you use our services ("Services"),
             including when you:
           </p>
 
-          <ul class="list-disc pl-6 text-gray-700 leading-relaxed mb-4">
+          <ul class="list-disc pl-6 text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <li>
               Visit our website at <strong>tq-random.vercel.app</strong> or any
               website of ours that links to this Privacy Notice.
@@ -53,7 +53,7 @@ onMounted(() => {
             </li>
           </ul>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>Questions or concerns?</strong> Reading this Privacy Notice
             will help you understand your privacy rights and choices. We are
             responsible for making decisions about how your personal information
@@ -62,7 +62,7 @@ onMounted(() => {
             concerns, please contact us at:
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             <a
               href="https://mail.google.com/mail/?view=cm&fs=1&to=tqrandom18@gmail.com"
               target="_blank"
@@ -75,15 +75,15 @@ onMounted(() => {
         </div>
         <!-- Summary of Key Points -->
         <div
-          class="bg-white p-8 rounded-2xl shadow mb-10"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10"
           data-aos="fade-up"
           data-aos-delay="400"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Summary of Key Points
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             This summary provides key points from our Privacy Notice, but you
             can find out more details about any of these topics by clicking the
             linked items below or by using our
@@ -92,7 +92,7 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>What personal information do we process?</strong>
             When you visit, use, or navigate our Services, we may process
             personal information depending on how you interact with us and the
@@ -103,7 +103,7 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>Do we process any sensitive personal information?</strong>
             Some of the information may be considered "special" or "sensitive"
             in certain jurisdictions (e.g., racial or ethnic origins, sexual
@@ -111,12 +111,12 @@ onMounted(() => {
             sensitive personal information.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>Do we collect any information from third parties?</strong>
             We do not collect any information from third parties.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>How do we process your information?</strong>
             We process your information to provide, improve, and administer our
             Services, communicate with you, ensure security and fraud
@@ -129,7 +129,7 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong
               >In what situations and with which parties do we share personal
               information?</strong
@@ -141,7 +141,7 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>How do we keep your information safe?</strong>
             We use organizational and technical measures to protect your
             information. However, no electronic transmission or storage system
@@ -152,7 +152,7 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>What are your rights?</strong>
             Privacy laws in your region may give you certain rights regarding
             your personal information. Learn more about
@@ -161,14 +161,14 @@ onMounted(() => {
             </a>
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>How do you exercise your rights?</strong>
             The easiest way is by visiting
             <strong>tq-random.vercel.app</strong> or contacting us directly. We
             will act on your request in accordance with applicable laws.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             <strong
               >Want to learn more about what we do with any information we
               collect?</strong
@@ -181,15 +181,15 @@ onMounted(() => {
         <!-- TABLE OF CONTENTS -->
         <div
           id="table-of-contents"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="350"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             Table of Contents
           </h2>
 
-          <ol class="list-decimal pl-6 text-gray-700 space-y-2 leading-relaxed">
+          <ol class="list-decimal pl-6 text-gray-700 dark:text-gray-100 space-y-2 leading-relaxed">
             <li>
               <a
                 id="full-notice"
@@ -307,24 +307,24 @@ onMounted(() => {
         <!-- 1. WHAT INFORMATION DO WE COLLECT -->
         <div
           id="what-information-we-collect"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-24"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-24"
           data-aos="fade-up"
           data-aos-delay="350"
         >
-          <h2 class="text-gray-700 leading-relaxed text-2xl font-bold mb-4">
+          <h2 class="text-gray-700 dark:text-gray-100 leading-relaxed text-2xl font-bold mb-4">
             1. WHAT INFORMATION DO WE COLLECT?
           </h2>
 
-          <h3 class="text-gray-700 leading-relaxed text-lg font-semibold mb-2">
+          <h3 class="text-gray-700 dark:text-gray-100 leading-relaxed text-lg font-semibold mb-2">
             Personal information you disclose to us
           </h3>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             <strong>In Short:</strong> We collect personal information that you
             provide to us.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             We collect personal information that you voluntarily provide to us
             when you register on the Services, express an interest in obtaining
             information about us or our products and Services, when you
@@ -334,7 +334,7 @@ onMounted(() => {
 
           <p
             id="personal-information"
-            class="text-gray-700 leading-relaxed mb-10 scroll-mt-25"
+            class="text-gray-700 dark:text-gray-100 leading-relaxed mb-10 scroll-mt-25"
           >
             <strong>Personal Information Provided by You.</strong> The personal
             information that we collect depends on the context of your
@@ -343,19 +343,19 @@ onMounted(() => {
             may include the following:
           </p>
 
-          <ul class="list-disc pl-5 space-y-1">
+          <ul class="list-disc pl-5 space-y-1 text-gray-700 dark:text-gray-100">
             <li>names</li>
             <li>phone numbers</li>
             <li>email addresses</li>
             <li>usernames</li>
             <li>passwords</li>
           </ul>
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>Sensitive Information:</strong> We do not process sensitive
             information.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>Social Media Login Data:</strong> We may provide you with
             the option to register with us using your existing social media
             account details, like your Facebook, X, or other social media
@@ -367,7 +367,7 @@ onMounted(() => {
             >.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             All personal information that you provide to us must be true,
             complete, and accurate, and you must notify us of any changes to
             such personal information.
@@ -376,17 +376,17 @@ onMounted(() => {
         <!-- 2. HOW DO WE PROCESS YOUR INFORMATION? -->
         <div
           id="how-we-process-information"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="400"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             2. HOW DO WE PROCESS YOUR INFORMATION?
           </h2>
 
           <p
             id="how-we-process"
-            class="text-gray-700 leading-relaxed mb-10 scroll-mt-25"
+            class="text-gray-700 dark:text-gray-100 leading-relaxed mb-10 scroll-mt-25"
           >
             <strong>In Short:</strong> We process your information to provide,
             improve, and administer our Services, communicate with you, for
@@ -394,12 +394,12 @@ onMounted(() => {
             process your information for other purposes with your consent.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             We process your personal information for a variety of reasons,
             depending on how you interact with our Services, including:
           </p>
 
-          <ul class="list-disc pl-6 text-gray-700 mb-4">
+          <ul class="list-disc pl-6 text-gray-700 dark:text-gray-100 mb-4">
             <li>
               To facilitate account creation and authentication and otherwise
               manage user accounts.
@@ -419,29 +419,29 @@ onMounted(() => {
         <!-- 3. WHEN AND WITH WHOM DO WE SHARE YOUR PERSONAL INFORMATION? -->
         <div
           id="share-personal-information"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="450"
         >
           <h2
             id="share-information"
-            class="text-2xl font-semibold text-gray-800 mb-10 scroll-mt-25"
+            class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-10 scroll-mt-25"
           >
             3. WHEN AND WITH WHOM DO WE SHARE YOUR PERSONAL INFORMATION?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> We may share information in specific
             situations described in this section and/or with the following third
             parties.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-4">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             We may need to share your personal information in the following
             situations:
           </p>
 
-          <ul class="list-disc pl-6 text-gray-700 mb-4">
+          <ul class="list-disc pl-6 text-gray-700 dark:text-gray-100 mb-4">
             <li>
               <strong>Business Transfers:</strong> We may share or transfer your
               information in connection with, or during negotiations of, any
@@ -454,35 +454,35 @@ onMounted(() => {
         <!-- 4. HOW DO WE HANDLE YOUR SOCIAL LOGINS? -->
         <div
           id="social-logins"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="500"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             4. HOW DO WE HANDLE YOUR SOCIAL LOGINS?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> If you choose to register or log in to
             our Services using a social media account, we may have access to
             certain information about you.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             Our Services offer you the ability to register and log in using your
             third-party social media account details (like your Facebook or X
             logins). Where you choose to do this, we will receive certain
             profile information about you from your social media provider.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             The profile information we receive may vary depending on the social
             media provider concerned, but will often include your name, email
             address, friends list, and profile picture, as well as other
             information you choose to make public.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             We will use the information we receive only for the purposes
             described in this Privacy Notice or that are otherwise made clear to
             you on the relevant Services. We do not control other uses of your
@@ -494,21 +494,21 @@ onMounted(() => {
         <!-- 5. HOW LONG DO WE KEEP YOUR INFORMATION? -->
         <div
           id="information-retention"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="550"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             5. HOW LONG DO WE KEEP YOUR INFORMATION?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> We keep your information for as long as
             necessary to fulfill the purposes outlined in this Privacy Notice
             unless otherwise required by law.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             We will only keep your personal information for as long as necessary
             for the purposes set out in this Privacy Notice, unless a longer
             retention period is required or permitted by law (e.g., tax,
@@ -517,7 +517,7 @@ onMounted(() => {
             an account with us.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             When we have no ongoing legitimate business need to process your
             personal information, we will either delete or anonymize such
             information, or if not possible (e.g., stored in backup archives),
@@ -529,27 +529,27 @@ onMounted(() => {
         <!-- 6. HOW DO WE KEEP YOUR INFORMATION SAFE? -->
         <div
           id="information-safety"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="600"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             6. HOW DO WE KEEP YOUR INFORMATION SAFE?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> We aim to protect your personal
             information through a system of organizational and technical
             security measures.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             We have implemented appropriate and reasonable technical and
             organizational security measures designed to protect the security of
             any personal information we process.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             Despite our safeguards, no electronic transmission over the Internet
             or information storage technology can be guaranteed 100% secure, so
             we cannot promise that hackers, cybercriminals, or other
@@ -561,15 +561,15 @@ onMounted(() => {
         <!-- 7. DO WE COLLECT INFORMATION FROM MINORS? -->
         <div
           id="minors-data"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="650"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             7. DO WE COLLECT INFORMATION FROM MINORS?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             <strong>In Short:</strong> We do not knowingly collect data from or
             market to minors.
           </p>
@@ -578,21 +578,21 @@ onMounted(() => {
         <!-- 8. WHAT ARE YOUR PRIVACY RIGHTS? -->
         <div
           id="privacy-rights"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="700"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             8. WHAT ARE YOUR PRIVACY RIGHTS?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> You may review, change, or terminate your
             account at any time, depending on your country, province, or state
             of residence.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             <strong>Withdrawing your consent:</strong> If we are relying on your
             consent to process your personal information (express and/or implied
             depending on the law), you have the right to withdraw your consent
@@ -603,7 +603,7 @@ onMounted(() => {
             >below.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             Please note that withdrawing consent will not affect the lawfulness
             of the processing prior to withdrawal, nor will it affect processing
             conducted on other lawful grounds.
@@ -612,22 +612,22 @@ onMounted(() => {
         <!-- 9. CONTROLS FOR DO-NOT-TRACK FEATURES -->
         <div
           id="do-not-track"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="750"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             9. CONTROLS FOR DO-NOT-TRACK FEATURES
           </h2>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             Most web browsers and some mobile operating systems and mobile
             applications include a Do-Not-Track ("DNT") feature or setting you
             can activate to signal your privacy preference not to have data
             about your online browsing activities monitored and collected.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             No uniform technology standard for recognizing and implementing DNT
             signals has been finalized. As such, we do not currently respond to
             DNT browser signals or any other mechanism that automatically
@@ -641,20 +641,20 @@ onMounted(() => {
         <!-- 10. DO OTHER REGIONS HAVE SPECIFIC PRIVACY RIGHTS? -->
         <div
           id="regional-privacy-rights"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="800"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             10. DO OTHER REGIONS HAVE SPECIFIC PRIVACY RIGHTS?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> You may have additional rights based on
             the country you reside in.
           </p>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>Philippines:</strong> We collect and process your personal
             information in accordance with the obligations and conditions set by
             the Data Privacy Act of 2012 (Republic Act No. 10173) and its
@@ -662,14 +662,14 @@ onMounted(() => {
             the notice requirements defined in the Data Privacy Act.
           </p>
 
-          <ul class="list-disc pl-6 text-gray-700 mb-4">
+          <ul class="list-disc pl-6 text-gray-700 dark:text-gray-100 mb-4">
             <li>Offer you the products or services that you want</li>
             <li>Respond to or help with your requests</li>
             <li>Manage your account with us</li>
             <li>Confirm your identity and protect your account</li>
           </ul>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             You can request access or correction of your personal information by
             contacting us using the section
             <a href="#review-update-delete" class="text-blue-600 underline"
@@ -685,15 +685,15 @@ onMounted(() => {
         <!-- 11. DATA HANDLING OF UPLOADED QUESTIONNAIRES -->
         <div
           id="data-handling"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="850"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             11. DATA HANDLING OF UPLOADED QUESTIONNAIRES
           </h2>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             All test questionnaires, questions, and answer files uploaded by
             teachers are securely stored in the TQRandom database (Supabase).
             This data is used only to generate randomized test versions and is
@@ -706,15 +706,15 @@ onMounted(() => {
         <!-- 12. STUDENT ANONYMITY -->
         <div
           id="student-anonymity"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="900"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             12. STUDENT ANONYMITY
           </h2>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             TQRandom does not collect or store any personally identifiable
             information of students. All student data remains anonymous,
             ensuring privacy and preventing tracking of individual student
@@ -727,15 +727,15 @@ onMounted(() => {
         <!-- 13. LIMITATIONS ON THIRD-PARTY SHARING -->
         <div
           id="third-party-sharing"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="950"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             13. LIMITATIONS ON THIRD-PARTY SHARING
           </h2>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             TQRandom will not sell, rent, or trade user information to
             advertisers or unrelated third parties. Personal and questionnaire
             data may only be shared with trusted service providers for system
@@ -747,20 +747,20 @@ onMounted(() => {
         <!-- 14. DO WE MAKE UPDATES TO THIS NOTICE? -->
         <div
           id="updates-notice"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="1000"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             14. DO WE MAKE UPDATES TO THIS NOTICE?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             <strong>In Short:</strong> Yes, we will update this notice as
             necessary to stay compliant with relevant laws.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             We may update this Privacy Notice from time to time. The updated
             version will be indicated by an updated "Revised" date at the top of
             this Privacy Notice. If we make material changes to this Privacy
@@ -774,15 +774,15 @@ onMounted(() => {
         <!-- 15. HOW CAN YOU CONTACT US ABOUT THIS NOTICE? -->
         <div
           id="contact-about-notice"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="1050"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             15. HOW CAN YOU CONTACT US ABOUT THIS NOTICE?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             If you have questions or comments about this notice, you may email
             us at
             <a
@@ -793,7 +793,7 @@ onMounted(() => {
             >
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             Ampayon<br />
             Butuan City, Agusan del Norte 8600<br />
             Philippines
@@ -803,16 +803,16 @@ onMounted(() => {
         <!-- 16. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM YOU? -->
         <div
           id="review-update-delete"
-          class="bg-white p-8 rounded-2xl shadow mb-10 scroll-mt-20"
+          class="bg-white dark:bg-gray-800 p-8 rounded-2xl shadow mb-10 scroll-mt-20"
           data-aos="fade-up"
           data-aos-delay="1100"
         >
-          <h2 class="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">
             16. HOW CAN YOU REVIEW, UPDATE, OR DELETE THE DATA WE COLLECT FROM
             YOU?
           </h2>
 
-          <p class="text-gray-700 leading-relaxed mb-2">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-2">
             Based on the applicable laws of your country, you may have the right
             to request access to the personal information we collect from you,
             details about how we have processed it, correct inaccuracies, or
@@ -822,7 +822,7 @@ onMounted(() => {
             applicable law.
           </p>
 
-          <p class="text-gray-700 leading-relaxed">
+          <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             To request to review, update, or delete your personal information,
             please visit:
             <a

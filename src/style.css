@@ -4,3 +4,6 @@
 * {
   font-family: 'Poppins', system-ui, -apple-system, sans-serif;
 }
+
+/* Enable class-based dark mode */
+@variant dark (&:where(.dark, .dark *));

@@ -55,9 +55,9 @@ const getStatusColor = (status) => {
 </script>
 
 <template>
-  <div class="bg-white shadow overflow-hidden sm:rounded-md">
+  <div class="bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-md">
     <div class="px-4 py-5 sm:px-6">
-      <h3 class="text-lg leading-6 font-medium text-gray-900">
+      <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
         Your Test Questionnaires
       </h3>
       <p class="mt-1 max-w-2xl text-sm text-gray-500">
@@ -77,7 +77,7 @@ const getStatusColor = (status) => {
               class="flex items-center justify-between sm:justify-start sm:space-x-3"
             >
               <div class="flex-1 min-w-0">
-                <h4 class="text-lg font-medium text-gray-900 truncate">
+                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
                   {{ test.title }}
                 </h4>
               </div>
@@ -159,7 +159,7 @@ const getStatusColor = (status) => {
             <!-- Edit Button -->
             <button
               @click="editTest(test.id)"
-              class="tutorial-test-edit-btn p-2 text-blue-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="tutorial-test-edit-btn p-2 text-blue-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit test"
             >
               <svg
@@ -180,7 +180,7 @@ const getStatusColor = (status) => {
             <!-- Delete Button -->
             <button
               @click="confirmDelete(test.id)"
-              class="tutorial-test-delete-btn p-2 text-red-600 shadow hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="tutorial-test-delete-btn p-2 text-red-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete test"
             >
               <svg
