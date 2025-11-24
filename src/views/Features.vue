@@ -18,7 +18,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
           <!-- Feature Block -->
           <div class="p-6 bg-white dark:bg-gray-800 shadow-md rounded-xl">
-            <h2 class="text-2xl font-semibold text-[#1e2939] mb-3">
+            <h2 class="text-2xl font-semibold text-[#1e2939] dark:text-gray-100 mb-3">
               🔄 Automatic Randomization
             </h2>
             <p class="text-gray-600 dark:text-gray-100">
@@ -27,7 +27,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
             </p>
           </div>
 
-          <div class="p-6 bg-white shadow-md rounded-xl">
+          <div class="p-6 bg-white dark:bg-gray-800 shadow-md rounded-xl">
             <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-3">
               📥 Import Questions
             </h2>
@@ -38,7 +38,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </div>
 
           <div class="p-6 bg-white dark:bg-gray-800 shadow-md rounded-xl">
-            <h2 class="text-2xl font-semibold text-[#1e2939] mb-3">
+            <h2 class="text-2xl font-semibold text-[#1e2939] dark:text-gray-100 mb-3">
               🖨️ Export & Print Ready
             </h2>
             <p class="text-gray-600 dark:text-gray-100">
@@ -48,7 +48,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </div>
 
           <div class="p-6 bg-white dark:bg-gray-800 shadow-md rounded-xl">
-            <h2 class="text-2xl font-semibold text-[#1e2939] mb-3">
+            <h2 class="text-2xl font-semibold text-[#1e2939] dark:text-gray-100 mb-3">
               🛡️ Fair & Secure Assessments
             </h2>
             <p class="text-gray-600 dark:text-gray-100">
