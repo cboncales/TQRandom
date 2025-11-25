@@ -16,10 +16,17 @@ export const useTutorialStore = defineStore('tutorial', () => {
       position: 'center'
     },
     {
+      id: 'create-test-btn',
+      title: 'Create Test Button',
+      description: 'Click the create test button to create a new test questionnaire.',
+      target: '.tutorial-create-test-btn',
+      position: 'center'
+    },
+    {
       id: 'create-test',
-      title: 'Create New Test',
-      description: 'Click here to create a new test questionnaire. You can upload documents or manually add questions.',
-      target: '.tutorial-create-btn',
+      title: 'Create Test Modal',
+      description: 'This is the create test modal. You can enter the title, description, and upload a header image for the test.',
+      target: '.tutorial-create-test-modal',
       position: 'bottom'
     },
     {
@@ -65,12 +72,131 @@ export const useTutorialStore = defineStore('tutorial', () => {
       position: 'top'
     },
     {
-      id: 'complete',
-      title: 'Finished Test Management Tutorial!',
-      description: 'You\'ve learned how to create tests. Click "Questions Button" to begin building your question bank or creating randomized tests.',
-      target: null,
-      position: 'center'
-    }
+        id: 'test-name',
+        title: 'Test Information',
+        description: 'This is the test information with a back icon to go back to the dashboard.',
+        target: '.tutorial-test-info',
+        position: 'top'
+    },
+    {
+      id: 'add-question',
+      title: 'Add Question',
+      description: 'Click the Questions button to add question, answer-choices, and correct answer manually to the test.',
+      target: '.tutorial-test-add-question-btn',
+      position: 'top'
+    },
+    {
+      id: 'question-form',
+      title: 'Question Form',
+      description: 'This is the question form, you can input a question, upload an image, and add answer-choices with images or text, and mark the correct answer.',
+      target: '.tutorial-question-form',
+      position: 'top'
+    },
+    {
+      id: 'upload-document',
+      title: 'Upload Document',
+      description: 'Click the upload document button to upload a document to the test.',
+      target: '.tutorial-test-upload-document-btn',
+      position: 'top'
+    },
+    {
+      id: 'upload-document-modal-top',
+      title: 'Upload Document Instructions',
+      description: 'This is the upload document modal, in the top part of the modal there is instructions on how to upload a document to the test.',
+      target: '.tutorial-upload-document-modal-top',
+      position: 'top'
+    },
+    {
+      id: 'upload-document-modal-bot',
+      title: 'Upload Document Inputs',
+      description: 'In the bottom part of the modal you can click to upload or drag and drop a file to upload a document to the test. You can also add answer-key',
+      target: '.tutorial-upload-document-modal-bot',
+      position: 'top'
+    },
+    {
+      id: 'image-extraction',
+      title: 'Image Extraction',
+      description: 'After you upload a document, the system will extract the questions and answer-choices from the document.',
+      target: '.tutorial-image-extraction',
+      position: 'top'
+    },
+    {
+      id: 'image-assignment',
+      title: 'Image Assignment to Questions',
+      description: 'Click the Questions tab to assign the images to the Questions.',
+      target: '.tutorial-questions-tab',
+      position: 'top'
+    },
+    {
+      id: 'image-assignment-choices',
+      title: 'Image Assignment to Answer Choices',
+      description: 'Click the Answer Choices tab to assign the images to the Answer Choices.',
+      target: '.tutorial-answer-choices-tab',
+      position: 'top'
+    },
+    {
+      id: 'tabs',
+      title: 'Tabs',
+      description: 'You can switch between the Questions and Randomized Versions tabs to view the questions and randomized versions respectively.',
+      target: '.tutorial-randomized-versions-tab',
+      position: 'top'
+    },
+    {
+      id: 'select-all-questions',
+      title: 'Select All Questions',
+      description: 'Select all questions to easily delete all questions at once or you can click the checkbox next to each question to delete individual questions.',
+      target: '.tutorial-select-all-questions',
+      position: 'top'
+    },
+    {
+      id: 'question-list',
+      title: 'Question List',
+      description: 'This is the question list with a checkbox to select individual questions and a delete button to delete the question.',
+      target: '.tutorial-question-list',
+      position: 'top'
+    },
+    {
+      id: 'randomized-versions-tab',
+      title: 'Generate Versions',
+      description: 'You can click either the Generate Your First Version button or the Generate Versions button to generate the randomized versions of the test.',
+      target: '.tutorial-generate-versions-btn',
+      position: 'top'
+    },
+    {
+      id: 'randomized-version-form',
+      title: 'Randomized Version Form',
+      description: 'This is the randomized version form, you can input the number of versions and the number of questions per version.',
+      target: '.tutorial-random-form',
+      position: 'top'
+    },
+    {
+      id: 'versions-card',
+      title: 'Randomized Versions Card',
+      description: 'After generating version the version cards will appear here.',
+      target: '.tutorial-versions-card',
+      position: 'top'
+    },
+    {
+      id: 'version-card-btn',
+      title: 'Version Card Buttons',
+      description: 'You can click the version card icon buttons in the right side of the version card to view answer key, preview randomized version, download or delete the version.',
+      target: '.tutorial-version-card-btn',
+      position: 'top'
+    },
+    {
+      id: 'select-all-versions',
+      title: 'Select All Versions',
+      description: 'You can select all versions to easily download or delete all versions at once or you can click the version card to download or delete individual versions.',
+      target: '.tutorial-select-all-versions',
+      position: 'top'
+    },
+    {
+      id: 'download-form',
+      title: 'Download Form',
+      description: 'This is the download form, you can select the format you want to download it in. You can also select the versions you want to download.',
+      target: '.tutorial-download-form',
+      position: 'top'
+    },
   ];
 
   const initTutorial = (isNewUser) => {

@@ -208,7 +208,7 @@ onMounted(() => {
                 </button>
                 <button
                   @click="openCreateModal"
-                  class="tutorial-create-btn bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
                 >
                   <svg
                     class="w-5 h-5 mr-2"
@@ -233,7 +233,7 @@ onMounted(() => {
 
       <!-- Dashboard Stats -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div class="tutorial-stats grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div class="bg-white dark:bg-gray-900 overflow-hidden shadow rounded-lg">
             <div class="p-5">
               <div class="flex items-center">
@@ -476,7 +476,7 @@ onMounted(() => {
         </div>
 
         <!-- Test List -->
-        <div v-if="!isLoading" class="tutorial-test-list">
+        <div v-if="!isLoading">
           <TestList
             :tests="filteredTests"
             @test-deleted="handleTestDeleted"

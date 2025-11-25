@@ -231,7 +231,7 @@ const saveQuestionsWithImages = async () => {
   <!-- Image Assignment Modal -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 z-50 overflow-y-auto bg-gray-500 bg-opacity-75"
+    class="fixed inset-0 bg-opacity-95 backdrop-blur-sm z-50 h-full w-full overflow-y-auto"
     aria-labelledby="modal-title"
     role="dialog"
     aria-modal="true"

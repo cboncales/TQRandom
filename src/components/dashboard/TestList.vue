@@ -60,7 +60,7 @@ const getStatusColor = (status) => {
       <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
         Your Test Questionnaires
       </h3>
-      <p class="mt-1 max-w-2xl text-sm text-gray-500">
+      <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-300">
         Manage your test collection and questions
       </p>
     </div>
@@ -91,12 +91,12 @@ const getStatusColor = (status) => {
               </span>
             </div>
 
-            <p class="mt-2 text-sm text-gray-500">
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-300">
               {{ test.description }}
             </p>
 
             <div
-              class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 space-y-1 sm:space-y-0 sm:space-x-4"
+              class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 dark:text-gray-300 space-y-1 sm:space-y-0 sm:space-x-4"
             >
               <span class="flex items-center">
                 <svg
@@ -138,7 +138,7 @@ const getStatusColor = (status) => {
             <!-- Manage Questions Button -->
             <button
               @click="manageQuestions(test.id)"
-              class="tutorial-test-questions-btn flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+              class="flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
             >
               <svg
                 class="w-4 h-4 sm:mr-1"
@@ -159,7 +159,7 @@ const getStatusColor = (status) => {
             <!-- Edit Button -->
             <button
               @click="editTest(test.id)"
-              class="tutorial-test-edit-btn p-2 text-blue-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 text-blue-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Edit test"
             >
               <svg
@@ -180,7 +180,7 @@ const getStatusColor = (status) => {
             <!-- Delete Button -->
             <button
               @click="confirmDelete(test.id)"
-              class="tutorial-test-delete-btn p-2 text-red-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="p-2 text-red-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
               title="Delete test"
             >
               <svg
