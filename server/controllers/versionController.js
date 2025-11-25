@@ -350,9 +350,11 @@ export async function getVersionAnswerKey(req, res) {
       .select(`
         id,
         version_number,
+        created_at,
         test_id,
         tests!inner (
           id,
+          title,
           user_id,
           part_descriptions
         )
@@ -387,6 +389,8 @@ export async function getVersionAnswerKey(req, res) {
         data: {
           version_id: version.id,
           version_number: version.version_number,
+          test_title: version.tests.title,
+          created_at: version.created_at,
           part_descriptions: partDescriptions,
           answer_key: []
         }
@@ -488,6 +492,8 @@ export async function getVersionAnswerKey(req, res) {
       data: {
         version_id: version.id,
         version_number: version.version_number,
+        test_title: version.tests.title,
+        created_at: version.created_at,
         part_descriptions: partDescriptions,
         answer_key: answerKey
       }

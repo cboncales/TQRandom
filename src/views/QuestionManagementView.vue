@@ -1229,6 +1229,165 @@ const downloadSelectedVersions = async () => {
   showDownloadFormatModal.value = true;
 };
 
+// Download answer keys for selected versions as .txt files
+const downloadSelectedAnswerKeys = async () => {
+  if (selectedVersions.value.length === 0) {
+    return;
+  }
+
+  try {
+    const testTitle = test.value?.title || "Test";
+
+    // For single version, download directly
+    if (selectedVersions.value.length === 1) {
+      const version = selectedVersions.value[0];
+      const result = await testStore.getVersionAnswerKey(version.id);
+      
+      if (result.error) {
+        alert(`Failed to load answer key: ${result.error}`);
+        return;
+      }
+
+      const answerKeyData = result.data;
+      
+      // Build the text content
+      let content = `Answer Key\n`;
+      content += `Version ${answerKeyData.version_number}\n`;
+      content += `Test: ${answerKeyData.test_title}\n`;
+      content += `Generated: ${new Date(answerKeyData.created_at).toLocaleString()}\n`;
+      content += `\n${'='.repeat(50)}\n\n`;
+
+      // Group answers by part
+      const partDescriptions = answerKeyData.part_descriptions || [];
+      const answers = answerKeyData.answer_key;
+
+      if (partDescriptions.length === 0) {
+        // No parts
+        answers.forEach(answer => {
+          content += `${answer.question_number}. ${answer.answer}\n`;
+        });
+      } else {
+        // Group by part
+        for (let i = 0; i < partDescriptions.length; i++) {
+          const partNumber = i + 1;
+          const partAnswers = answers.filter(a => a.part === partNumber);
+          
+          if (partAnswers.length > 0) {
+            content += `${partDescriptions[i]}\n`;
+            content += `${'-'.repeat(partDescriptions[i].length)}\n`;
+            
+            partAnswers.forEach(answer => {
+              content += `${answer.question_number}. ${answer.answer}\n`;
+            });
+            
+            content += `\n`;
+          }
+        }
+      }
+
+      // Create blob and download
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Answer_Key_V${answerKeyData.version_number}_${Date.now()}.txt`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      return;
+    }
+
+    // For multiple versions, create a ZIP
+    if (
+      !confirm(
+        `This will download answer keys for ${selectedVersions.value.length} versions as a ZIP file. Continue?`
+      )
+    ) {
+      return;
+    }
+
+    isDownloadingAll.value = true;
+    downloadProgress.value = { current: 0, total: selectedVersions.value.length };
+
+    const zip = new JSZip();
+    const folderName = testTitle.replace(/[^a-z0-9]/gi, "_");
+
+    // Fetch and generate answer key files for selected versions
+    for (let i = 0; i < selectedVersions.value.length; i++) {
+      const version = selectedVersions.value[i];
+      downloadProgress.value.current = i + 1;
+
+      const result = await testStore.getVersionAnswerKey(version.id);
+      
+      if (result.error) {
+        console.error(`Failed to load answer key for version ${version.version_number}:`, result.error);
+        continue;
+      }
+
+      const answerKeyData = result.data;
+      
+      // Build the text content
+      let content = `Answer Key\n`;
+      content += `Version ${answerKeyData.version_number}\n`;
+      content += `Test: ${answerKeyData.test_title}\n`;
+      content += `Generated: ${new Date(answerKeyData.created_at).toLocaleString()}\n`;
+      content += `\n${'='.repeat(50)}\n\n`;
+
+      // Group answers by part
+      const partDescriptions = answerKeyData.part_descriptions || [];
+      const answers = answerKeyData.answer_key;
+
+      if (partDescriptions.length === 0) {
+        answers.forEach(answer => {
+          content += `${answer.question_number}. ${answer.answer}\n`;
+        });
+      } else {
+        for (let j = 0; j < partDescriptions.length; j++) {
+          const partNumber = j + 1;
+          const partAnswers = answers.filter(a => a.part === partNumber);
+          
+          if (partAnswers.length > 0) {
+            content += `${partDescriptions[j]}\n`;
+            content += `${'-'.repeat(partDescriptions[j].length)}\n`;
+            
+            partAnswers.forEach(answer => {
+              content += `${answer.question_number}. ${answer.answer}\n`;
+            });
+            
+            content += `\n`;
+          }
+        }
+      }
+
+      zip.file(`${folderName}_V${version.version_number}_Answer_Key.txt`, content);
+    }
+
+    // Generate and download ZIP
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${folderName}_Answer_Keys.zip`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    // Clear selection after successful download
+    selectedVersions.value = [];
+    selectAll.value = false;
+
+  } catch (error) {
+    console.error("Error downloading answer keys:", error);
+    alert(`An error occurred while downloading answer keys: ${error.message}`);
+  } finally {
+    isDownloadingAll.value = false;
+    downloadProgress.value = null;
+  }
+};
+
 // Confirm and execute the selected versions download
 const downloadSelectedVersionsZip = async (format = "pdf") => {
   if (selectedVersions.value.length === 0) {
@@ -2072,6 +2231,27 @@ onMounted(async () => {
             v-if="selectedVersions.length > 0"
             class="fixed bottom-8 right-8 flex flex-col space-y-3 z-40 animate-fade-in"
           >
+            <!-- Download Answer Keys Button -->
+            <button
+              @click.stop="downloadSelectedAnswerKeys"
+              class="group flex items-center bg-green-600 text-white hover:bg-green-700 shadow-lg hover:shadow-xl px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 transform hover:scale-105"
+            >
+              <svg
+                class="w-5 h-5 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              Download Answer Key{{ selectedVersions.length > 1 ? "s" : "" }}
+            </button>
+
             <!-- Download Button (for all selected) -->
             <button
               @click.stop="downloadSelectedVersions"

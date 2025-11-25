@@ -110,6 +110,42 @@ watch(
 const handleClose = () => {
   emit('close');
 };
+
+const downloadAnswerKey = () => {
+  if (!answerKeyData.value) return;
+
+  // Build the text content
+  let content = `Answer Key\n`;
+  content += `Version ${answerKeyData.value.version_number}\n`;
+  content += `Test: ${answerKeyData.value.test_title}\n`;
+  content += `Generated: ${new Date(answerKeyData.value.created_at).toLocaleString()}\n`;
+  content += `\n${'='.repeat(50)}\n\n`;
+
+  // Add answers grouped by part
+  groupedAnswers.value.forEach(group => {
+    if (group.part) {
+      content += `${group.description}\n`;
+      content += `${'-'.repeat(group.description.length)}\n`;
+    }
+
+    group.answers.forEach(answer => {
+      content += `${answer.question_number}. ${answer.answer}\n`;
+    });
+
+    content += `\n`;
+  });
+
+  // Create blob and download
+  const blob = new Blob([content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `Answer_Key_V${answerKeyData.value.version_number}_${Date.now()}.txt`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
 </script>
 
 <template>
@@ -243,7 +279,27 @@ const handleClose = () => {
       </div>
 
       <!-- Footer (Fixed) -->
-      <div class="px-6 pt-4 pb-6 flex justify-end shrink-0">
+      <div class="px-6 pt-4 pb-6 flex justify-between shrink-0">
+        <button
+          @click="downloadAnswerKey"
+          :disabled="!answerKeyData"
+          class="bg-green-600 text-white hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+        >
+          <svg
+            class="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+            />
+          </svg>
+          Download
+        </button>
         <button
           @click="handleClose"
           class="bg-gray-600 text-white hover:bg-gray-700 px-6 py-2 rounded-md text-sm font-medium transition-colors duration-200"
