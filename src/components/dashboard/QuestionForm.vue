@@ -15,6 +15,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  testParts: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["close", "question-saved"]);
@@ -25,6 +29,8 @@ const showDeleteOptionConfirm = ref(null);
 
 // Form data
 const questionText = ref("");
+const questionType = ref("Multiple Choice");
+const questionPart = ref(null); // Now stores part number (1, 2, 3) instead of text
 const questionImageUrl = ref(null);
 const questionImageFile = ref(null);
 const options = ref([
@@ -34,19 +40,74 @@ const options = ref([
   { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
 ]);
 
+// Predefined question types
+const questionTypes = [
+  "Multiple Choice",
+  "True or False",
+  "Identification",
+  "Essay",
+  "Fill in the Blank"
+];
+
+// Initialize options based on question type
+const initializeOptionsForType = (type) => {
+  switch (type) {
+    case "Multiple Choice":
+      return [
+        { id: 1, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 2, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+      ];
+    case "True or False":
+      return [
+        { id: 1, text: "True", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 2, text: "False", isCorrect: false, imageUrl: null, imageFile: null },
+      ];
+    case "Identification":
+    case "Fill in the Blank":
+    case "Essay":
+      return [
+        { id: 1, text: "", isCorrect: true, imageUrl: null, imageFile: null },
+      ];
+    default:
+      return [
+        { id: 1, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 2, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+        { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
+      ];
+  }
+};
+
 // Reset form function
 const resetForm = () => {
   questionText.value = "";
+  questionType.value = "Multiple Choice";
+  // Set default part: if test has parts, default to Part 1, otherwise null
+  questionPart.value = (props.testParts && props.testParts.length > 0) ? 1 : null;
   questionImageUrl.value = null;
   questionImageFile.value = null;
-  options.value = [
-    { id: 1, text: "", isCorrect: false, imageUrl: null, imageFile: null },
-    { id: 2, text: "", isCorrect: false, imageUrl: null, imageFile: null },
-    { id: 3, text: "", isCorrect: false, imageUrl: null, imageFile: null },
-    { id: 4, text: "", isCorrect: false, imageUrl: null, imageFile: null },
-  ];
+  options.value = initializeOptionsForType("Multiple Choice");
   errorMessage.value = "";
 };
+
+// Watch for question type changes to adjust options
+watch(questionType, (newType) => {
+  // Only reset options if changing to a different type structure
+  const currentStructure = options.value.length;
+  const newStructure = initializeOptionsForType(newType).length;
+  
+  if (currentStructure !== newStructure) {
+    options.value = initializeOptionsForType(newType);
+  } else if (newType === "True or False") {
+    // Special handling for True/False to ensure correct labels
+    options.value = [
+      { ...options.value[0], text: "True" },
+      { ...options.value[1], text: "False" },
+    ];
+  }
+});
 
 // Watch for editing question changes
 watch(
@@ -54,6 +115,8 @@ watch(
   (newQuestion) => {
     if (newQuestion) {
       questionText.value = newQuestion.question;
+      questionType.value = newQuestion.type || "Multiple Choice";
+      questionPart.value = newQuestion.part || null; // Part is now integer or null
       questionImageUrl.value = newQuestion.imageUrl || null;
       options.value = newQuestion.options.map((opt) => ({
         ...opt,
@@ -176,9 +239,23 @@ const handleSubmit = async () => {
   }
 
   const filledOptions = options.value.filter((opt) => opt.text.trim());
-  if (filledOptions.length < 2) {
-    errorMessage.value = "Please provide at least 2 answer options";
-    return;
+  
+  // Validate options based on question type
+  if (questionType.value === "Multiple Choice") {
+    if (filledOptions.length < 2) {
+      errorMessage.value = "Please provide at least 2 answer options for Multiple Choice questions";
+      return;
+    }
+  } else if (questionType.value === "True or False") {
+    if (filledOptions.length !== 2) {
+      errorMessage.value = "True or False questions must have exactly 2 options";
+      return;
+    }
+  } else if (["Identification", "Essay", "Fill in the Blank"].includes(questionType.value)) {
+    if (filledOptions.length < 1) {
+      errorMessage.value = "Please provide an answer for this question type";
+      return;
+    }
   }
 
   // Allow questions without correct answers marked
@@ -223,8 +300,9 @@ const handleSubmit = async () => {
     // Prepare question data
     const questionData = {
       question: questionText.value.trim(),
+      type: questionType.value,
+      part: questionPart.value, // Part is already an integer or null
       imageUrl: uploadedQuestionImageUrl,
-      type: "multiple-choice",
       options: processedOptions,
     };
 
@@ -333,6 +411,60 @@ const hasCorrectAnswer = () => {
             />
           </div>
 
+          <!-- Question Type and Part Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Question Type -->
+            <div>
+              <label
+                for="question-type"
+                class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2"
+              >
+                Question Type *
+              </label>
+              <select
+                id="question-type"
+                v-model="questionType"
+                required
+                :disabled="props.isLoading"
+                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+              >
+                <option v-for="type in questionTypes" :key="type" :value="type">
+                  {{ type }}
+                </option>
+              </select>
+            </div>
+
+            <!-- Question Part (Radio Buttons) - Only show if test has parts -->
+            <div v-if="testParts && testParts.length > 0">
+              <label
+                class="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3"
+              >
+                Assign to Part *
+              </label>
+              <div class="space-y-2">
+                <!-- Option: Each Part -->
+                <label
+                  v-for="(partDesc, index) in testParts"
+                  :key="index"
+                  class="flex items-start cursor-pointer p-2 border rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  :class="questionPart === (index + 1) ? 'bg-blue-50 dark:bg-blue-900 border-blue-300 dark:border-blue-700' : 'border-gray-300 dark:border-gray-700'"
+                >
+                  <input
+                    type="radio"
+                    :value="index + 1"
+                    v-model="questionPart"
+                    :disabled="props.isLoading"
+                    class="mt-0.5 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                  />
+                  <span class="ml-3 text-sm text-gray-700 dark:text-gray-100">
+                    <span class="font-medium">Part {{ index + 1 }}</span>
+                    <span class="block text-xs text-gray-500 dark:text-gray-400">{{ partDesc }}</span>
+                  </span>
+                </label>
+              </div>
+            </div>
+          </div>
+
           <!-- Question Image Upload -->
           <div>
             <label
@@ -379,7 +511,7 @@ const hasCorrectAnswer = () => {
           </div>
 
           <!-- Multiple Choice Options -->
-          <div>
+          <div v-if="questionType === 'Multiple Choice'">
             <div
               class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4"
             >
@@ -491,10 +623,10 @@ const hasCorrectAnswer = () => {
                       <button
                         type="button"
                         @click="removeOptionImage(option.id)"
-                        class="absolute top-1 right-1 bg-red-600 text-white dark:text-gray-100 rounded-full p-1 hover:bg-red-700"
+                        class="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 hover:bg-red-700"
                       >
                         <svg
-                          class="w-2.5 h-2.5 sm:w-3 sm:h-3"
+                          class="w-3 h-3"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -513,17 +645,82 @@ const hasCorrectAnswer = () => {
                     type="file"
                     accept="image/*"
                     @change="(e) => handleOptionImageUpload(e, option.id)"
-                    :disabled="props.isLoading || isUploadingImage"
-                    class="block w-full text-xs text-gray-500 dark:text-gray-300 file:mr-2 file:py-1 file:px-2 sm:file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                    class="block w-full text-xs text-gray-500 dark:text-gray-300 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                   />
                 </div>
               </div>
             </div>
+          </div>
 
-            <!-- Validation Warning (removed - correct answer is now optional) -->
-            <div v-if="!hasCorrectAnswer()" class="mt-2 text-sm text-red-600">
-              Please mark at least one correct answer
+          <!-- True or False Options -->
+          <div v-else-if="questionType === 'True or False'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Correct Answer
+            </h4>
+            <div class="space-y-2">
+              <label
+                v-for="option in options"
+                :key="option.id"
+                class="flex items-center p-3 border rounded-lg cursor-pointer transition-colors"
+                :class="
+                  option.isCorrect
+                    ? 'bg-green-50 border-green-200 dark:bg-green-900 dark:border-green-700'
+                    : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700'
+                "
+              >
+                <input
+                  type="radio"
+                  :checked="option.isCorrect"
+                  @change="toggleCorrectAnswer(option.id)"
+                  class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300"
+                />
+                <span class="ml-3 text-sm font-medium text-gray-700 dark:text-gray-100">
+                  {{ option.text }}
+                </span>
+              </label>
             </div>
+          </div>
+
+          <!-- Identification Answer -->
+          <div v-else-if="questionType === 'Identification'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Correct Answer
+            </h4>
+            <input
+              v-model="options[0].text"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              placeholder="Enter the correct answer"
+            />
+          </div>
+
+          <!-- Fill in the Blank Answer -->
+          <div v-else-if="questionType === 'Fill in the Blank'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Correct Answer
+            </h4>
+            <input
+              v-model="options[0].text"
+              type="text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              placeholder="Enter the correct answer to fill in the blank"
+            />
+          </div>
+
+          <!-- Essay Answer -->
+          <div v-else-if="questionType === 'Essay'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Sample Answer / Key Points
+            </h4>
+            <textarea
+              v-model="options[0].text"
+              rows="4"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              placeholder="Enter sample answer or key points for grading"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Provide a sample answer or key points that should be included in the essay response.
+            </p>
           </div>
         </form>
       </div>

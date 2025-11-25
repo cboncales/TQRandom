@@ -61,28 +61,82 @@ export function generateUniqueShuffles(array, count) {
 
 /**
  * Shuffle questions and their answer choices for test randomization
+ * Only shuffles answer choices for Multiple Choice questions
  * 
  * @param {Array} questions - Array of question objects with answer_choices
- * @returns {Object} - Shuffled questions with shuffled answer choices
+ * @returns {Object} - Shuffled questions with shuffled answer choices (only for Multiple Choice)
  */
 export function shuffleTestQuestions(questions) {
-  // Shuffle the order of questions
-  const shuffledQuestions = fisherYatesShuffle(questions);
-  
-  // For each question, shuffle its answer choices
-  const result = shuffledQuestions.map((question, index) => {
-    const shuffledChoices = fisherYatesShuffle(question.answer_choices || []);
+  // If no questions or single question, return as is
+  if (!Array.isArray(questions) || questions.length === 0) return [];
+
+  // Helper function to process answer choices based on question type
+  const processAnswerChoices = (question) => {
+    const choices = question.answer_choices || [];
+    const questionType = question.type || '';
     
+    // Only shuffle answer choices for Multiple Choice questions
+    const shouldShuffle = questionType === 'Multiple Choice';
+    const processedChoices = shouldShuffle ? fisherYatesShuffle(choices) : choices;
+    
+    return processedChoices.map((choice, choiceIndex) => ({
+      ...choice,
+      choice_order: choiceIndex + 1
+    }));
+  };
+
+  // Detect if questions have a 'part' field and group by part
+  const hasPartField = questions.some(q => q.part !== null && q.part !== undefined);
+
+  if (hasPartField) {
+    // Group questions by part value
+    const partGroups = {};
+    
+    for (const q of questions) {
+      const partKey = q.part !== null && q.part !== undefined ? q.part : 'no_part';
+      
+      if (!partGroups[partKey]) {
+        partGroups[partKey] = [];
+      }
+      partGroups[partKey].push(q);
+    }
+
+    // Get sorted part keys (1, 2, 3, etc., then 'no_part' at the end)
+    const partKeys = Object.keys(partGroups).sort((a, b) => {
+      if (a === 'no_part') return 1;
+      if (b === 'no_part') return -1;
+      return Number(a) - Number(b);
+    });
+
+    // Shuffle each part independently and concatenate
+    const shuffledQuestions = [];
+    for (const partKey of partKeys) {
+      const partQuestions = partGroups[partKey];
+      const shuffledPart = fisherYatesShuffle(partQuestions);
+      shuffledQuestions.push(...shuffledPart);
+    }
+
+    // Map questions with their processed answer choices
+    return shuffledQuestions.map((question, index) => {
+      return {
+        ...question,
+        question_order: index + 1,
+        shuffled_answer_choices: processAnswerChoices(question)
+      };
+    });
+  }
+
+  // If no part field, shuffle all questions together
+  const shuffledQuestions = fisherYatesShuffle(questions);
+
+  const result = shuffledQuestions.map((question, index) => {
     return {
       ...question,
       question_order: index + 1,
-      shuffled_answer_choices: shuffledChoices.map((choice, choiceIndex) => ({
-        ...choice,
-        choice_order: choiceIndex + 1
-      }))
+      shuffled_answer_choices: processAnswerChoices(question)
     };
   });
-  
+
   return result;
 }
 

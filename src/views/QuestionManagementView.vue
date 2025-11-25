@@ -68,6 +68,7 @@ const errorMessage = ref("");
 
 const test = ref({});
 const questions = ref([]);
+const availableTypes = ref([]);
 
 // Tab management
 const activeTab = ref("questions"); // 'questions' or 'versions'
@@ -158,6 +159,8 @@ const editQuestion = async (question) => {
     editingQuestion.value = {
       id: question.id,
       question: question.question || question.text, // Use question.question if available, fallback to question.text
+      type: question.type || "Multiple Choice",
+      part: question.part || "",
       imageUrl: question.imageUrl || question.image_url || null, // Preserve existing question image URL (try both camelCase and snake_case)
       options: options,
     };
@@ -186,7 +189,9 @@ const handleQuestionSaved = async (questionData) => {
         questionData.question,
         questionData.options.filter((opt) => opt.text.trim()),
         questionData.imageUrl, // Pass question image URL
-        testId // Pass testId for cache invalidation
+        testId, // Pass testId for cache invalidation
+        questionData.type, // Pass question type
+        questionData.part // Pass question part
       );
 
       if (result.error) {
@@ -226,7 +231,9 @@ const handleQuestionSaved = async (questionData) => {
         testId,
         questionData.question,
         questionData.options.filter((opt) => opt.text.trim()),
-        questionData.imageUrl // Pass question image URL
+        questionData.imageUrl, // Pass question image URL
+        questionData.type, // Pass question type
+        questionData.part // Pass question part
       );
 
       if (result.error) {
@@ -434,18 +441,30 @@ const loadQuestions = async (forceRefresh = false) => {
     });
 
     // Transform questions data for UI with correct answer flags
-    questions.value = result.data.map((question) => ({
-      id: question.id,
-      question: question.text,
-      imageUrl: question.image_url || null, // Include question image
-      type: "multiple-choice",
-      options: question.answer_choices.map((choice) => ({
-        id: choice.id,
-        text: choice.text,
-        imageUrl: choice.image_url || null, // Include choice image
-        isCorrect: correctAnswerMap[question.id] === choice.id,
-      })),
-    }));
+    questions.value = result.data.map((question) => {
+      const qType = question.type || 'Multiple Choice';
+      const qPart = question.part || '';
+      return {
+        id: question.id,
+        question: question.text,
+        type: qType,
+        part: qPart,
+        imageUrl: question.image_url || null, // Include question image
+        options: question.answer_choices.map((choice) => ({
+          id: choice.id,
+          text: choice.text,
+          imageUrl: choice.image_url || null, // Include choice image
+          isCorrect: correctAnswerMap[question.id] === choice.id,
+        })),
+      };
+    });
+
+    // Populate availableTypes for the Generate Versions modal
+    const typesSet = new Set();
+    result.data.forEach((q) => {
+      if (q.type) typesSet.add(q.type);
+    });
+    availableTypes.value = Array.from(typesSet);
   } catch (error) {
     errorMessage.value = "Failed to load questions";
     console.error("Load questions error:", error);
@@ -1784,6 +1803,7 @@ onMounted(async () => {
             <QuestionList
               :questions="questions"
               :selected-questions="selectedQuestions"
+              :part-descriptions="test.part_descriptions || []"
               @edit-question="editQuestion"
               @delete-question="handleQuestionDeleted"
               @toggle-selection="toggleQuestionSelection"
@@ -2130,6 +2150,7 @@ onMounted(async () => {
         :is-open="showQuestionForm"
         :editing-question="editingQuestion"
         :is-loading="isSavingQuestion"
+        :test-parts="test.part_descriptions || []"
         @close="closeQuestionForm"
         @question-saved="handleQuestionSaved"
       />
@@ -2201,6 +2222,7 @@ onMounted(async () => {
         :isOpen="showGenerateVersionModal"
         :totalQuestions="questions.length"
         :isGenerating="isGeneratingVersions"
+        :numberOfParts="test.number_of_parts || 0"
         @close="closeGenerateVersionModal"
         @generate="handleGenerateVersions"
       />

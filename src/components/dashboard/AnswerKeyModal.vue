@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useTestStore } from '@/stores/testStore';
 
 const props = defineProps({
@@ -46,6 +46,53 @@ const loadAnswerKey = async () => {
     isLoadingAnswerKey.value = false;
   }
 };
+
+// Group answers by part
+const groupedAnswers = computed(() => {
+  if (!answerKeyData.value || !answerKeyData.value.answer_key) {
+    return [];
+  }
+
+  const partDescriptions = answerKeyData.value.part_descriptions || [];
+  const answers = answerKeyData.value.answer_key;
+
+  // If no parts, return all answers in one group
+  if (partDescriptions.length === 0) {
+    return [{
+      part: null,
+      description: null,
+      answers: answers
+    }];
+  }
+
+  // Group by part
+  const groups = [];
+  
+  for (let i = 0; i < partDescriptions.length; i++) {
+    const partNumber = i + 1;
+    const partAnswers = answers.filter(a => a.part === partNumber);
+    
+    if (partAnswers.length > 0) {
+      groups.push({
+        part: partNumber,
+        description: partDescriptions[i],
+        answers: partAnswers
+      });
+    }
+  }
+
+  // Add answers without parts at the end (if any)
+  const answersWithoutPart = answers.filter(a => !a.part || a.part === null);
+  if (answersWithoutPart.length > 0) {
+    groups.push({
+      part: null,
+      description: 'Other Questions',
+      answers: answersWithoutPart
+    });
+  }
+
+  return groups;
+});
 
 // Watch for modal open and versionId changes
 watch(
@@ -162,20 +209,33 @@ const handleClose = () => {
             </p>
           </div>
 
-          <!-- Answer Key Grid -->
-          <div
-            v-else
-            class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3"
-          >
+          <!-- Answer Key Grouped by Part -->
+          <div v-else class="space-y-6">
             <div
-              v-for="answer in answerKeyData.answer_key"
-              :key="answer.question_number"
-              class="bg-green-50 border border-green-200 rounded-lg p-3 text-center"
+              v-for="(group, groupIndex) in groupedAnswers"
+              :key="groupIndex"
             >
-              <div
-                class="text-xl md:text-2xl lg:text-2xl font-bold text-green-700"
-              >
-                {{ answer.question_number }}.{{ answer.answer }}
+              <!-- Part Header -->
+              <div v-if="group.part" class="mb-3">
+                <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                  {{ group.description }}
+                </h3>
+              </div>
+
+              <!-- Answers in this part -->
+              <div class="space-y-2">
+                <div
+                  v-for="answer in group.answers"
+                  :key="answer.question_number"
+                  class="flex items-start"
+                >
+                  <span class="font-semibold text-gray-700 dark:text-gray-200 mr-2">
+                    {{ answer.question_number }}.
+                  </span>
+                  <span class="text-gray-900 dark:text-gray-100">
+                    {{ answer.answer }}
+                  </span>
+                </div>
               </div>
             </div>
           </div>

@@ -14,6 +14,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  numberOfParts: {
+    type: Number,
+    default: 0,
+  },
 });
 
 const emit = defineEmits(['close', 'generate']);
@@ -177,6 +181,31 @@ const handleClose = () => {
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-100">
               Available questions: {{ totalQuestions }}
             </p>
+          </div>
+
+          <!-- Shuffle Info -->
+          <div v-if="numberOfParts > 0" class="bg-indigo-50 dark:bg-gray-900 border border-indigo-200 dark:border-indigo-700 rounded-md p-4">
+            <div class="flex">
+              <svg
+                class="h-5 w-5 text-indigo-400 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div class="text-sm text-indigo-700">
+                <p class="font-medium">Part-Based Shuffling</p>
+                <p class="mt-1 text-xs">
+                  Questions will be shuffled within each part ({{ numberOfParts }} part{{ numberOfParts > 1 ? 's' : '' }}) to maintain test structure.
+                </p>
+              </div>
+            </div>
           </div>
 
           <!-- Algorithm Info -->

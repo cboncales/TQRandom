@@ -1,5 +1,5 @@
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, computed } from 'vue';
 import { useTestStore } from '@/stores/testStore';
 
 const props = defineProps({
@@ -46,6 +46,53 @@ const loadVersion = async () => {
     isLoadingPreview.value = false;
   }
 };
+
+// Group questions by part
+const groupedQuestions = computed(() => {
+  if (!previewVersion.value || !previewVersion.value.questions) {
+    return [];
+  }
+
+  const partDescriptions = previewVersion.value.part_descriptions || [];
+  const questions = previewVersion.value.questions;
+
+  // If no parts, return all questions in one group
+  if (partDescriptions.length === 0) {
+    return [{
+      part: null,
+      description: null,
+      questions: questions
+    }];
+  }
+
+  // Group by part
+  const groups = [];
+  
+  for (let i = 0; i < partDescriptions.length; i++) {
+    const partNumber = i + 1;
+    const partQuestions = questions.filter(q => q.part === partNumber);
+    
+    if (partQuestions.length > 0) {
+      groups.push({
+        part: partNumber,
+        description: partDescriptions[i],
+        questions: partQuestions
+      });
+    }
+  }
+
+  // Add questions without parts at the end (if any)
+  const questionsWithoutPart = questions.filter(q => !q.part || q.part === null);
+  if (questionsWithoutPart.length > 0) {
+    groups.push({
+      part: null,
+      description: 'Other Questions',
+      questions: questionsWithoutPart
+    });
+  }
+
+  return groups;
+});
 
 // Watch for modal open and versionId changes
 watch(
@@ -145,58 +192,102 @@ const handleClose = () => {
 
         <!-- Content -->
         <div v-else-if="previewVersion" class="space-y-6">
-          <div
-            v-for="(question, qIndex) in previewVersion.questions"
-            :key="question.question_id"
-            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700"
-          >
-            <!-- Question -->
-            <div class="mb-4">
-              <div class="flex items-start">
-                <span
-                  class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3"
-                >
-                  {{ question.question_number }}
-                </span>
-                <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">
-                  {{ question.question_text }}
-                </p>
-              </div>
-
-              <!-- Question Image -->
-              <div v-if="question.question_image_url" class="ml-11 mt-3">
-                <img
-                  :src="question.question_image_url"
-                  alt="Question image"
-                  class="max-w-md h-auto rounded-lg border border-gray-300 shadow-sm"
-                />
-              </div>
+          <!-- Loop through grouped questions by part -->
+          <div v-for="(group, groupIndex) in groupedQuestions" :key="groupIndex">
+            <!-- Part Header -->
+            <div v-if="group.part" class="mb-4 pb-2 border-b-2 border-gray-300 dark:border-gray-600">
+              <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {{ group.description }}
+              </h3>
             </div>
 
-            <!-- Answer Choices -->
-            <div class="ml-11 space-y-2">
+            <!-- Questions in this part -->
+            <div class="space-y-6">
               <div
-                v-for="(choice, cIndex) in question.answer_choices"
-                :key="choice.id"
-                class="p-3 rounded-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+                v-for="question in group.questions"
+                :key="question.question_id"
+                class="bg-gray-50 dark:bg-gray-800 rounded-lg p-5 border border-gray-200 dark:border-gray-700"
               >
-                <div class="flex items-start">
-                  <span
-                    class="shrink-0 font-medium text-gray-700 dark:text-gray-100 mr-3 min-w-[24px]"
-                  >
-                    {{ String.fromCharCode(65 + cIndex) }}.
-                  </span>
-                  <div class="flex-1">
-                    <p class="text-gray-800 dark:text-gray-100">{{ choice.text }}</p>
+                <!-- Question -->
+                <div class="mb-4">
+                  <div class="flex items-start">
+                    <span
+                      class="shrink-0 inline-flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-800 text-sm font-medium mr-3"
+                    >
+                      {{ question.question_number }}
+                    </span>
+                    <p class="text-lg text-gray-900 dark:text-gray-100 font-medium">
+                      {{ question.question_text }}
+                    </p>
+                  </div>
 
-                    <!-- Answer Choice Image -->
-                    <div v-if="choice.image_url" class="mt-2">
-                      <img
-                        :src="choice.image_url"
-                        alt="Answer choice image"
-                        class="max-w-xs h-auto rounded border border-gray-300"
-                      />
+                  <!-- Question Image -->
+                  <div v-if="question.question_image_url" class="ml-11 mt-3">
+                    <img
+                      :src="question.question_image_url"
+                      alt="Question image"
+                      class="max-w-md h-auto rounded-lg border border-gray-300 shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <!-- Answer Choices for Multiple Choice -->
+                <div v-if="question.question_type === 'Multiple Choice'" class="ml-11 space-y-2">
+                  <div
+                    v-for="(choice, cIndex) in question.answer_choices"
+                    :key="choice.id"
+                    class="p-3 rounded-md bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+                  >
+                    <div class="flex items-start">
+                      <span
+                        class="shrink-0 font-medium text-gray-700 dark:text-gray-100 mr-3 min-w-6"
+                      >
+                        {{ String.fromCharCode(65 + cIndex) }}.
+                      </span>
+                      <div class="flex-1">
+                        <p class="text-gray-800 dark:text-gray-100">{{ choice.text }}</p>
+
+                        <!-- Answer Choice Image -->
+                        <div v-if="choice.image_url" class="mt-2">
+                          <img
+                            :src="choice.image_url"
+                            alt="Answer choice image"
+                            class="max-w-xs h-auto rounded border border-gray-300"
+                          />
+                        </div>
+                      </div>
                     </div>
+                  </div>
+                </div>
+
+                <!-- Answer Line for True/False -->
+                <div v-else-if="question.question_type === 'True or False'" class="ml-11">
+                  <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 dark:text-gray-200">Answer:</span>
+                    <div class="flex-1 border-b-2 border-gray-300 dark:border-gray-600 h-8"></div>
+                  </div>
+                </div>
+
+                <!-- Answer Line for Identification -->
+                <div v-else-if="question.question_type === 'Identification'" class="ml-11">
+                  <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 dark:text-gray-200">Answer:</span>
+                    <div class="flex-1 border-b-2 border-gray-300 dark:border-gray-600 h-8"></div>
+                  </div>
+                </div>
+
+                <!-- Answer Lines for Fill in the Blank -->
+                <div v-else-if="question.question_type === 'Fill in the Blank'" class="ml-11">
+                  <div class="flex items-center space-x-4">
+                    <span class="text-gray-700 dark:text-gray-200">Answer:</span>
+                    <div class="flex-1 border-b-2 border-gray-300 dark:border-gray-600 h-8"></div>
+                  </div>
+                </div>
+
+                <!-- Answer Space for Essay -->
+                <div v-else-if="question.question_type === 'Essay'" class="ml-11">
+                  <div class="border-2 border-gray-300 dark:border-gray-600 rounded-md p-4 min-h-[120px]">
+                    <span class="text-sm text-gray-500 dark:text-gray-400 italic">Space for essay answer</span>
                   </div>
                 </div>
               </div>

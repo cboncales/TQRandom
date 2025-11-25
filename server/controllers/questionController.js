@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase.js';
  */
 async function createQuestion(req, res) {
   try {
-    const { testId, questionText, questionImageUrl, answerChoices } = req.body;
+    const { testId, questionText, questionImageUrl, answerChoices, questionType, questionPart } = req.body;
     const userId = req.user.id;
 
     // Debug: Log received data
@@ -28,7 +28,10 @@ async function createQuestion(req, res) {
       return res.status(404).json({ error: 'Test not found or access denied' });
     }
 
-    // Create the question (with optional image URL)
+    // Create the question (with optional image URL, type, and part)
+    // Part should be stored as integer (1, 2, 3, etc.) or null
+    const partNumber = questionPart ? parseInt(questionPart, 10) : null;
+    
     const { data: questionData, error: questionError } = await supabase
       .from('questions')
       .insert([
@@ -36,6 +39,8 @@ async function createQuestion(req, res) {
           test_id: testId,
           text: questionText.trim(),
           image_url: questionImageUrl || null,
+          type: questionType || 'Multiple Choice',
+          part: partNumber,
         },
       ])
       .select()
@@ -145,7 +150,7 @@ async function getTestQuestions(req, res) {
 async function updateQuestion(req, res) {
   try {
     const { id } = req.params;
-    const { questionText, answerChoices, questionImageUrl } = req.body;
+    const { questionText, answerChoices, questionImageUrl, questionType, questionPart } = req.body;
     const userId = req.user.id;
 
     if (!questionText || !questionText.trim()) {
@@ -167,10 +172,17 @@ async function updateQuestion(req, res) {
       return res.status(404).json({ error: 'Question not found or access denied' });
     }
 
-    // Update the question text and image URL
+    // Update the question text, image URL, type, and part
     const updateData = { text: questionText.trim() };
     if (questionImageUrl !== undefined) {
       updateData.image_url = questionImageUrl;
+    }
+    if (questionType !== undefined) {
+      updateData.type = questionType;
+    }
+    if (questionPart !== undefined) {
+      // Convert part to integer or null
+      updateData.part = questionPart ? parseInt(questionPart, 10) : null;
     }
     
     const { error: updateError } = await supabase

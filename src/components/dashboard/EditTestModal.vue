@@ -31,8 +31,33 @@ const logoFile = ref(null);
 const logoPreview = ref(null);
 const logoChanged = ref(false);
 
+// Parts states
+const numberOfParts = ref(0);
+const partDescriptions = ref([]);
+const partDirections = ref([]);
+const generalDirections = ref("");
+
 // Store original for change detection
 let originalSnapshot = {};
+
+// Watch for changes in numberOfParts
+watch(numberOfParts, (newValue) => {
+  const num = parseInt(newValue) || 0;
+  if (num > 0) {
+    if (num > partDescriptions.value.length) {
+      for (let i = partDescriptions.value.length; i < num; i++) {
+        partDescriptions.value.push("");
+        partDirections.value.push("");
+      }
+    } else if (num < partDescriptions.value.length) {
+      partDescriptions.value = partDescriptions.value.slice(0, num);
+      partDirections.value = partDirections.value.slice(0, num);
+    }
+  } else {
+    partDescriptions.value = [];
+    partDirections.value = [];
+  }
+});
 
 // Logo upload handlers
 const handleLogoUpload = (event) => {
@@ -81,6 +106,22 @@ const loadTest = async () => {
         description: test.description || "",
       };
 
+      // Load parts data
+      numberOfParts.value = test.number_of_parts || 0;
+      partDescriptions.value = test.part_descriptions ? [...test.part_descriptions] : [];
+      
+      // Load directions data
+      if (test.directions && Array.isArray(test.directions)) {
+        if (test.number_of_parts > 0) {
+          partDirections.value = [...test.directions];
+        } else {
+          generalDirections.value = test.directions[0] || "";
+        }
+      } else {
+        partDirections.value = [];
+        generalDirections.value = "";
+      }
+
       // Load existing logo
       currentLogoUrl.value = test.header_logo_url || null;
       logoPreview.value = test.header_logo_url || null;
@@ -90,6 +131,9 @@ const loadTest = async () => {
       originalSnapshot = {
         ...form.value,
         header_logo_url: test.header_logo_url,
+        number_of_parts: test.number_of_parts || 0,
+        part_descriptions: test.part_descriptions ? [...test.part_descriptions] : [],
+        directions: test.directions ? [...test.directions] : [],
       };
     }
   } catch (err) {
@@ -112,10 +156,21 @@ watch(
 
 // Has changes?
 const hasChanges = () => {
+  const partsChanged = 
+    numberOfParts.value !== originalSnapshot.number_of_parts ||
+    JSON.stringify(partDescriptions.value) !== JSON.stringify(originalSnapshot.part_descriptions);
+  
+  const directionsChanged = 
+    (numberOfParts.value > 0 
+      ? JSON.stringify(partDirections.value) !== JSON.stringify(originalSnapshot.directions)
+      : generalDirections.value !== (originalSnapshot.directions?.[0] || ""));
+    
   return (
     form.value.title !== originalSnapshot.title ||
     form.value.description !== originalSnapshot.description ||
-    logoChanged.value
+    logoChanged.value ||
+    partsChanged ||
+    directionsChanged
   );
 };
 
@@ -124,6 +179,21 @@ const handleSave = async () => {
   if (!form.value.title.trim()) {
     errorMessage.value = "Test title is required.";
     return;
+  }
+
+  // Validate parts
+  const numParts = parseInt(numberOfParts.value) || 0;
+  if (numParts > 0) {
+    const emptyDescriptions = partDescriptions.value.filter(d => !d.trim());
+    if (emptyDescriptions.length > 0) {
+      errorMessage.value = "Please fill in all part descriptions";
+      return;
+    }
+    const emptyDirections = partDirections.value.filter(d => !d.trim());
+    if (emptyDirections.length > 0) {
+      errorMessage.value = "Please fill in all part directions";
+      return;
+    }
   }
 
   if (!hasChanges()) {
@@ -139,6 +209,9 @@ const handleSave = async () => {
     const updates = {
       title: form.value.title.trim(),
       description: form.value.description.trim(),
+      number_of_parts: numParts,
+      part_descriptions: partDescriptions.value,
+      directions: numParts > 0 ? partDirections.value : [generalDirections.value],
     };
 
     // Upload new logo if changed
@@ -268,6 +341,87 @@ const closeModal = () => {
               class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
               :disabled="isSaving"
             ></textarea>
+          </div>
+
+          <!-- Number of Parts -->
+          <div>
+            <label
+              for="edit-number-of-parts"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-100"
+            >
+              Number of Parts (Optional)
+            </label>
+            <input
+              id="edit-number-of-parts"
+              v-model.number="numberOfParts"
+              type="number"
+              min="0"
+              max="10"
+              :disabled="isSaving"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              placeholder="e.g., 2, 3, 4..."
+            />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
+              Specify how many parts this test has (leave 0 for no parts)
+            </p>
+          </div>
+
+          <!-- General Directions (Only shown when numberOfParts is 0) -->
+          <div v-if="numberOfParts === 0">
+            <label
+              for="edit-general-directions"
+              class="block text-sm font-medium text-gray-700 dark:text-gray-100"
+            >
+              Test Directions (Optional)
+            </label>
+            <textarea
+              id="edit-general-directions"
+              v-model="generalDirections"
+              rows="3"
+              :disabled="isSaving"
+              class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs md:text-sm lg:text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
+              placeholder="e.g., Directions: Choose the letter of the correct answer. Write your answer on the space provided."
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">
+              General directions for the entire test
+            </p>
+          </div>
+
+          <!-- Part Descriptions and Directions (Dynamic) -->
+          <div v-if="numberOfParts > 0" class="space-y-4">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-100">
+              Part Descriptions and Directions
+            </h4>
+            <div
+              v-for="(desc, index) in partDescriptions"
+              :key="index"
+              class="p-4 border border-gray-200 rounded-lg space-y-3 bg-gray-50 dark:bg-gray-800"
+            >
+              <div class="flex items-start gap-2">
+                <span class="shrink-0 mt-2 w-16 text-sm font-semibold text-gray-700 dark:text-gray-200">
+                  Part {{ index + 1 }}:
+                </span>
+                <input
+                  v-model="partDescriptions[index]"
+                  type="text"
+                  :disabled="isSaving"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed bg-white dark:bg-gray-900"
+                  :placeholder="`e.g., Part ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][index] || (index + 1)}. Identify the following...`"
+                />
+              </div>
+              <div class="flex items-start gap-2">
+                <span class="shrink-0 mt-2 w-16 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  Directions:
+                </span>
+                <textarea
+                  v-model="partDirections[index]"
+                  rows="2"
+                  :disabled="isSaving"
+                  class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed bg-white dark:bg-gray-900"
+                  :placeholder="`e.g., Directions: Identify what is being asked. Choose your answers from the box. Write your answer on the space provided.`"
+                ></textarea>
+              </div>
+            </div>
           </div>
 
           <!-- Header Logo Upload -->

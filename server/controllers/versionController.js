@@ -38,14 +38,7 @@ export async function generateVersions(req, res) {
     // Get all questions for this test with their answer choices
     const { data: questions, error: questionsError } = await supabase
       .from('questions')
-      .select(`
-        id,
-        text,
-        answer_choices (
-          id,
-          text
-        )
-      `)
+      .select(`*, answer_choices ( id, text )`)
       .eq('test_id', testId)
       .order('id', { ascending: true });
 
@@ -66,7 +59,7 @@ export async function generateVersions(req, res) {
       ? questionsPerVersion 
       : maxQuestions;
 
-    // 🔧 FIX: Get the highest existing version number to continue from it
+    // Get the highest existing version number to continue from it
     const { data: existingVersions, error: existingError } = await supabase
       .from('test_versions')
       .select('version_number')
@@ -96,6 +89,7 @@ export async function generateVersions(req, res) {
       }
 
       // Shuffle questions and answer choices using Fisher-Yates
+      // The shuffle function will automatically detect parts and shuffle within each part
       const shuffledQuestions = shuffleTestQuestions(questionsToUse);
 
       // Create version record
@@ -252,7 +246,8 @@ export async function getVersion(req, res) {
           title,
           description,
           header_logo_url,
-          user_id
+          user_id,
+          part_descriptions
         )
       `)
       .eq('id', versionId)
@@ -275,7 +270,9 @@ export async function getVersion(req, res) {
         questions (
           id,
           text,
-          image_url
+          image_url,
+          type,
+          part
         ),
         test_versions_answer_choices (
           choice_order,
@@ -311,6 +308,8 @@ export async function getVersion(req, res) {
         question_id: vq.questions.id,
         question_text: vq.questions.text,
         question_image_url: vq.questions.image_url,
+        question_type: vq.questions.type,
+        part: vq.questions.part,
         answer_choices: sortedChoices
       };
     });
@@ -323,6 +322,7 @@ export async function getVersion(req, res) {
         test_title: version.tests.title,
         test_description: version.tests.description,
         header_logo_url: version.tests.header_logo_url,
+        part_descriptions: version.tests.part_descriptions || [],
         questions: formattedQuestions
       }
     });
@@ -335,7 +335,7 @@ export async function getVersion(req, res) {
 
 /**
  * Get answer key for a version
- * Returns question numbers mapped to correct answer letters (A, B, C, D, etc.)
+ * Returns question numbers mapped to correct answers with part information
  */
 export async function getVersionAnswerKey(req, res) {
   try {
@@ -351,7 +351,8 @@ export async function getVersionAnswerKey(req, res) {
         test_id,
         tests!inner (
           id,
-          user_id
+          user_id,
+          part_descriptions
         )
       `)
       .eq('id', versionId)
@@ -366,11 +367,12 @@ export async function getVersionAnswerKey(req, res) {
     }
 
     const testId = version.test_id;
+    const partDescriptions = version.tests.part_descriptions || [];
 
-    // Get all questions for this test
+    // Get all questions for this test with type and part info
     const { data: testQuestions, error: questionsError } = await supabase
       .from('questions')
-      .select('id')
+      .select('id, type, part')
       .eq('test_id', testId);
 
     if (questionsError) {
@@ -383,17 +385,28 @@ export async function getVersionAnswerKey(req, res) {
         data: {
           version_id: version.id,
           version_number: version.version_number,
+          part_descriptions: partDescriptions,
           answer_key: []
         }
       });
     }
 
     const questionIds = testQuestions.map(q => q.id);
+    const questionDetailsMap = {};
+    testQuestions.forEach(q => {
+      questionDetailsMap[q.id] = { type: q.type, part: q.part };
+    });
 
-    // Get all correct answers for these questions
+    // Get all correct answers for these questions with answer choice text
     const { data: correctAnswers, error: answersError } = await supabase
       .from('answers')
-      .select('question_id, answer_choices_id')
+      .select(`
+        question_id,
+        answer_choices_id,
+        answer_choices (
+          text
+        )
+      `)
       .in('question_id', questionIds);
 
     if (answersError) {
@@ -401,11 +414,14 @@ export async function getVersionAnswerKey(req, res) {
       return res.status(500).json({ error: answersError.message });
     }
 
-    // Create a map of question_id -> correct_choice_id
+    // Create a map of question_id -> correct_choice_info
     const answerMap = {};
     if (correctAnswers) {
       correctAnswers.forEach(answer => {
-        answerMap[answer.question_id] = answer.answer_choices_id;
+        answerMap[answer.question_id] = {
+          choice_id: answer.answer_choices_id,
+          choice_text: answer.answer_choices.text
+        };
       });
     }
 
@@ -433,20 +449,34 @@ export async function getVersionAnswerKey(req, res) {
     const answerKey = [];
     
     versionQuestions.forEach(vq => {
-      const correctChoiceId = answerMap[vq.question_id];
+      const correctChoiceInfo = answerMap[vq.question_id];
+      const questionDetails = questionDetailsMap[vq.question_id];
       
-      if (correctChoiceId) {
-        // Find which position (order) the correct choice is in the shuffled choices
-        const sortedChoices = vq.test_versions_answer_choices.sort((a, b) => a.choice_order - b.choice_order);
-        const correctChoicePosition = sortedChoices.findIndex(c => c.answer_choices_id === correctChoiceId);
+      if (correctChoiceInfo && questionDetails) {
+        let answerDisplay = '';
+        const questionType = questionDetails.type || 'Multiple Choice';
         
-        if (correctChoicePosition !== -1) {
-          // Convert position to letter (0 = A, 1 = B, etc.)
-          const letter = String.fromCharCode(65 + correctChoicePosition); // 65 is 'A'
+        // Format answer based on question type
+        if (questionType === 'Multiple Choice') {
+          // Find which position (order) the correct choice is in the shuffled choices
+          const sortedChoices = vq.test_versions_answer_choices.sort((a, b) => a.choice_order - b.choice_order);
+          const correctChoicePosition = sortedChoices.findIndex(c => c.answer_choices_id === correctChoiceInfo.choice_id);
           
+          if (correctChoicePosition !== -1) {
+            // Convert position to letter (0 = A, 1 = B, etc.)
+            answerDisplay = String.fromCharCode(65 + correctChoicePosition);
+          }
+        } else {
+          // For other types, use the actual answer text
+          answerDisplay = correctChoiceInfo.choice_text;
+        }
+        
+        if (answerDisplay) {
           answerKey.push({
             question_number: vq.question_order,
-            answer: letter
+            answer: answerDisplay,
+            question_type: questionType,
+            part: questionDetails.part
           });
         }
       }
@@ -456,6 +486,7 @@ export async function getVersionAnswerKey(req, res) {
       data: {
         version_id: version.id,
         version_number: version.version_number,
+        part_descriptions: partDescriptions,
         answer_key: answerKey
       }
     });

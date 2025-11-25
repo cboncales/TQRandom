@@ -59,9 +59,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Create a new test
    */
-  async function createTest(title, description, header_logo_url = null) {
+  async function createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = []) {
     try {
-      const result = await testApi.createTest(title, description, header_logo_url);
+      const result = await testApi.createTest(title, description, header_logo_url, number_of_parts, part_descriptions, directions);
       
       if (result.error) {
         return { error: result.error };
@@ -179,9 +179,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Create a new question with answer choices
    */
-  async function createQuestion(testId, questionText, answerChoices, questionImageUrl = null) {
+  async function createQuestion(testId, questionText, answerChoices, questionImageUrl = null, questionType = null, questionPart = null) {
     try {
-      const result = await questionApi.createQuestion(testId, questionText, answerChoices, questionImageUrl);
+      const result = await questionApi.createQuestion(testId, questionText, answerChoices, questionImageUrl, questionType, questionPart);
       
       if (result.error) {
         return { error: result.error };
@@ -229,9 +229,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Update a question and its answer choices
    */
-  async function updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null, testId = null) {
+  async function updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null, testId = null, questionType = null, questionPart = null) {
     try {
-      const result = await questionApi.updateQuestion(questionId, questionText, answerChoices, questionImageUrl);
+      const result = await questionApi.updateQuestion(questionId, questionText, answerChoices, questionImageUrl, questionType, questionPart);
       
       if (result.error) {
         return { error: result.error };

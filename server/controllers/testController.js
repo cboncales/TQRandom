@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase.js';
  */
 async function createTest(req, res) {
   try {
-    const { title, description, header_logo_url } = req.body;
+    const { title, description, header_logo_url, number_of_parts, part_descriptions, directions } = req.body;
     
     if (!req.user || !req.user.id) {
       console.error('createTest: req.user is undefined');
@@ -19,6 +19,17 @@ async function createTest(req, res) {
       return res.status(400).json({ error: 'Title is required' });
     }
 
+    // Validate parts data if provided
+    const numberOfParts = number_of_parts || 0;
+    const partDescriptions = part_descriptions || [];
+    const testDirections = directions || [];
+    
+    if (numberOfParts > 0 && partDescriptions.length !== numberOfParts) {
+      return res.status(400).json({ 
+        error: 'Number of part descriptions must match number of parts' 
+      });
+    }
+
     const { data, error } = await supabase
       .from('tests')
       .insert([
@@ -27,6 +38,9 @@ async function createTest(req, res) {
           title: title.trim(),
           description: description?.trim() || null,
           header_logo_url: header_logo_url || null,
+          number_of_parts: numberOfParts,
+          part_descriptions: partDescriptions,
+          directions: testDirections,
         },
       ])
       .select()
@@ -110,6 +124,37 @@ async function updateTest(req, res) {
     if (updates.title !== undefined) allowedUpdates.title = updates.title.trim();
     if (updates.description !== undefined) allowedUpdates.description = updates.description?.trim() || null;
     if (updates.header_logo_url !== undefined) allowedUpdates.header_logo_url = updates.header_logo_url || null;
+    if (updates.number_of_parts !== undefined) allowedUpdates.number_of_parts = updates.number_of_parts;
+    if (updates.part_descriptions !== undefined) allowedUpdates.part_descriptions = updates.part_descriptions;
+    if (updates.directions !== undefined) allowedUpdates.directions = updates.directions;
+
+    // Validate parts data if being updated
+    if (allowedUpdates.number_of_parts !== undefined && allowedUpdates.part_descriptions !== undefined) {
+      if (allowedUpdates.number_of_parts > 0 && allowedUpdates.part_descriptions.length !== allowedUpdates.number_of_parts) {
+        return res.status(400).json({ 
+          error: 'Number of part descriptions must match number of parts' 
+        });
+      }
+    }
+
+    // Validate directions data if being updated
+    if (allowedUpdates.directions !== undefined) {
+      if (!Array.isArray(allowedUpdates.directions)) {
+        return res.status(400).json({ 
+          error: 'Directions must be an array' 
+        });
+      }
+      // If number_of_parts is being updated or already exists, validate directions length
+      const numberOfParts = allowedUpdates.number_of_parts !== undefined 
+        ? allowedUpdates.number_of_parts 
+        : updates.number_of_parts; // Fallback to existing value if available
+      
+      if (numberOfParts !== undefined && numberOfParts > 0 && allowedUpdates.directions.length !== numberOfParts) {
+        return res.status(400).json({ 
+          error: 'Number of directions must match number of parts' 
+        });
+      }
+    }
 
     if (Object.keys(allowedUpdates).length === 0) {
       return res.status(400).json({ error: 'No valid updates provided' });

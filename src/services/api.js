@@ -309,10 +309,10 @@ export const testApi = {
   /**
    * Create a new test
    */
-  async createTest(title, description, header_logo_url = null) {
+  async createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = []) {
     return apiRequest('/api/tests', {
       method: 'POST',
-      body: JSON.stringify({ title, description, header_logo_url }),
+      body: JSON.stringify({ title, description, header_logo_url, number_of_parts, part_descriptions, directions }),
     });
   },
 
@@ -362,10 +362,10 @@ export const questionApi = {
   /**
    * Create a new question with answer choices
    */
-  async createQuestion(testId, questionText, answerChoices, questionImageUrl = null) {
+  async createQuestion(testId, questionText, answerChoices, questionImageUrl = null, questionType = null, questionPart = null) {
     return apiRequest('/api/questions', {
       method: 'POST',
-      body: JSON.stringify({ testId, questionText, answerChoices, questionImageUrl }),
+      body: JSON.stringify({ testId, questionText, answerChoices, questionImageUrl, questionType, questionPart }),
     });
   },
 
@@ -381,10 +381,10 @@ export const questionApi = {
   /**
    * Update a question
    */
-  async updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null) {
+  async updateQuestion(questionId, questionText, answerChoices, questionImageUrl = null, questionType = null, questionPart = null) {
     return apiRequest(`/api/questions/${questionId}`, {
       method: 'PUT',
-      body: JSON.stringify({ questionText, answerChoices, questionImageUrl }),
+      body: JSON.stringify({ questionText, answerChoices, questionImageUrl, questionType, questionPart }),
     });
   },
 
@@ -480,9 +480,10 @@ export const versionApi = {
    * Generate randomized versions of a test
    */
   async generateVersions(testId, versionCount, questionsPerVersion) {
+    const body = { testId, versionCount, questionsPerVersion };
     return apiRequest('/api/versions/generate', {
       method: 'POST',
-      body: JSON.stringify({ testId, versionCount, questionsPerVersion }),
+      body: JSON.stringify(body),
     });
   },
 

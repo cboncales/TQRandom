@@ -11,12 +11,25 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  partDescriptions: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["edit-question", "delete-question", "toggle-selection"]);
 
 const showDeleteConfirm = ref(null);
 const deleteQuestionId = ref(null);
+
+// Helper function to get part description by part number
+const getPartDescription = (partNumber) => {
+  if (!partNumber || !props.partDescriptions || props.partDescriptions.length === 0) {
+    return null;
+  }
+  const index = partNumber - 1; // Part numbers are 1-indexed
+  return props.partDescriptions[index] || null;
+};
 
 const editQuestion = (question) => {
   emit("edit-question", question);
@@ -48,6 +61,47 @@ const isQuestionSelected = (question) => {
 const toggleSelection = (question) => {
   emit("toggle-selection", question);
 };
+
+// Group questions by part for organized display
+const groupedQuestions = computed(() => {
+  if (!props.partDescriptions || props.partDescriptions.length === 0) {
+    // No parts defined, return all questions in a single group
+    return [{
+      part: null,
+      description: null,
+      questions: props.questions
+    }];
+  }
+
+  // Create groups for each part
+  const groups = [];
+  
+  // Add a group for each defined part
+  for (let i = 0; i < props.partDescriptions.length; i++) {
+    const partNumber = i + 1;
+    const questionsInPart = props.questions.filter(q => q.part === partNumber);
+    
+    if (questionsInPart.length > 0) {
+      groups.push({
+        part: partNumber,
+        description: props.partDescriptions[i],
+        questions: questionsInPart
+      });
+    }
+  }
+
+  // Add questions without parts at the end (if any)
+  const questionsWithoutPart = props.questions.filter(q => !q.part || q.part === null);
+  if (questionsWithoutPart.length > 0) {
+    groups.push({
+      part: null,
+      description: 'Unassigned Questions',
+      questions: questionsWithoutPart
+    });
+  }
+
+  return groups;
+});
 </script>
 
 <template>
@@ -59,13 +113,29 @@ const toggleSelection = (question) => {
       </p>
     </div>
 
-    <ul class="divide-y divide-gray-200">
-      <li
-        v-for="(question, index) in questions"
-        :key="question.id"
-        class="px-3 sm:px-4 py-4 sm:py-6 transition-colors duration-200"
-        :class="isQuestionSelected(question) ? 'bg-blue-50 border-l-4 border-l-blue-500 dark:bg-gray-700 dark:border-l-blue-800' : ''"
-      >
+    <!-- Loop through grouped questions by part -->
+    <div v-for="(group, groupIndex) in groupedQuestions" :key="groupIndex">
+      <!-- Part Header -->
+      <div v-if="group.part" class="bg-indigo-50 dark:bg-indigo-900 px-4 py-3 border-t-2 border-indigo-300 dark:border-indigo-600">
+        <h4 class="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
+          {{ group.description }}
+        </h4>
+      </div>
+      <!-- Unassigned Questions Header (if any) -->
+      <div v-else-if="group.description" class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-t-2 border-gray-300 dark:border-gray-600">
+        <h4 class="text-base sm:text-lg font-bold text-gray-700 dark:text-gray-200">
+          {{ group.description }}
+        </h4>
+      </div>
+
+      <!-- Questions in this part -->
+      <ul class="divide-y divide-gray-200">
+        <li
+          v-for="(question, index) in group.questions"
+          :key="question.id"
+          class="px-3 sm:px-4 py-4 sm:py-6 transition-colors duration-200"
+          :class="isQuestionSelected(question) ? 'bg-blue-50 border-l-4 border-l-blue-500 dark:bg-gray-700 dark:border-l-blue-800' : ''"
+        >
         <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-0">
           <div class="flex-1 min-w-0">
             <!-- Question Number and Text -->
@@ -105,13 +175,13 @@ const toggleSelection = (question) => {
                 </span>
 
                 <!-- Multiple Choice Options -->
-                <div v-if="question.type === 'multiple-choice'" class="mb-3 sm:mb-4">
+                <div v-if="question.type === 'Multiple Choice'" class="mb-3 sm:mb-4">
                   <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">
                     Answer Options:
                   </h5>
                   <div class="space-y-2">
                     <div
-                      v-for="option in question.options"
+                      v-for="(option, optIndex) in question.options"
                       :key="option.id"
                       class="flex items-start p-2 rounded border"
                       :class="
@@ -120,6 +190,9 @@ const toggleSelection = (question) => {
                           : 'bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700'
                       "
                     >
+                      <span class="shrink-0 font-medium mr-2 text-gray-600 dark:text-gray-300">
+                        {{ String.fromCharCode(65 + optIndex) }}.
+                      </span>
                       <span
                         class="shrink-0 h-4 w-4 rounded-full mr-3 mt-0.5 flex items-center justify-center"
                         :class="
@@ -164,16 +237,69 @@ const toggleSelection = (question) => {
 
                   <!-- Correct Answer Summary -->
                   <div class="mt-3 text-xs sm:text-sm text-gray-600 dark:text-gray-100">
-                    <strong>Correct answer(s): </strong>
+                    <strong>Correct answer: </strong>
                     <span class="text-green-600 font-medium dark:text-green-400">
                       {{
                         getCorrectAnswers(question.options)
-                          .map((opt) => opt.text)
+                          .map((opt, idx) => {
+                            const optIndex = question.options.findIndex(o => o.id === opt.id);
+                            return String.fromCharCode(65 + optIndex) + '. ' + opt.text;
+                          })
                           .join(", ")
                       }}
                     </span>
                   </div>
                 </div>
+
+                <!-- True or False Answer -->
+                <div v-else-if="question.type === 'True or False'" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900 dark:border-green-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      Correct Answer:
+                    </h5>
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300">
+                      {{ getCorrectAnswers(question.options)[0]?.text || 'Not specified' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Identification Answer -->
+                <div v-else-if="question.type === 'Identification'" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900 dark:border-green-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      Correct Answer:
+                    </h5>
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300">
+                      {{ getCorrectAnswers(question.options)[0]?.text || 'Not specified' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Fill in the Blank Answer -->
+                <div v-else-if="question.type === 'Fill in the Blank'" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900 dark:border-green-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      Correct Answer:
+                    </h5>
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300">
+                      {{ getCorrectAnswers(question.options)[0]?.text || 'Not specified' }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Essay Answer (if provided) -->
+                <div v-else-if="question.type === 'Essay' && question.options && question.options.length > 0" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-green-50 border border-green-200 dark:bg-green-900 dark:border-green-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      Sample Answer / Key Points:
+                    </h5>
+                    <p class="text-xs sm:text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap">
+                      {{ question.options[0]?.text || 'No sample answer provided' }}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Remove old part badge - now shown as headers -->
               </div>
             </div>
           </div>
@@ -201,30 +327,32 @@ const toggleSelection = (question) => {
           </div>
         </div>
       </li>
-
-      <!-- Empty State -->
-      <li v-if="questions.length === 0" class="px-4 py-8 sm:px-6 text-center">
-        <div class="text-gray-500 dark:text-gray-100">
-          <svg
-            class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-100"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          <h3 class="mt-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">No questions</h3>
-          <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-100">
-            Get started by adding your first question.
-          </p>
-        </div>
-      </li>
     </ul>
+  </div>
+  
+  <!-- Empty State (shown when no questions at all) -->
+  <div v-if="questions.length === 0" class="px-4 py-8 sm:px-6 text-center bg-white dark:bg-gray-900">
+    <div class="text-gray-500 dark:text-gray-100">
+      <svg
+        class="mx-auto h-10 w-10 sm:h-12 sm:w-12 text-gray-400 dark:text-gray-100"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <h3 class="mt-2 text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">No questions</h3>
+      <p class="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-100">
+        Get started by adding your first question.
+      </p>
+    </div>
+  </div>
+
   </div>
 
   <!-- Delete Confirmation Modal -->
