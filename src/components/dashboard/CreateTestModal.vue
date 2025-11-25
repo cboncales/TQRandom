@@ -21,6 +21,7 @@ const logoPreview = ref(null);
 const numberOfParts = ref(0);
 const partDescriptions = ref([]);
 const partDirections = ref([]);
+const partIdentificationImages = ref([]); // Array of {file, preview} objects
 const generalDirections = ref("");
 const isLoading = ref(false);
 const isUploadingLogo = ref(false);
@@ -30,22 +31,25 @@ const errorMessage = ref("");
 watch(numberOfParts, (newValue) => {
   const num = parseInt(newValue) || 0;
   if (num > 0) {
-    // Add or remove part descriptions to match the number
+    // Add or remove part descriptions, directions, and identification images to match the number
     if (num > partDescriptions.value.length) {
-      // Add new empty descriptions and directions
+      // Add new empty descriptions, directions, and identification images
       for (let i = partDescriptions.value.length; i < num; i++) {
         partDescriptions.value.push("");
         partDirections.value.push("");
+        partIdentificationImages.value.push({ file: null, preview: null });
       }
     } else if (num < partDescriptions.value.length) {
-      // Remove excess descriptions and directions
+      // Remove excess descriptions, directions, and identification images
       partDescriptions.value = partDescriptions.value.slice(0, num);
       partDirections.value = partDirections.value.slice(0, num);
+      partIdentificationImages.value = partIdentificationImages.value.slice(0, num);
     }
   } else {
-    // Clear all descriptions and directions if no parts
+    // Clear all descriptions, directions, and identification images if no parts
     partDescriptions.value = [];
     partDirections.value = [];
+    partIdentificationImages.value = [];
   }
 });
 
@@ -71,6 +75,32 @@ const handleLogoUpload = (event) => {
 const removeLogo = () => {
   logoFile.value = null;
   logoPreview.value = null;
+};
+
+// Identification image upload handlers (per-part)
+const handleIdentificationImageUpload = (partIndex, event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
+      errorMessage.value = "Identification image file size must be less than 5MB";
+      return;
+    }
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      partIdentificationImages.value[partIndex] = {
+        file: file,
+        preview: e.target.result
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeIdentificationImage = (partIndex) => {
+  partIdentificationImages.value[partIndex] = { file: null, preview: null };
 };
 
 const handleSubmit = async () => {
@@ -111,13 +141,28 @@ const handleSubmit = async () => {
       isUploadingLogo.value = false;
     }
 
+    // Upload identification images for each part
+    const identificationImageUrls = [];
+    for (let i = 0; i < numParts; i++) {
+      if (partIdentificationImages.value[i]?.file) {
+        const uploadResult = await imageApi.uploadImage(partIdentificationImages.value[i].file);
+        if (uploadResult.error) {
+          throw new Error(`Identification image ${i + 1} upload failed: ${uploadResult.error}`);
+        }
+        identificationImageUrls.push(uploadResult.data.imageUrl);
+      } else {
+        identificationImageUrls.push(null);
+      }
+    }
+
     const result = await testStore.createTest(
       title.value,
       description.value.trim(),
       logoUrl,
       numParts,
       partDescriptions.value,
-      numParts > 0 ? partDirections.value : [generalDirections.value]
+      numParts > 0 ? partDirections.value : [generalDirections.value],
+      identificationImageUrls
     );
 
     if (result.error) {
@@ -147,6 +192,7 @@ const resetForm = () => {
   numberOfParts.value = 0;
   partDescriptions.value = [];
   partDirections.value = [];
+  partIdentificationImages.value = [];
   generalDirections.value = "";
   errorMessage.value = "";
 };
@@ -335,6 +381,52 @@ const closeModal = () => {
                 class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed bg-white dark:bg-gray-900"
                 :placeholder="`e.g., Directions: Identify what is being asked. Choose your answers from the box. Write your answer on the space provided.`"
               ></textarea>
+            </div>
+            
+            <!-- Identification Image Upload (Per Part) -->
+            <div class="flex items-start gap-2 mt-3">
+              <span class="shrink-0 w-16 text-xs font-medium text-gray-600 dark:text-gray-300">
+                Image:
+              </span>
+              <div class="flex-1">
+                <div v-if="partIdentificationImages[index]?.preview" class="mb-2">
+                  <div class="relative inline-block">
+                    <img
+                      :src="partIdentificationImages[index].preview"
+                      alt="Identification image preview"
+                      class="max-w-full h-auto rounded-lg border-2 border-gray-300"
+                    />
+                    <button
+                      type="button"
+                      @click="removeIdentificationImage(index)"
+                      :disabled="isLoading"
+                      class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
+                    >
+                      <svg
+                        class="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="file"
+                  accept="image/*"
+                  @change="(event) => handleIdentificationImageUpload(index, event)"
+                  :disabled="isLoading"
+                  class="block text-sm text-gray-500 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">PNG, JPG, GIF up to 5MB (Optional)</p>
+              </div>
             </div>
           </div>
         </div>

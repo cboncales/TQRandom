@@ -5,7 +5,7 @@ import { supabase } from '../config/supabase.js';
  */
 async function createTest(req, res) {
   try {
-    const { title, description, header_logo_url, number_of_parts, part_descriptions, directions } = req.body;
+    const { title, description, header_logo_url, number_of_parts, part_descriptions, directions, identification_image_urls } = req.body;
     
     if (!req.user || !req.user.id) {
       console.error('createTest: req.user is undefined');
@@ -23,6 +23,7 @@ async function createTest(req, res) {
     const numberOfParts = number_of_parts || 0;
     const partDescriptions = part_descriptions || [];
     const testDirections = directions || [];
+    const identificationImageUrls = identification_image_urls || [];
     
     if (numberOfParts > 0 && partDescriptions.length !== numberOfParts) {
       return res.status(400).json({ 
@@ -41,6 +42,7 @@ async function createTest(req, res) {
           number_of_parts: numberOfParts,
           part_descriptions: partDescriptions,
           directions: testDirections,
+          identification_image_urls: identificationImageUrls,
         },
       ])
       .select()
@@ -127,6 +129,7 @@ async function updateTest(req, res) {
     if (updates.number_of_parts !== undefined) allowedUpdates.number_of_parts = updates.number_of_parts;
     if (updates.part_descriptions !== undefined) allowedUpdates.part_descriptions = updates.part_descriptions;
     if (updates.directions !== undefined) allowedUpdates.directions = updates.directions;
+    if (updates.identification_image_urls !== undefined) allowedUpdates.identification_image_urls = updates.identification_image_urls;
 
     // Validate parts data if being updated
     if (allowedUpdates.number_of_parts !== undefined && allowedUpdates.part_descriptions !== undefined) {
@@ -152,6 +155,15 @@ async function updateTest(req, res) {
       if (numberOfParts !== undefined && numberOfParts > 0 && allowedUpdates.directions.length !== numberOfParts) {
         return res.status(400).json({ 
           error: 'Number of directions must match number of parts' 
+        });
+      }
+    }
+
+    // Validate identification_image_urls data if being updated
+    if (allowedUpdates.identification_image_urls !== undefined) {
+      if (!Array.isArray(allowedUpdates.identification_image_urls)) {
+        return res.status(400).json({ 
+          error: 'Identification image URLs must be an array' 
         });
       }
     }

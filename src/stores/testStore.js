@@ -59,9 +59,9 @@ export const useTestStore = defineStore("testStore", () => {
   /**
    * Create a new test
    */
-  async function createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = []) {
+  async function createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = [], identification_image_urls = []) {
     try {
-      const result = await testApi.createTest(title, description, header_logo_url, number_of_parts, part_descriptions, directions);
+      const result = await testApi.createTest(title, description, header_logo_url, number_of_parts, part_descriptions, directions, identification_image_urls);
       
       if (result.error) {
         return { error: result.error };

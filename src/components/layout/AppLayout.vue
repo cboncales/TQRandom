@@ -447,6 +447,7 @@ const isDarkMode = computed(() => themeStore.isDarkMode);
           class="grid grid-cols-1 md:grid-cols-4 gap-8"
           data-aos="fade-up"
           data-aos-delay="300"
+          data-aos-once="true"
         >
           <!-- Company Info -->
           <div class="md:col-span-2">

@@ -31,6 +31,10 @@ const logoFile = ref(null);
 const logoPreview = ref(null);
 const logoChanged = ref(false);
 
+// Identification image states (per-part)
+const currentIdentificationImageUrls = ref([]);
+const partIdentificationImages = ref([]); // Array of {file, preview, changed} objects
+
 // Parts states
 const numberOfParts = ref(0);
 const partDescriptions = ref([]);
@@ -48,14 +52,19 @@ watch(numberOfParts, (newValue) => {
       for (let i = partDescriptions.value.length; i < num; i++) {
         partDescriptions.value.push("");
         partDirections.value.push("");
+        partIdentificationImages.value.push({ file: null, preview: null, changed: false });
       }
     } else if (num < partDescriptions.value.length) {
       partDescriptions.value = partDescriptions.value.slice(0, num);
       partDirections.value = partDirections.value.slice(0, num);
+      partIdentificationImages.value = partIdentificationImages.value.slice(0, num);
+      currentIdentificationImageUrls.value = currentIdentificationImageUrls.value.slice(0, num);
     }
   } else {
     partDescriptions.value = [];
     partDirections.value = [];
+    partIdentificationImages.value = [];
+    currentIdentificationImageUrls.value = [];
   }
 });
 
@@ -84,6 +93,38 @@ const removeLogo = () => {
   logoPreview.value = null;
   currentLogoUrl.value = null;
   logoChanged.value = true;
+};
+
+// Identification image upload handlers (per-part)
+const handleIdentificationImageUpload = (partIndex, event) => {
+  const file = event.target.files[0];
+  if (file) {
+    if (file.size > 5 * 1024 * 1024) {
+      // 5MB limit
+      errorMessage.value = "Identification image file size must be less than 5MB";
+      return;
+    }
+    
+    // Create preview URL
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      partIdentificationImages.value[partIndex] = {
+        file: file,
+        preview: e.target.result,
+        changed: true
+      };
+    };
+    reader.readAsDataURL(file);
+  }
+};
+
+const removeIdentificationImage = (partIndex) => {
+  partIdentificationImages.value[partIndex] = {
+    file: null,
+    preview: null,
+    changed: true
+  };
+  currentIdentificationImageUrls.value[partIndex] = null;
 };
 
 // Load test data
@@ -128,9 +169,25 @@ const loadTest = async () => {
       logoFile.value = null;
       logoChanged.value = false;
 
+      // Load existing identification images (per-part)
+      currentIdentificationImageUrls.value = test.identification_image_urls ? [...test.identification_image_urls] : [];
+      partIdentificationImages.value = [];
+      
+      // Initialize identification images for each part
+      const numParts = test.number_of_parts || 0;
+      for (let i = 0; i < numParts; i++) {
+        const existingUrl = currentIdentificationImageUrls.value[i] || null;
+        partIdentificationImages.value.push({
+          file: null,
+          preview: existingUrl,
+          changed: false
+        });
+      }
+
       originalSnapshot = {
         ...form.value,
         header_logo_url: test.header_logo_url,
+        identification_image_urls: test.identification_image_urls ? [...test.identification_image_urls] : [],
         number_of_parts: test.number_of_parts || 0,
         part_descriptions: test.part_descriptions ? [...test.part_descriptions] : [],
         directions: test.directions ? [...test.directions] : [],
@@ -229,6 +286,25 @@ const handleSave = async () => {
         updates.header_logo_url = null;
       }
     }
+
+    // Upload new identification images if changed (per-part)
+    const identificationImageUrls = [...currentIdentificationImageUrls.value];
+    for (let i = 0; i < numParts; i++) {
+      const partImage = partIdentificationImages.value[i];
+      if (partImage?.changed) {
+        if (partImage.file) {
+          const uploadResult = await imageApi.uploadImage(partImage.file);
+          if (uploadResult.error) {
+            throw new Error(`Identification image ${i + 1} upload failed: ${uploadResult.error}`);
+          }
+          identificationImageUrls[i] = uploadResult.data.imageUrl;
+        } else {
+          // Image was removed
+          identificationImageUrls[i] = null;
+        }
+      }
+    }
+    updates.identification_image_urls = identificationImageUrls;
 
     const result = await testStore.updateTest(props.testId, updates);
 
@@ -420,6 +496,52 @@ const closeModal = () => {
                   class="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm disabled:bg-gray-100 disabled:cursor-not-allowed bg-white dark:bg-gray-900"
                   :placeholder="`e.g., Directions: Identify what is being asked. Choose your answers from the box. Write your answer on the space provided.`"
                 ></textarea>
+              </div>
+              
+              <!-- Identification Image Upload (Per Part) -->
+              <div class="flex items-start gap-2 mt-3">
+                <span class="shrink-0 w-16 text-xs font-medium text-gray-600 dark:text-gray-300">
+                  Image:
+                </span>
+                <div class="flex-1">
+                  <div v-if="partIdentificationImages[index]?.preview" class="mb-2">
+                    <div class="relative inline-block">
+                      <img
+                        :src="partIdentificationImages[index].preview"
+                        alt="Identification image preview"
+                        class="max-w-full h-auto rounded-lg border-2 border-gray-300"
+                      />
+                      <button
+                        type="button"
+                        @click="removeIdentificationImage(index)"
+                        :disabled="isSaving"
+                        class="absolute -top-2 -right-2 bg-red-600 text-white rounded-full p-1 hover:bg-red-700 disabled:opacity-50"
+                      >
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    @change="(event) => handleIdentificationImageUpload(index, event)"
+                    :disabled="isSaving"
+                    class="block text-sm text-gray-500 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                  />
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-300">PNG, JPG, GIF up to 5MB (Optional)</p>
+                </div>
               </div>
             </div>
           </div>

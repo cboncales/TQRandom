@@ -309,10 +309,10 @@ export const testApi = {
   /**
    * Create a new test
    */
-  async createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = []) {
+  async createTest(title, description, header_logo_url = null, number_of_parts = 0, part_descriptions = [], directions = [], identification_image_urls = []) {
     return apiRequest('/api/tests', {
       method: 'POST',
-      body: JSON.stringify({ title, description, header_logo_url, number_of_parts, part_descriptions, directions }),
+      body: JSON.stringify({ title, description, header_logo_url, number_of_parts, part_descriptions, directions, identification_image_urls }),
     });
   },
 
