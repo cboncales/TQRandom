@@ -1804,6 +1804,7 @@ onMounted(async () => {
               :questions="questions"
               :selected-questions="selectedQuestions"
               :part-descriptions="test.part_descriptions || []"
+              :directions="test.directions || []"
               @edit-question="editQuestion"
               @delete-question="handleQuestionDeleted"
               @toggle-selection="toggleQuestionSelection"

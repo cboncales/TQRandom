@@ -15,6 +15,10 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  directions: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const emit = defineEmits(["edit-question", "delete-question", "toggle-selection"]);
@@ -69,6 +73,7 @@ const groupedQuestions = computed(() => {
     return [{
       part: null,
       description: null,
+      direction: props.directions && props.directions.length > 0 ? props.directions[0] : null,
       questions: props.questions
     }];
   }
@@ -85,6 +90,7 @@ const groupedQuestions = computed(() => {
       groups.push({
         part: partNumber,
         description: props.partDescriptions[i],
+        direction: props.directions && props.directions[i] ? props.directions[i] : null,
         questions: questionsInPart
       });
     }
@@ -96,6 +102,7 @@ const groupedQuestions = computed(() => {
     groups.push({
       part: null,
       description: 'Unassigned Questions',
+      direction: null,
       questions: questionsWithoutPart
     });
   }
@@ -115,11 +122,22 @@ const groupedQuestions = computed(() => {
 
     <!-- Loop through grouped questions by part -->
     <div v-for="(group, groupIndex) in groupedQuestions" :key="groupIndex">
+      <!-- Direction displayed at top when no parts -->
+      <div v-if="!group.part && group.direction && !group.description" class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+        <p class="text-sm text-gray-700 dark:text-gray-300 italic">
+          {{ group.direction }}
+        </p>
+      </div>
+
       <!-- Part Header -->
       <div v-if="group.part" class="bg-indigo-50 dark:bg-indigo-900 px-4 py-3 border-t-2 border-indigo-300 dark:border-indigo-600">
-        <h4 class="text-base sm:text-lg font-bold text-indigo-900 dark:text-indigo-100">
+        <h4 class="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">
           {{ group.description }}
         </h4>
+        <!-- Direction for this part -->
+        <p v-if="group.direction" class="mt-2 text-sm text-gray-700 dark:text-gray-300 italic">
+          {{ group.direction }}
+        </p>
       </div>
       <!-- Unassigned Questions Header (if any) -->
       <div v-else-if="group.description" class="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-t-2 border-gray-300 dark:border-gray-600">

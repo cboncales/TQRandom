@@ -54,6 +54,7 @@ const groupedQuestions = computed(() => {
   }
 
   const partDescriptions = previewVersion.value.part_descriptions || [];
+  const directions = previewVersion.value.directions || [];
   const questions = previewVersion.value.questions;
 
   // If no parts, return all questions in one group
@@ -61,6 +62,7 @@ const groupedQuestions = computed(() => {
     return [{
       part: null,
       description: null,
+      direction: directions.length > 0 ? directions[0] : null,
       questions: questions
     }];
   }
@@ -76,6 +78,7 @@ const groupedQuestions = computed(() => {
       groups.push({
         part: partNumber,
         description: partDescriptions[i],
+        direction: directions[i] || null,
         questions: partQuestions
       });
     }
@@ -87,6 +90,7 @@ const groupedQuestions = computed(() => {
     groups.push({
       part: null,
       description: 'Other Questions',
+      direction: null,
       questions: questionsWithoutPart
     });
   }
@@ -194,11 +198,22 @@ const handleClose = () => {
         <div v-else-if="previewVersion" class="space-y-6">
           <!-- Loop through grouped questions by part -->
           <div v-for="(group, groupIndex) in groupedQuestions" :key="groupIndex">
+            <!-- Direction at top when no parts -->
+            <div v-if="!group.part && group.direction && groupIndex === 0" class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <p class="text-sm text-gray-700 dark:text-gray-300 italic">
+                <span class="font-semibold not-italic">Directions:</span> {{ group.direction }}
+              </p>
+            </div>
+
             <!-- Part Header -->
             <div v-if="group.part" class="mb-4 pb-2 border-b-2 border-gray-300 dark:border-gray-600">
               <h3 class="text-lg font-bold text-gray-900 dark:text-gray-100">
                 {{ group.description }}
               </h3>
+              <!-- Direction for this part -->
+              <p v-if="group.direction" class="mt-2 text-sm text-gray-700 dark:text-gray-300 italic">
+                <span class="font-semibold not-italic">Directions:</span> {{ group.direction }}
+              </p>
             </div>
 
             <!-- Questions in this part -->

@@ -247,7 +247,8 @@ export async function getVersion(req, res) {
           description,
           header_logo_url,
           user_id,
-          part_descriptions
+          part_descriptions,
+          directions
         )
       `)
       .eq('id', versionId)
@@ -323,6 +324,7 @@ export async function getVersion(req, res) {
         test_description: version.tests.description,
         header_logo_url: version.tests.header_logo_url,
         part_descriptions: version.tests.part_descriptions || [],
+        directions: version.tests.directions || [],
         questions: formattedQuestions
       }
     });
