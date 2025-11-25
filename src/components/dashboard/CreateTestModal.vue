@@ -168,7 +168,7 @@ const closeModal = () => {
   >
     <!-- Modal content -->
     <div
-      class="relative mt-16 mx-auto mb-16 p-5 border border-gray-300 w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-900"
+      class="relative mt-12 mx-auto mb-16 p-5 border border-gray-400 w-full max-w-md shadow-lg rounded-md bg-white dark:bg-gray-900"
       @click.stop
     >
       <!-- Close button -->

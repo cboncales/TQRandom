@@ -717,51 +717,113 @@ const generateVersionWord = async (versionData) => {
     })
   );
 
+  // Group questions by part
+  const partDescriptions = versionData.part_descriptions || [];
+  const directions = versionData.directions || [];
+  const questionParagraphs = [];
+
+  // If no parts, show general direction at the top
+  if (partDescriptions.length === 0 && directions.length > 0 && directions[0]) {
+    questionParagraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `Directions: ${directions[0]}`,
+            italics: true,
+            size: 20,
+            color: "404040",
+          }),
+        ],
+        spacing: { before: 200, after: 300 },
+      })
+    );
+  }
+
+  let currentPart = null;
+
+  // Build questions with part headers
+  versionData.questions.forEach((q, qIndex) => {
+    // Add part header if this is a new part
+    if (partDescriptions.length > 0 && q.part !== currentPart) {
+      currentPart = q.part;
+      const partIndex = currentPart - 1;
+      const partDescription = partDescriptions[partIndex];
+      const partDirection = directions[partIndex];
+
+      // Part description
+      questionParagraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: partDescription,
+              bold: true,
+              size: 24,
+            }),
+          ],
+          spacing: { before: 400, after: 100 },
+        })
+      );
+
+      // Part direction
+      if (partDirection) {
+        questionParagraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `Directions: ${partDirection}`,
+                italics: true,
+                size: 20,
+                color: "404040",
+              }),
+            ],
+            spacing: { after: 300 },
+          })
+        );
+      }
+    }
+
+    // Question text
+    questionParagraphs.push(
+      new Paragraph({
+        children: [
+          new TextRun({
+            text: `${q.question_number}. `,
+            bold: true,
+            size: 22,
+          }),
+          new TextRun({
+            text: q.question_text,
+            size: 22,
+          }),
+        ],
+        spacing: { before: 200, after: 100 },
+      })
+    );
+
+    // Answer choices (5 spaces before letter)
+    q.answer_choices.forEach((choice, choiceIndex) => {
+      const letter = String.fromCharCode(65 + choiceIndex);
+      questionParagraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `     ${letter}. ${choice.text}`,
+              size: 20,
+            }),
+          ],
+          spacing: { after: 80 },
+        })
+      );
+    });
+  });
+
   const doc = new Document({
     sections: [
       {
         properties: {},
         children: [
           ...headerParagraphs,
-
-          // Questions
-          ...versionData.questions.flatMap((q, qIndex) => {
-            const questionParagraphs = [
-              // Question text
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `${q.question_number}. `,
-                    bold: true,
-                    size: 22,
-                  }),
-                  new TextRun({
-                    text: q.question_text,
-                    size: 22,
-                  }),
-                ],
-                spacing: { before: 200, after: 100 },
-              }),
-            ];
-
-            // Answer choices (5 spaces before letter)
-            const choiceParagraphs = q.answer_choices.map(
-              (choice, choiceIndex) => {
-                const letter = String.fromCharCode(65 + choiceIndex);
-                return new Paragraph({
-                  children: [
-                    new TextRun({
-                      text: `     ${letter}. ${choice.text}`,
-                      size: 20,
-                    }),
-                  ],
-                  spacing: { after: 80 },
-                });
-              }
-            );
-
-            return [...questionParagraphs, ...choiceParagraphs];
-          }),
+          ...questionParagraphs,
         ],
       },
     ],
@@ -881,8 +943,62 @@ const generateVersionPDF = async (versionData) => {
   // Reset text color
   doc.setTextColor(0, 0, 0);
 
+  // Group questions by part
+  const partDescriptions = versionData.part_descriptions || [];
+  const directions = versionData.directions || [];
+  let currentPart = null;
+
+  // If no parts, show general direction at the top
+  if (partDescriptions.length === 0 && directions.length > 0 && directions[0]) {
+    checkPageBreak(12);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "italic");
+    doc.setTextColor(60, 60, 60);
+    const directionLines = wrapText(`Directions: ${directions[0]}`, contentWidth);
+    directionLines.forEach((line) => {
+      checkPageBreak(5);
+      doc.text(line, margin, yPosition);
+      yPosition += 5;
+    });
+    yPosition += 6;
+    doc.setTextColor(0, 0, 0);
+  }
+
   // Questions
   versionData.questions.forEach((q, qIndex) => {
+    // Check if we need to display a new part header
+    if (partDescriptions.length > 0 && q.part !== currentPart) {
+      currentPart = q.part;
+      const partIndex = currentPart - 1;
+      const partDescription = partDescriptions[partIndex];
+      const partDirection = directions[partIndex];
+
+      checkPageBreak(20);
+
+      // Part header
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(partDescription, margin, yPosition);
+      yPosition += 7;
+
+      // Part direction
+      if (partDirection) {
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "italic");
+        doc.setTextColor(60, 60, 60);
+        const directionLines = wrapText(`Directions: ${partDirection}`, contentWidth);
+        directionLines.forEach((line) => {
+          checkPageBreak(5);
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        });
+        doc.setTextColor(0, 0, 0);
+      }
+
+      yPosition += 6;
+    }
+
     // Check if we need a new page for the question
     checkPageBreak(25); // Minimum space for question start
 

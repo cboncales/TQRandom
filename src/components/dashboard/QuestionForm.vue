@@ -335,7 +335,7 @@ const hasCorrectAnswer = () => {
   >
     <!-- Modal content -->
     <div
-      class="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+      class="relative w-full max-w-2xl bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
       <div class="overflow-y-auto flex-1 p-5">

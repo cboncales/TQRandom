@@ -39,7 +39,7 @@ const handleClose = () => {
     data-aos-delay="300"
   >
     <div
-      class="relative top-20 mx-auto p-4 sm:p-5 border border-gray-300 w-11/12 max-w-sm sm:max-w-md shadow-lg rounded-md bg-white dark:bg-gray-900"
+      class="relative top-20 mx-auto p-4 sm:p-5 border border-gray-400 w-11/12 max-w-sm sm:max-w-md shadow-lg rounded-md bg-white dark:bg-gray-900"
       @click.stop
     >
       <div class="mt-3 text-center">

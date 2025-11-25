@@ -265,7 +265,7 @@ const closeModal = () => {
   >
     <!-- MODAL CARD -->
     <div
-      class="relative bg-white dark:bg-gray-900 w-full max-w-xs md:max-w-lg lg:max-w-lg mt-16 mb-16 p-6 rounded-lg shadow-lg border border-gray-300"
+      class="relative bg-white dark:bg-gray-900 w-full max-w-xs md:max-w-lg lg:max-w-lg mt-12 mb-16 p-6 rounded-lg shadow-lg border border-gray-400"
       @click.stop
     >
       <!-- HEADER -->

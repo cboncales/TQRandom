@@ -126,7 +126,7 @@ const handleClose = () => {
     data-aos-delay="300"
   >
     <div
-      class="relative w-full max-w-4xl bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
+      class="relative w-full max-w-4xl bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-700 rounded-lg shadow-lg flex flex-col max-h-[calc(100vh-2rem)]"
       @click.stop
     >
       <!-- Header (Fixed) -->

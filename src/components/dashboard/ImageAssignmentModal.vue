@@ -242,7 +242,7 @@ const saveQuestionsWithImages = async () => {
       >
         <!-- Header -->
         <div
-          class="px-6 py-4 border-gray-200 flex justify-between items-center bg-linear-to-r from-blue-600 dark:from-blue-900 to-blue-700 dark:to-blue-900 shrink-0"
+          class="px-6 py-4 border-gray-400 flex justify-between items-center bg-linear-to-r from-blue-600 dark:from-blue-900 to-blue-700 dark:to-blue-900 shrink-0"
         >
           <div>
             <h3

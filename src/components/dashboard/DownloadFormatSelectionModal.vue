@@ -79,7 +79,7 @@ const getDownloadDescription = () => {
       >
 
       <div
-        class="relative z-10 inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
+        class="relative z-10 inline-block align-bottom bg-white dark:bg-gray-900 border border-gray-400 dark:border-gray-700 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6"
         data-aos="fade-up"
         data-aos-delay="300"
       >
