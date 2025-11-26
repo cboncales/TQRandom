@@ -2,17 +2,20 @@
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TestList from "@/components/dashboard/TestList.vue";
 import CreateTestModal from "@/components/dashboard/CreateTestModal.vue";
+import AIGenerateTestModal from "@/components/dashboard/AIGenerateTestModal.vue";
 import TutorialOverlay from "@/components/tutorial/TutorialOverlay.vue";
 import { ref, onMounted, watch } from "vue";
 import { useTestStore } from "@/stores/testStore";
 import { useTutorialStore } from "@/stores/tutorialStore";
 import { useRoute } from "vue-router";
+import api from "@/services/api";
 
 const testStore = useTestStore();
 const tutorialStore = useTutorialStore();
 const route = useRoute();
 
 const showCreateModal = ref(false);
+const showAIGenerateModal = ref(false);
 const tests = ref([]);
 const filteredTests = ref([]);
 const searchQuery = ref("");
@@ -20,6 +23,7 @@ const isLoading = ref(true);
 const errorMessage = ref("");
 const isDeletingTest = ref(false);
 const deletingTestTitle = ref("");
+const isGeneratingAI = ref(false);
 
 // Stats
 const totalQuestions = ref(0);
@@ -32,6 +36,71 @@ const openCreateModal = () => {
 
 const closeCreateModal = () => {
   showCreateModal.value = false;
+};
+
+const openAIGenerateModal = () => {
+  showAIGenerateModal.value = true;
+};
+
+const closeAIGenerateModal = () => {
+  showAIGenerateModal.value = false;
+};
+
+const handleAIGenerate = async (formData) => {
+  isGeneratingAI.value = true;
+  
+  try {
+    // Create FormData for the API call
+    const apiFormData = new FormData();
+    apiFormData.append('testTitle', formData.testTitle);
+    apiFormData.append('topic', formData.topic);
+    apiFormData.append('numberOfQuestions', formData.numberOfQuestions);
+    apiFormData.append('numberOfParts', formData.numberOfParts);
+    
+    // Add parts configuration
+    apiFormData.append('parts', JSON.stringify(formData.parts));
+    
+    // Add question types (for backward compatibility)
+    apiFormData.append('questionTypes', JSON.stringify(formData.questionTypes));
+    
+    // Add file if provided
+    if (formData.file) {
+      apiFormData.append('file', formData.file);
+    }
+    
+    // Call AI generation API
+    const result = await api.aiApi.generateTest(apiFormData);
+    
+    if (result.error) {
+      alert(`Error generating test: ${result.error}`);
+      isGeneratingAI.value = false;
+      return;
+    }
+    
+    // Add the generated test to the list
+    if (result.data && result.data.test) {
+      tests.value.unshift({
+        ...result.data.test,
+        questionCount: result.data.test.questionCount || 0
+      });
+      filterTests();
+      
+      // Log the full response for debugging
+      console.log('AI Generated Test:', result.data.test);
+      console.log('Generated Questions:', result.data.questions);
+      
+      // Show success message with details
+      const questionCount = result.data.questions?.length || 0;
+      alert(`Test "${result.data.test.title}" generated successfully with ${questionCount} questions!`);
+    }
+    
+    closeAIGenerateModal();
+  } catch (error) {
+    console.error('AI generation error:', error);
+    alert(`Failed to generate test: ${error.message || 'Unknown error'}`);
+  } finally {
+    isGeneratingAI.value = false;
+  }
 };
 
 const handleTestCreated = (newTest) => {
@@ -207,8 +276,8 @@ onMounted(() => {
                   Help
                 </button>
                 <button
-                  @click="openCreateModal"
-                  class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  @click="openAIGenerateModal"
+                  class="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center"
                 >
                   <svg
                     class="w-5 h-5 mr-2"
@@ -220,10 +289,29 @@ onMounted(() => {
                       stroke-linecap="round"
                       stroke-linejoin="round"
                       stroke-width="2"
+                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                    />
+                  </svg>
+                  AI Generate
+                </button>
+                <button
+                  @click="openCreateModal"
+                  class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                >
+                  <svg
+                    class="w-6 h-6 mr-2 md:w-5 md:h-5 md:mr-2 lg:w-5 lg:h-5 lg:mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  Create New Test Questionnaire
+                  Create Test
                 </button>
               </div>
             </div>
@@ -520,6 +608,14 @@ onMounted(() => {
         :is-open="showCreateModal"
         @close="closeCreateModal"
         @test-created="handleTestCreated"
+      />
+
+      <!-- AI Generate Test Modal -->
+      <AIGenerateTestModal
+        :is-open="showAIGenerateModal"
+        :is-generating="isGeneratingAI"
+        @close="closeAIGenerateModal"
+        @generate="handleAIGenerate"
       />
 
       <!-- Deleting Test Progress Modal -->

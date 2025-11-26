@@ -17,7 +17,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
         >
           <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Overview</h2>
           <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
-            TQRandom is a web application created to help instructors easily
+            TQRandom is a web application created to help teachers easily
             prepare randomized test questionnaires. It was built with one goal
             in mind: to reduce cheating and save time by generating multiple
             clean, shuffled versions of tests for classroom assessments.
@@ -35,7 +35,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </h2>
           <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
             This project was developed as part of an academic requirement for an
-            IT student and designed specifically for university instructors. It
+            IT student and designed specifically for teachers. It
             aims to simplify the process of managing test questions, importing
             content from documents, and generating randomized test versions
             without manual work.
@@ -70,7 +70,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
         >
           <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4">Our Mission</h2>
           <p class="text-gray-700 dark:text-gray-100 leading-relaxed">
-            Our mission is to provide instructors with a fast, reliable, and
+            Our mission is to provide teachers with a fast, reliable, and
             secure way to prepare multiple test versions. By reducing repetitive
             tasks and enhancing exam fairness, TQ Random supports better
             classroom management and more effective assessment preparation.

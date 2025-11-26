@@ -607,6 +607,52 @@ export const imageApi = {
   },
 };
 
+// ============================================
+// AI ENDPOINTS
+// ============================================
+
+export const aiApi = {
+  /**
+   * Generate test with AI
+   */
+  async generateTest(formData) {
+    const token = getAuthToken();
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData, // FormData object with all parameters
+      });
+
+      const contentType = response.headers.get('content-type');
+      let data;
+
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      if (!response.ok) {
+        return {
+          error: data.error || data.message || `HTTP error! status: ${response.status}`,
+          status: response.status,
+        };
+      }
+
+      return { data, status: response.status };
+    } catch (error) {
+      console.error('AI generation error:', error);
+      return {
+        error: error.message || 'Network error occurred',
+      };
+    }
+  },
+};
+
 export default {
   authApi,
   testApi,
@@ -616,5 +662,6 @@ export default {
   versionApi,
   userApi,
   imageApi,
+  aiApi,
 };
 

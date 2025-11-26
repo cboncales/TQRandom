@@ -25,7 +25,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             Create and organize your test questions with our simple interface.
             Add multiple choices, mark the correct answer, and update or delete
-            items anytime. Everything is designed to help instructors prepare
+            items anytime. Everything is designed to help teachers prepare
             tests faster and more efficiently.
           </p>
           <ul class="list-disc ml-6 text-gray-700 dark:text-gray-100 space-y-2">
@@ -47,7 +47,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           <p class="text-gray-700 dark:text-gray-100 leading-relaxed mb-4">
             Save time by uploading your DOCX or PDF files. The system
             automatically extracts questions and answer choices from your
-            documents. This makes it easier for instructors who already have
+            documents. This makes it easier for teachers who already have
             prepared questionnaires.
           </p>
           <ul class="list-disc ml-6 text-gray-700 dark:text-gray-100 space-y-2">
@@ -113,7 +113,7 @@ import AppLayout from "@/components/layout/AppLayout.vue";
           </p>
           <ul class="list-disc ml-6 text-gray-700 dark:text-gray-100 space-y-2">
             <li>Secure Supabase storage</li>
-            <li>Only instructors can access their own tests</li>
+            <li>Only teachers can access their own tests</li>
             <li>Data can be deleted anytime for privacy</li>
           </ul>
         </div>

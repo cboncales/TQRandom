@@ -12,7 +12,7 @@ const navigateTo = (routeName) => {
 
 // --- Carousel Logic ---
 const currentSlide = ref(0);
-const slideCount = 2; // Matches the number of slides in the template
+const slideCount = 3; // Matches the number of slides in the template
 let autoAdvanceInterval = null;
 
 // Computed property to determine the CSS translation for the carousel track
@@ -194,7 +194,7 @@ onBeforeUnmount(() => {
                   <span
                     class="text-[#155dfc] uppercase tracking-widest text-sm font-medium mb-3 block"
                   >
-                    For University Instructors
+                    For Teachers
                   </span>
                   <h1
                     class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight"
@@ -299,6 +299,116 @@ onBeforeUnmount(() => {
                     <p class="text-xs text-gray-500 mt-4 text-right">
                       Content successfully parsed.
                     </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SLIDE 3: AI Test Generator Feature -->
+            <div class="carousel-slide">
+              <div
+                class="text-center lg:text-left lg:flex lg:items-center lg:justify-between"
+              >
+                <!-- Content -->
+                <div class="lg:w-7/12">
+                  <!-- Accent Text: Purple gradient -->
+                  <span
+                    class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 uppercase tracking-widest text-sm font-medium mb-3 block"
+                  >
+                    AI-Powered Generation
+                  </span>
+                  <h1
+                    class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight"
+                  >
+                    Create Tests with
+
+                    <br class="hidden sm:inline" />
+
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600">AI Intelligence</span>
+                  </h1>
+                  <!-- Text Color: Off-White #ebe6e7 -->
+                  <p class="text-xl md:text-2xl mb-10 text-gray-800 dark:text-[#ebe6e7]">
+                    Generate high-quality test questions instantly using AI. 
+                    Simply provide a topic or upload reference materials, and let 
+                    our AI create comprehensive tests with multiple question types.
+                  </p>
+                  <div
+                    class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 justify-center lg:justify-start"
+                  >
+                    <!-- Primary Button: Purple gradient -->
+                    <button
+                      @click="navigateTo('register')"
+                      class="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-lg font-semibold hover:from-purple-700 hover:to-pink-700 transition shadow-lg hover:shadow-xl transform hover:scale-105"
+                    >
+                      Try AI Generator
+                    </button>
+                    <!-- Secondary Button -->
+                    <button
+                      @click="navigateTo('features')"
+                      class="px-8 py-4 bg-transparent border-2 border-purple-600 text-purple-600 dark:text-purple-400 rounded-lg font-semibold hover:bg-purple-50 dark:hover:bg-purple-900/20 transition"
+                    >
+                      Learn More
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Visual: AI Generation Mockup -->
+                <div class="lg:w-5/12 mt-12 lg:mt-0">
+                  <div
+                    class="relative bg-gradient-to-br from-purple-900/40 to-pink-900/40 backdrop-blur-md p-8 rounded-2xl shadow-2xl border border-purple-500/30"
+                  >
+                    <!-- AI Icon -->
+                    <div class="flex items-center space-x-3 mb-6">
+                      <div class="w-12 h-12 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                        <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <div class="h-3 bg-purple-400 rounded w-32 mb-2"></div>
+                        <div class="h-2 bg-gray-600 rounded w-24"></div>
+                      </div>
+                    </div>
+
+                    <!-- Generated Questions Preview -->
+                    <div class="space-y-4">
+                      <div class="bg-gray-800/50 p-4 rounded-lg border border-purple-500/20">
+                        <div class="flex items-start space-x-3">
+                          <div class="w-6 h-6 bg-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">1</div>
+                          <div class="flex-1">
+                            <div class="h-3 bg-gray-600 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-600 rounded w-5/6"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="bg-gray-800/50 p-4 rounded-lg border border-purple-500/20">
+                        <div class="flex items-start space-x-3">
+                          <div class="w-6 h-6 bg-pink-600 rounded flex items-center justify-center text-white text-xs font-bold">2</div>
+                          <div class="flex-1">
+                            <div class="h-3 bg-gray-600 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-600 rounded w-4/6"></div>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="bg-gray-800/50 p-4 rounded-lg border border-purple-500/20">
+                        <div class="flex items-start space-x-3">
+                          <div class="w-6 h-6 bg-purple-600 rounded flex items-center justify-center text-white text-xs font-bold">3</div>
+                          <div class="flex-1">
+                            <div class="h-3 bg-gray-600 rounded w-full mb-2"></div>
+                            <div class="h-3 bg-gray-600 rounded w-3/6"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <!-- AI Badge -->
+                    <div class="mt-6 flex items-center justify-between">
+                      <div class="flex items-center space-x-2">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span class="text-xs text-green-400 font-medium">AI Generated</span>
+                      </div>
+                      <span class="text-xs text-gray-400">5 question types supported</span>
+                    </div>
                   </div>
                 </div>
               </div>
