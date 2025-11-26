@@ -132,11 +132,31 @@ async function extractImagesFromDocx(filePath) {
 
 /**
  * Parses raw text into structured question and answer data.
- * Assumes questions start with a number (e.g., "1.", "1)")
- * Assumes answer choices start with a letter (A-H) (e.g., "A.", "A)")
- *
- * Now also handles [IMAGE] markers for embedded images
- * If no markers found, distributes images evenly across questions
+ * Supports multiple question types:
+ * - Multiple Choice: Questions with 2-8 lettered answer choices (A., B., C., etc.)
+ * - True/False: Questions with "True" and "False" or "T" and "F" answers
+ * - Identification: Questions with "Answer:" or "Ans:" followed by the answer
+ * - Fill in the Blank: Questions containing ___ with "Answer:" or "Ans:" 
+ * - Essay: Questions marked with [ESSAY] or no answer format
+ * 
+ * Format examples:
+ * 1. What is 2+2? [Multiple Choice]
+ *    A. 3
+ *    B. 4
+ *    C. 5
+ * 
+ * 2. The Earth is round. [True/False]
+ *    True
+ *    False
+ * 
+ * 3. Who invented the telephone? [Identification]
+ *    Answer: Alexander Graham Bell
+ * 
+ * 4. The capital of France is ___. [Fill in the Blank]
+ *    Answer: Paris
+ * 
+ * 5. Explain the theory of relativity. [Essay]
+ *    Answer: [sample answer or key points]
  *
  * @param {string} rawText - The raw text extracted from the document.
  * @param {Array} extractedImages - Array of extracted images with {url, path}
@@ -150,12 +170,15 @@ function parseDocumentText(rawText, extractedImages = []) {
   let imageIndex = 0;
   let hasImageMarkers = false;
 
-  // Regex for question lines: starts with number, then dot or parenthesis, then text
+  // Regex patterns
   const questionPattern = /^(\d+)[\.\)]\s*(.+)$/;
-  // Regex for answer choice lines: starts with letter (A-H), then dot or parenthesis, then text
   const answerChoicePattern = /^[A-H][\.\)]\s+(.+)$/i;
-  // Regex for image markers
   const imagePattern = /\[IMAGE\]|\[IMG\]|IMAGE_(\d+)/i;
+  const answerPattern = /^(Answer|Ans|ANSWER|ANS):\s*(.+)$/i;
+  const truePattern = /^(True|TRUE|T)$/;
+  const falsePattern = /^(False|FALSE|F)$/;
+  const essayMarker = /\[ESSAY\]|\[Essay\]/i;
+  const fillInBlankPattern = /___+/;
   
   // Check if document has any image markers
   hasImageMarkers = imagePattern.test(rawText);
@@ -163,95 +186,132 @@ function parseDocumentText(rawText, extractedImages = []) {
   for (const line of lines) {
     const trimmedLine = line.trim();
     if (!trimmedLine) {
-      continue; // Skip blank lines
+      continue;
     }
 
     const questionMatch = trimmedLine.match(questionPattern);
     const answerChoiceMatch = trimmedLine.match(answerChoicePattern);
     const imageMatch = trimmedLine.match(imagePattern);
+    const answerMatch = trimmedLine.match(answerPattern);
+    const trueMatch = trimmedLine.match(truePattern);
+    const falseMatch = trimmedLine.match(falsePattern);
 
     if (questionMatch) {
-      // New question found
+      // Save previous question
+      if (currentQuestion) {
+        questions.push(finalizeQuestion(currentQuestion));
+      }
+
       questionNumber = parseInt(questionMatch[1]);
       const text = questionMatch[2].trim();
 
-      // If there was a previous question, push it to the array
-      if (currentQuestion) {
-        // Validate answer choices count
-        if (currentQuestion.answer_choices.length < 2 || currentQuestion.answer_choices.length > 8) {
-          console.warn(`Skipping question ${currentQuestion.question_number} due to invalid number of answer choices (${currentQuestion.answer_choices.length}). Must be between 2 and 8.`);
-        } else {
-          questions.push(currentQuestion);
-        }
+      // Detect question type
+      let type = 'Multiple Choice'; // Default
+      if (essayMarker.test(text)) {
+        type = 'Essay';
+      } else if (fillInBlankPattern.test(text)) {
+        type = 'Fill in the Blank';
       }
 
       currentQuestion = {
         question_number: questionNumber,
-        question_text: text,
-        question_image: null, // Will be set if image marker found
+        question_text: text.replace(essayMarker, '').trim(),
+        question_image: null,
+        question_type: type,
         answer_choices: [],
+        direct_answer: null, // For non-MC questions
       };
     } else if (imageMatch && currentQuestion) {
       // Image marker found
       if (currentQuestion.answer_choices.length === 0) {
-        // Image belongs to question
         if (extractedImages[imageIndex]) {
           currentQuestion.question_image = extractedImages[imageIndex];
           imageIndex++;
         }
       } else {
-        // Image belongs to last answer choice
         const lastChoiceIndex = currentQuestion.answer_choices.length - 1;
         if (extractedImages[imageIndex]) {
           currentQuestion.answer_choices[lastChoiceIndex].image = extractedImages[imageIndex];
           imageIndex++;
         }
       }
+    } else if (answerMatch && currentQuestion) {
+      // Direct answer format (for Identification, Fill in Blank, Essay)
+      currentQuestion.direct_answer = answerMatch[2].trim();
+      if (currentQuestion.question_type === 'Multiple Choice') {
+        currentQuestion.question_type = 'Identification';
+      }
     } else if (answerChoiceMatch && currentQuestion) {
-      // Answer choice for the current question
+      // Multiple choice answer
       const choiceText = answerChoiceMatch[1].trim();
       currentQuestion.answer_choices.push({
         text: choiceText,
-        image: null // Will be set if image marker found next
+        image: null
+      });
+    } else if ((trueMatch || falseMatch) && currentQuestion) {
+      // True/False answer
+      if (currentQuestion.answer_choices.length === 0) {
+        currentQuestion.question_type = 'True or False';
+      }
+      const choiceText = trueMatch ? 'True' : 'False';
+      currentQuestion.answer_choices.push({
+        text: choiceText,
+        image: null
       });
     } else if (currentQuestion) {
-      // Multi-line question or answer choice (append to previous)
-      // This logic assumes multi-line content belongs to the most recent element (question or last choice)
+      // Multi-line content
       if (currentQuestion.answer_choices.length > 0) {
-        // Append to the last answer choice
         const lastChoiceIndex = currentQuestion.answer_choices.length - 1;
         currentQuestion.answer_choices[lastChoiceIndex].text += ' ' + trimmedLine;
       } else {
-        // Append to the question text
         currentQuestion.question_text += ' ' + trimmedLine;
       }
     }
   }
 
-  // Add the last question if it exists
+  // Add the last question
   if (currentQuestion) {
-    // Validate answer choices count for the last question
-    if (currentQuestion.answer_choices.length < 2 || currentQuestion.answer_choices.length > 8) {
-      console.warn(`Skipping question ${currentQuestion.question_number} due to invalid number of answer choices (${currentQuestion.answer_choices.length}). Must be between 2 and 8.`);
-    } else {
-      questions.push(currentQuestion);
-    }
+    questions.push(finalizeQuestion(currentQuestion));
   }
 
-  // If no [IMAGE] markers were found but we have extracted images,
-  // distribute them evenly across questions (assign to first N questions)
+  // Auto-distribute images if no markers found
   if (!hasImageMarkers && extractedImages.length > 0) {
-    console.log(`No [IMAGE] markers found. Auto-distributing ${extractedImages.length} images to first ${Math.min(extractedImages.length, questions.length)} questions.`);
-    
+    console.log(`Auto-distributing ${extractedImages.length} images to questions`);
     for (let i = 0; i < Math.min(extractedImages.length, questions.length); i++) {
       if (extractedImages[i]) {
         questions[i].question_image = extractedImages[i];
-        console.log(`Assigned image ${i + 1} to question ${questions[i].question_number}`);
       }
     }
   }
 
   return questions;
+}
+
+/**
+ * Finalize and validate a question object
+ */
+function finalizeQuestion(question) {
+  const { question_type, answer_choices, direct_answer } = question;
+
+  // Validate based on question type
+  if (question_type === 'Multiple Choice') {
+    if (answer_choices.length < 2 || answer_choices.length > 8) {
+      console.warn(`Skipping question ${question.question_number}: Invalid MC choices (${answer_choices.length})`);
+      return null;
+    }
+  } else if (question_type === 'True or False') {
+    if (answer_choices.length !== 2) {
+      console.warn(`Skipping question ${question.question_number}: True/False must have 2 choices`);
+      return null;
+    }
+  } else if (['Identification', 'Fill in the Blank', 'Essay'].includes(question_type)) {
+    if (!direct_answer) {
+      console.warn(`Skipping question ${question.question_number}: ${question_type} needs an answer`);
+      return null;
+    }
+  }
+
+  return question;
 }
 
 export {
