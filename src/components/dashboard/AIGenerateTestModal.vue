@@ -96,54 +96,23 @@ const handlePartQuestionChange = (partIndex, newValue) => {
   const num = parseInt(numberOfParts.value) || 0;
   const maxTotal = parseInt(numberOfQuestions.value) || 0;
   
-  if (num <= 1) {
-    // Only one part, just cap at max
-    partQuestionCounts.value[partIndex] = Math.min(newValue, maxTotal);
-    return;
-  }
+  // Parse and validate the new value
+  const parsedValue = parseInt(newValue) || 0;
   
-  // Calculate current total excluding the changed part
-  let otherPartsTotal = 0;
-  for (let i = 0; i < num; i++) {
-    if (i !== partIndex) {
-      otherPartsTotal += parseInt(partQuestionCounts.value[i]) || 0;
-    }
-  }
+  // Set minimum to 1
+  const validValue = Math.max(1, parsedValue);
   
-  // Calculate maximum allowed for this part
-  const maxForThisPart = maxTotal - (num - 1); // Reserve at least 1 for each other part
-  const cappedValue = Math.min(Math.max(1, newValue), maxForThisPart);
+  // Update the value for this part
+  partQuestionCounts.value[partIndex] = validValue;
   
-  // Set the new value
-  partQuestionCounts.value[partIndex] = cappedValue;
+  // Calculate total with the new value
+  const currentTotal = partQuestionCounts.value.reduce((sum, count) => sum + (parseInt(count) || 0), 0);
   
-  // Calculate remaining questions to distribute
-  const remaining = maxTotal - cappedValue;
-  
-  if (remaining < num - 1) {
-    // Not enough to give 1 to each other part, cap this part further
-    partQuestionCounts.value[partIndex] = maxTotal - (num - 1);
-    // Distribute 1 to each other part
-    for (let i = 0; i < num; i++) {
-      if (i !== partIndex) {
-        partQuestionCounts.value[i] = 1;
-      }
-    }
-    return;
-  }
-  
-  // Distribute remaining among other parts
-  const otherParts = num - 1;
-  const baseAmount = Math.floor(remaining / otherParts);
-  const remainder = remaining % otherParts;
-  
-  let otherPartIndex = 0;
-  for (let i = 0; i < num; i++) {
-    if (i !== partIndex) {
-      const amount = otherPartIndex < remainder ? baseAmount + 1 : baseAmount;
-      partQuestionCounts.value[i] = amount;
-      otherPartIndex++;
-    }
+  // If total exceeds max, cap this part's value
+  if (currentTotal > maxTotal) {
+    const excess = currentTotal - maxTotal;
+    const cappedValue = Math.max(1, validValue - excess);
+    partQuestionCounts.value[partIndex] = cappedValue;
   }
 };
 
