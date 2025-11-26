@@ -531,7 +531,7 @@ onMounted(() => {
                 @click="loadTests"
                 class="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 underline"
               >
-                Try again or Login again
+                Login again by refreshing the page.
               </button>
             </div>
           </div>
@@ -628,12 +628,12 @@ onMounted(() => {
       >
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
           <!-- Background overlay - non-clickable -->
-          <div class="fixed inset-0 bg-gray-900 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+          <div class="fixed inset-0 bg-opacity-95 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
 
           <!-- Center modal -->
           <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-          <div class="relative inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
+          <div class="relative inline-block align-bottom bg-white border border-gray-400 dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full sm:p-6">
             <div>
               <!-- Spinner Icon -->
               <div class="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30">

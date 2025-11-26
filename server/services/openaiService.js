@@ -21,30 +21,38 @@ export async function generateQuestions(params) {
     }
 
     let prompt = '';
+    let requestedCount = numberOfQuestions;
+    let adjustedParts = parts;
 
+    // Strategy: Request 10% more questions to account for inconsistency, then trim to exact count
     if (numberOfParts > 0 && parts && parts.length > 0) {
-      // Generate questions with parts
-      prompt = buildPromptWithParts(testTitle, topicContent, numberOfParts, parts);
+      adjustedParts = parts.map(part => ({
+        ...part,
+        questionCount: Math.ceil(part.questionCount * 1.1) // Request 10% more
+      }));
+      prompt = buildPromptWithParts(testTitle, topicContent, numberOfParts, adjustedParts);
     } else {
-      // Generate questions without parts
-      prompt = buildPromptWithoutParts(testTitle, topicContent, numberOfQuestions, questionTypes);
+      requestedCount = Math.ceil(numberOfQuestions * 1.1); // Request 10% more
+      prompt = buildPromptWithoutParts(testTitle, topicContent, requestedCount, questionTypes);
     }
 
     console.log('Sending prompt to OpenAI...');
+    console.log(`Requesting ${requestedCount} questions (will trim to ${numberOfQuestions})`);
     
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: 'You are an expert educational content creator specializing in creating high-quality test questions. Generate questions that are clear, accurate, and appropriate for the given topic. Always respond with valid JSON format.'
+          content: 'You are an expert educational content creator specializing in creating high-quality test questions. Generate questions that are clear, accurate, and appropriate for the given topic. Always respond with valid JSON format. Generate AT LEAST the number of questions requested.'
         },
         {
           role: 'user',
           content: prompt
         }
       ],
-      temperature: 0.7,
+      temperature: 0.5,
+      max_tokens: 4096,
       response_format: { type: "json_object" }
     });
 
@@ -53,6 +61,45 @@ export async function generateQuestions(params) {
 
     // Parse the JSON response
     const parsedQuestions = JSON.parse(generatedContent);
+    
+    // Validate and trim to EXACT count
+    if (numberOfParts > 0 && parts && parts.length > 0) {
+      // Trim parts-based generation to exact counts
+      let totalGenerated = 0;
+      let totalExpected = 0;
+      
+      parts.forEach((part, index) => {
+        totalExpected += part.questionCount; // Use original count
+        const generatedPart = parsedQuestions.parts?.[index];
+        if (generatedPart && generatedPart.questions) {
+          const generatedCount = generatedPart.questions.length;
+          totalGenerated += generatedCount;
+          
+          // Always trim to exact count
+          if (generatedCount !== part.questionCount) {
+            console.log(`Part ${index + 1}: Generated ${generatedCount}, trimming to ${part.questionCount}`);
+            generatedPart.questions = generatedPart.questions.slice(0, part.questionCount);
+          }
+        }
+      });
+      
+      console.log(`Total questions: Expected ${totalExpected}, Generated ${totalGenerated}`);
+    } else {
+      // Trim non-parts generation to exact count
+      const generatedCount = parsedQuestions.questions?.length || 0;
+      console.log(`Questions: Expected ${numberOfQuestions}, Generated ${generatedCount}`);
+      
+      // Always trim to exact count
+      if (generatedCount !== numberOfQuestions) {
+        console.log(`Trimming from ${generatedCount} to ${numberOfQuestions} questions`);
+        parsedQuestions.questions = parsedQuestions.questions.slice(0, numberOfQuestions);
+      }
+      
+      // Warn if we didn't get enough questions even with the buffer
+      if (generatedCount < numberOfQuestions) {
+        console.warn(`WARNING: Only generated ${generatedCount} questions, requested ${numberOfQuestions}. User will see fewer questions.`);
+      }
+    }
     
     return {
       success: true,
@@ -140,6 +187,8 @@ Important guidelines:
    - Relevant to the topic
    - Grammatically correct
 
+CRITICAL: You MUST generate EXACTLY the number of questions specified for each part. Do NOT generate fewer or more questions than requested.
+
 Generate exactly the number of questions specified for each part.`;
 
   return prompt;
@@ -203,6 +252,8 @@ Important guidelines:
    - Appropriate difficulty level
    - Relevant to the topic
    - Grammatically correct
+
+CRITICAL: You MUST generate EXACTLY ${numberOfQuestions} questions. Count carefully and ensure the "questions" array contains exactly ${numberOfQuestions} items. Do NOT generate fewer or more questions than requested.
 
 Generate exactly ${numberOfQuestions} questions.`;
 

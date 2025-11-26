@@ -23,10 +23,38 @@ export const useTutorialStore = defineStore('tutorial', () => {
       position: 'center'
     },
     {
+      id: 'ai-generate-btn',
+      title: 'AI Generate Test Button',
+      description: 'Click the AI Generate button to create a test questionnaire using AI. Simply provide a topic or upload a reference document, and let AI generate questions for you.',
+      target: '.tutorial-ai-generate-btn',
+      position: 'center'
+    },
+    {
       id: 'create-test',
       title: 'Create Test Modal',
       description: 'This is the create test modal. You can enter the title, description, and upload a header image for the test.',
       target: '.tutorial-create-test-modal',
+      position: 'bottom'
+    },
+    {
+      id: 'create-test-parts',
+      title: 'Test Parts Configuration',
+      description: 'You can specify the number of parts for your test. For each part, you can add a description and directions to guide students.',
+      target: '.tutorial-create-test-parts',
+      position: 'bottom'
+    },
+    {
+      id: 'ai-generate-modal',
+      title: 'AI Generate Test Modal',
+      description: 'This is the AI generation modal. Enter a topic or upload reference materials, specify question types and counts, and let AI create your test questions automatically.',
+      target: '.tutorial-ai-generate-modal',
+      position: 'bottom'
+    },
+    {
+      id: 'ai-question-types',
+      title: 'AI Question Types',
+      description: 'AI can generate 5 types of questions: Multiple Choice, True/False, Identification, Fill in the Blank, and Essay. You can mix types or assign specific types per part.',
+      target: '.tutorial-ai-question-types',
       position: 'bottom'
     },
     {
@@ -90,6 +118,20 @@ export const useTutorialStore = defineStore('tutorial', () => {
       title: 'Question Form',
       description: 'This is the question form, you can input a question, upload an image, and add answer-choices with images or text, and mark the correct answer.',
       target: '.tutorial-question-form',
+      position: 'top'
+    },
+    {
+      id: 'question-types',
+      title: 'Question Types',
+      description: 'You can create different question types: Multiple Choice, True/False, Identification, Fill in the Blank, and Essay. Each type has specific input fields.',
+      target: '.tutorial-question-types',
+      position: 'top'
+    },
+    {
+      id: 'identification-images',
+      title: 'Identification Images',
+      description: 'For Identification questions, you can upload images for each part. The images will appear below the part directions to help students answer.',
+      target: '.tutorial-identification-images',
       position: 'top'
     },
     {
@@ -184,6 +226,20 @@ export const useTutorialStore = defineStore('tutorial', () => {
       position: 'top'
     },
     {
+      id: 'answer-key-modal',
+      title: 'Answer Key Modal',
+      description: 'The answer key modal displays all questions with their correct answers highlighted. This helps you quickly review the correct responses for any version.',
+      target: '.tutorial-answer-key-modal',
+      position: 'top'
+    },
+    {
+      id: 'preview-version-modal',
+      title: 'Preview Version Modal',
+      description: 'The preview modal shows how the test version will appear to students, with randomized questions and answer choices in the selected format.',
+      target: '.tutorial-preview-version-modal',
+      position: 'top'
+    },
+    {
       id: 'select-all-versions',
       title: 'Select All Versions',
       description: 'You can select all versions to easily download or delete all versions at once or you can click the version card to download or delete individual versions.',
@@ -193,9 +249,16 @@ export const useTutorialStore = defineStore('tutorial', () => {
     {
       id: 'download-form',
       title: 'Download Form',
-      description: 'This is the download form, you can select the format you want to download it in. You can also select the versions you want to download.',
+      description: 'This is the download form, you can select the format you want to download it in (DOCX, PDF, or both). You can also select the versions you want to download.',
       target: '.tutorial-download-form',
       position: 'top'
+    },
+    {
+      id: 'final-step',
+      title: 'Tutorial Complete!',
+      description: 'You\'re all set! You can now create tests manually, generate them with AI, upload documents, manage questions, and create randomized versions. Access this tutorial anytime from your user settings.',
+      target: null,
+      position: 'center'
     },
   ];
 

@@ -2,6 +2,20 @@ import { supabase } from '../config/supabase.js';
 import { generateQuestions } from '../services/openaiService.js';
 
 /**
+ * Convert question type from API format to database format
+ */
+function convertQuestionType(type) {
+  const typeMap = {
+    'multiple_choice': 'Multiple Choice',
+    'true_false': 'True or False',
+    'identification': 'Identification',
+    'fill_in_the_blank': 'Fill in the Blank',
+    'essay': 'Essay'
+  };
+  return typeMap[type] || type;
+}
+
+/**
  * Generate test with AI and save to database
  */
 async function generateTestWithAI(req, res) {
@@ -15,7 +29,31 @@ async function generateTestWithAI(req, res) {
     const file = req.file; // From multer
 
     console.log('Generating test with AI for user:', userId);
-    console.log('Parameters:', { testTitle, numberOfQuestions, numberOfParts, parts: parts?.length });
+    console.log('Raw parameters:', { testTitle, numberOfQuestions, numberOfParts, parts, questionTypes });
+
+    // Parse parts and questionTypes if they are JSON strings
+    let parsedParts = parts;
+    let parsedQuestionTypes = questionTypes;
+    
+    if (typeof parts === 'string') {
+      try {
+        parsedParts = JSON.parse(parts);
+      } catch (e) {
+        console.error('Error parsing parts:', e);
+        parsedParts = [];
+      }
+    }
+    
+    if (typeof questionTypes === 'string') {
+      try {
+        parsedQuestionTypes = JSON.parse(questionTypes);
+      } catch (e) {
+        console.error('Error parsing questionTypes:', e);
+        parsedQuestionTypes = [];
+      }
+    }
+
+    console.log('Parsed parameters:', { parsedParts: parsedParts?.length, parsedQuestionTypes: parsedQuestionTypes?.length });
 
     // Validate required fields
     if (!testTitle || !testTitle.trim()) {
@@ -32,8 +70,8 @@ async function generateTestWithAI(req, res) {
       topic: topic || '',
       numberOfQuestions: parseInt(numberOfQuestions) || 10,
       numberOfParts: parseInt(numberOfParts) || 0,
-      parts: parts || [],
-      questionTypes: questionTypes || [],
+      parts: parsedParts || [],
+      questionTypes: parsedQuestionTypes || [],
       file: file
     });
 
@@ -54,11 +92,11 @@ async function generateTestWithAI(req, res) {
     };
 
     // Set up part descriptions and directions if parts exist
-    if (numberOfParts > 0 && parts && parts.length > 0) {
-      testData.part_descriptions = parts.map((part, index) => 
+    if (numberOfParts > 0 && parsedParts && parsedParts.length > 0) {
+      testData.part_descriptions = parsedParts.map((part, index) => 
         `Part ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][index] || (index + 1)}`
       );
-      testData.directions = parts.map(() => 
+      testData.directions = parsedParts.map(() => 
         'Choose the best answer for each question.'
       );
     } else {
@@ -78,36 +116,49 @@ async function generateTestWithAI(req, res) {
 
     console.log('Test created with ID:', test.id);
 
-    // Save questions to database
-    const questions = [];
+    // Prepare questions data (store correct answers separately)
+    const questionsToSave = [];
+    const questionMetadata = []; // Track questions with their correct answers
     
     if (generatedData.parts && Array.isArray(generatedData.parts)) {
       // Questions organized by parts
       for (const part of generatedData.parts) {
         for (const q of part.questions) {
-          questions.push({
+          const convertedType = convertQuestionType(q.type);
+          questionsToSave.push({
             test_id: test.id,
             part: part.partNumber,
-            question: q.question,
-            type: q.type,
-            correct_answer: q.correctAnswer
+            text: q.question,
+            type: convertedType,
+            image_url: null
+          });
+          questionMetadata.push({
+            correctAnswer: q.correctAnswer,
+            type: convertedType,
+            options: q.options || []
           });
         }
       }
     } else if (generatedData.questions && Array.isArray(generatedData.questions)) {
       // Questions without parts
       for (const q of generatedData.questions) {
-        questions.push({
+        const convertedType = convertQuestionType(q.type);
+        questionsToSave.push({
           test_id: test.id,
           part: 1,
-          question: q.question,
-          type: q.type,
-          correct_answer: q.correctAnswer
+          text: q.question,
+          type: convertedType,
+          image_url: null
+        });
+        questionMetadata.push({
+          correctAnswer: q.correctAnswer,
+          type: convertedType,
+          options: q.options || []
         });
       }
     }
 
-    if (questions.length === 0) {
+    if (questionsToSave.length === 0) {
       // Delete the test if no questions were generated
       await supabase.from('tests').delete().eq('id', test.id);
       return res.status(500).json({ error: 'No questions were generated' });
@@ -115,7 +166,7 @@ async function generateTestWithAI(req, res) {
 
     const { data: savedQuestions, error: questionsError } = await supabase
       .from('questions')
-      .insert(questions)
+      .insert(questionsToSave)
       .select();
 
     if (questionsError) {
@@ -127,84 +178,136 @@ async function generateTestWithAI(req, res) {
 
     console.log(`Saved ${savedQuestions.length} questions`);
 
-    // Save answer options for multiple choice questions
-    const answerOptions = [];
-    let questionIndex = 0;
+    // Now create answer_choices for all questions and link correct answers
+    const answerChoices = [];
+    const correctAnswers = [];
 
-    if (generatedData.parts && Array.isArray(generatedData.parts)) {
-      for (const part of generatedData.parts) {
-        for (const q of part.questions) {
-          if (q.type === 'multiple_choice' && q.options && Array.isArray(q.options)) {
-            const questionId = savedQuestions[questionIndex].id;
-            q.options.forEach((option, optIndex) => {
-              answerOptions.push({
-                question_id: questionId,
-                option_text: option,
-                option_letter: String.fromCharCode(65 + optIndex), // A, B, C, D
-                is_correct: option === q.correctAnswer
-              });
-            });
-          }
-          questionIndex++;
-        }
+    for (let i = 0; i < savedQuestions.length; i++) {
+      const question = savedQuestions[i];
+      const metadata = questionMetadata[i];
+      
+      if (metadata.type === 'Multiple Choice' && metadata.options.length > 0) {
+        // For Multiple Choice: Create choices for each option
+        metadata.options.forEach((option, optIndex) => {
+          answerChoices.push({
+            question_id: question.id,
+            text: option,
+            image_url: null
+          });
+        });
+      } else {
+        // For other question types: Create a single answer choice with the correct answer
+        answerChoices.push({
+          question_id: question.id,
+          text: metadata.correctAnswer,
+          image_url: null
+        });
       }
-    } else if (generatedData.questions && Array.isArray(generatedData.questions)) {
-      for (const q of generatedData.questions) {
-        if (q.type === 'multiple_choice' && q.options && Array.isArray(q.options)) {
-          const questionId = savedQuestions[questionIndex].id;
-          q.options.forEach((option, optIndex) => {
-            answerOptions.push({
-              question_id: questionId,
-              option_text: option,
-              option_letter: String.fromCharCode(65 + optIndex), // A, B, C, D
-              is_correct: option === q.correctAnswer
-            });
+    }
+
+    if (answerChoices.length > 0) {
+      const { data: savedAnswerChoices, error: choicesError } = await supabase
+        .from('answer_choices')
+        .insert(answerChoices)
+        .select();
+
+      if (choicesError) {
+        console.error('Error saving answer choices:', choicesError);
+        await supabase.from('tests').delete().eq('id', test.id);
+        return res.status(500).json({ error: choicesError.message });
+      }
+
+      console.log(`Saved ${savedAnswerChoices.length} answer choices`);
+
+      // Now link each question to its correct answer in the answers table
+      for (let i = 0; i < savedQuestions.length; i++) {
+        const question = savedQuestions[i];
+        const metadata = questionMetadata[i];
+        
+        // Find the correct answer_choice_id
+        let correctAnswerChoiceId;
+        
+        if (metadata.type === 'Multiple Choice') {
+          // Find the answer choice that matches the correct answer text
+          const correctChoice = savedAnswerChoices.find(
+            choice => choice.question_id === question.id && choice.text === metadata.correctAnswer
+          );
+          correctAnswerChoiceId = correctChoice?.id;
+        } else {
+          // For non-MC questions, the first (and only) choice is the correct answer
+          const choice = savedAnswerChoices.find(choice => choice.question_id === question.id);
+          correctAnswerChoiceId = choice?.id;
+        }
+
+        if (correctAnswerChoiceId) {
+          correctAnswers.push({
+            question_id: question.id,
+            answer_choices_id: correctAnswerChoiceId
           });
         }
-        questionIndex++;
+      }
+
+      // Insert into answers table
+      if (correctAnswers.length > 0) {
+        const { error: answersError } = await supabase
+          .from('answers')
+          .insert(correctAnswers);
+
+        if (answersError) {
+          console.error('Error saving correct answers:', answersError);
+          // Continue anyway, questions and choices are saved
+        } else {
+          console.log(`Saved ${correctAnswers.length} correct answer links`);
+        }
       }
     }
 
-    if (answerOptions.length > 0) {
-      const { error: optionsError } = await supabase
-        .from('answer_options')
-        .insert(answerOptions);
-
-      if (optionsError) {
-        console.error('Error saving answer options:', optionsError);
-        // Continue anyway, questions are saved
-      } else {
-        console.log(`Saved ${answerOptions.length} answer options`);
-      }
-    }
-
-    // Fetch all saved answer options for the questions
+    // Fetch all saved answer choices and answers for the questions
     const questionIds = savedQuestions.map(q => q.id);
-    const { data: fetchedOptions } = await supabase
-      .from('answer_options')
+    const { data: fetchedChoices } = await supabase
+      .from('answer_choices')
       .select('*')
       .in('question_id', questionIds);
 
-    // Build questions array with options
-    const questionsWithOptions = savedQuestions.map(question => {
+    const { data: fetchedAnswers } = await supabase
+      .from('answers')
+      .select('question_id, answer_choices_id')
+      .in('question_id', questionIds);
+
+    // Build questions array with choices and correct answers
+    // Match the format expected by QuestionList component
+    const questionsWithOptions = savedQuestions.map((question, index) => {
+      const metadata = questionMetadata[index];
       const questionData = {
         id: question.id,
-        question: question.question,
+        question: question.text, // QuestionList expects 'question' not 'text'
         type: question.type,
         part: question.part,
-        correct_answer: question.correct_answer
+        imageUrl: question.image_url || null // Include image URL in camelCase
       };
 
-      // Add options for multiple choice questions
-      if (question.type === 'multiple_choice' && fetchedOptions) {
-        questionData.options = fetchedOptions
-          .filter(opt => opt.question_id === question.id)
-          .sort((a, b) => a.option_letter.localeCompare(b.option_letter))
-          .map(opt => ({
-            option_letter: opt.option_letter,
-            option_text: opt.option_text,
-            is_correct: opt.is_correct
-          }));
+      // Add choices for the question
+      const choices = fetchedChoices?.filter(choice => choice.question_id === question.id) || [];
+      const correctAnswerLink = fetchedAnswers?.find(ans => ans.question_id === question.id);
+
+      if (metadata.type === 'Multiple Choice') {
+        questionData.options = choices.map(choice => ({
+          id: choice.id,
+          text: choice.text,
+          imageUrl: choice.image_url || null, // Include image URL in camelCase
+          isCorrect: choice.id === correctAnswerLink?.answer_choices_id // camelCase for frontend
+        }));
+      } else {
+        // For non-MC questions, include the correct answer
+        const correctChoice = choices[0];
+        questionData.correctAnswer = correctChoice?.text || metadata.correctAnswer;
+        // Also include options array for non-MC (True/False, Identification, etc.)
+        questionData.options = choices.map(choice => ({
+          id: choice.id,
+          text: choice.text,
+          imageUrl: choice.image_url || null,
+          isCorrect: choice.id === correctAnswerLink?.answer_choices_id
+        }));
       }
 
       return questionData;
