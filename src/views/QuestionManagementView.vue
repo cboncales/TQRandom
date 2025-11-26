@@ -10,7 +10,7 @@ import PreviewVersionModal from "@/components/dashboard/PreviewVersionModal.vue"
 import AnswerKeyModal from "@/components/dashboard/AnswerKeyModal.vue";
 import GenerateVersionsModal from "@/components/dashboard/GenerateVersionsModal.vue";
 import DeleteVersionConfirmationModal from "@/components/dashboard/DeleteVersionConfirmationModal.vue";
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useTestStore } from "@/stores/testStore";
 import { jsPDF } from "jspdf";
@@ -70,6 +70,9 @@ const test = ref({});
 const questions = ref([]);
 const availableTypes = ref([]);
 
+// Search functionality
+const searchQuery = ref("");
+
 // Tab management
 const activeTab = ref("questions"); // 'questions' or 'versions'
 
@@ -109,6 +112,47 @@ const showImageAssignmentModal = ref(false);
 const pendingQuestions = ref([]);
 const extractedImages = ref([]);
 const savedAnswerKeyMap = ref({}); // Store parsed answer key for later use
+
+// Computed property for filtered questions
+const filteredQuestions = computed(() => {
+  if (!searchQuery.value.trim()) {
+    return questions.value;
+  }
+
+  const query = searchQuery.value.toLowerCase().trim();
+
+  return questions.value.filter((question) => {
+    // Search in question text (it's stored as 'question' field after transformation)
+    const questionText = (question.question || "").toLowerCase();
+    if (questionText.includes(query)) {
+      return true;
+    }
+
+    // Search in answer choices/options text
+    if (question.options && Array.isArray(question.options)) {
+      const hasMatchInChoices = question.options.some((option) => {
+        const optionText = (option.text || "").toLowerCase();
+        return optionText.includes(query);
+      });
+      if (hasMatchInChoices) {
+        return true;
+      }
+    }
+
+    // Search in correct answer (find the correct option text)
+    if (question.options && Array.isArray(question.options)) {
+      const correctOption = question.options.find((opt) => opt.isCorrect);
+      if (correctOption) {
+        const correctText = (correctOption.text || "").toLowerCase();
+        if (correctText.includes(query)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  });
+});
 
 const openQuestionForm = () => {
   editingQuestion.value = null;
@@ -314,7 +358,7 @@ const toggleQuestionSelection = (question) => {
 
 const toggleSelectAllQuestions = () => {
   if (selectAllQuestions.value) {
-    selectedQuestions.value = [...questions.value];
+    selectedQuestions.value = [...filteredQuestions.value];
   } else {
     selectedQuestions.value = [];
   }
@@ -782,39 +826,111 @@ const generateVersionWord = async (versionData) => {
       }
     }
 
-    // Question text
-    questionParagraphs.push(
-      new Paragraph({
-        children: [
-          new TextRun({
-            text: `${q.question_number}. `,
-            bold: true,
-            size: 22,
-          }),
-          new TextRun({
-            text: q.question_text,
-            size: 22,
-          }),
-        ],
-        spacing: { before: 200, after: 100 },
-      })
-    );
-
-    // Answer choices (5 spaces before letter)
-    q.answer_choices.forEach((choice, choiceIndex) => {
-      const letter = String.fromCharCode(65 + choiceIndex);
+    // Question text with inline blank for short answer types
+    const questionType = q.type || 'Multiple Choice';
+    const hasMultipleChoices = q.answer_choices && q.answer_choices.length >= 2;
+    
+    if ((questionType === 'Multiple Choice' || questionType === 'True or False') && hasMultipleChoices) {
+      // For MC and T/F: Question on its own line
       questionParagraphs.push(
         new Paragraph({
           children: [
             new TextRun({
-              text: `     ${letter}. ${choice.text}`,
-              size: 20,
+              text: `${q.question_number}. `,
+              bold: true,
+              size: 22,
+            }),
+            new TextRun({
+              text: q.question_text,
+              size: 22,
             }),
           ],
-          spacing: { after: 80 },
+          spacing: { before: 200, after: 100 },
         })
       );
-    });
+      
+      // Then show answer choices
+      q.answer_choices.forEach((choice, choiceIndex) => {
+        const letter = String.fromCharCode(65 + choiceIndex);
+        questionParagraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: `     ${letter}. ${choice.text}`,
+                size: 20,
+              }),
+            ],
+            spacing: { after: 80 },
+          })
+        );
+      });
+    } else if (questionType === 'Essay') {
+      // For Essay: Question with extra space below (remove any trailing underscores)
+      const cleanQuestionText = q.question_text.replace(/\s*_+\s*$/, '').trim();
+      
+      questionParagraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${q.question_number}. `,
+              bold: true,
+              size: 22,
+            }),
+            new TextRun({
+              text: cleanQuestionText,
+              size: 22,
+            }),
+          ],
+          spacing: { before: 200, after: 150 },
+        })
+      );
+      
+      // Add multiple blank lines for essay answer
+      for (let i = 0; i < 8; i++) {
+        questionParagraphs.push(
+          new Paragraph({
+            children: [
+              new TextRun({
+                text: '_'.repeat(90),
+                size: 20,
+                color: '999999',
+              }),
+            ],
+            spacing: { after: 100 },
+          })
+        );
+      }
+      
+      // Add extra space after lines
+      questionParagraphs.push(
+        new Paragraph({
+          children: [new TextRun({ text: '', size: 20 })],
+          spacing: { after: 300 },
+        })
+      );
+    } else {
+      // For Identification, Fill in the Blank, True or False (single answer): Question with inline blank
+      questionParagraphs.push(
+        new Paragraph({
+          children: [
+            new TextRun({
+              text: `${q.question_number}. `,
+              bold: true,
+              size: 22,
+            }),
+            new TextRun({
+              text: q.question_text + ' ',
+              size: 22,
+            }),
+            new TextRun({
+              text: '________',
+              size: 22,
+            }),
+          ],
+          spacing: { before: 200, after: 100 },
+        })
+      );
+    }
   });
 
   const doc = new Document({
@@ -1002,47 +1118,107 @@ const generateVersionPDF = async (versionData) => {
     // Check if we need a new page for the question
     checkPageBreak(25); // Minimum space for question start
 
+    // Determine question type and formatting
+    const questionType = q.type || 'Multiple Choice';
+    const hasMultipleChoices = q.answer_choices && q.answer_choices.length >= 2;
+
     // Question number and text
     doc.setFontSize(11);
     doc.setFont("helvetica", "bold");
 
     const questionPrefix = `${q.question_number}. `;
     const prefixWidth = doc.getTextWidth(questionPrefix);
-    const questionLines = wrapText(q.question_text, contentWidth);
+    
+    if ((questionType === 'Multiple Choice' || questionType === 'True or False') && hasMultipleChoices) {
+      // For MC and T/F: Question on separate lines, then choices
+      const questionLines = wrapText(q.question_text, contentWidth);
 
-    // First line with number
-    doc.text(questionPrefix, margin, yPosition);
-    doc.setFont("helvetica", "normal");
-    doc.text(questionLines[0], margin + prefixWidth, yPosition);
-    yPosition += 6;
-
-    // Remaining lines
-    for (let i = 1; i < questionLines.length; i++) {
-      checkPageBreak(6);
-      doc.text(questionLines[i], margin + prefixWidth, yPosition);
+      // First line with number
+      doc.text(questionPrefix, margin, yPosition);
+      doc.setFont("helvetica", "normal");
+      doc.text(questionLines[0], margin + prefixWidth, yPosition);
       yPosition += 6;
-    }
 
-    yPosition += 2; // Small space before answer choices
+      // Remaining lines
+      for (let i = 1; i < questionLines.length; i++) {
+        checkPageBreak(6);
+        doc.text(questionLines[i], margin + prefixWidth, yPosition);
+        yPosition += 6;
+      }
 
-    // Answer choices (with 5 white spaces to the left)
-    q.answer_choices.forEach((choice, choiceIndex) => {
-      checkPageBreak(6);
+      yPosition += 2;
 
-      const letter = String.fromCharCode(65 + choiceIndex); // A, B, C, D...
-      const choiceText = `     ${letter}. ${choice.text}`;
-      const choiceLines = wrapText(choiceText, contentWidth);
+      // Show answer choices
+      q.answer_choices.forEach((choice, choiceIndex) => {
+        checkPageBreak(6);
 
-      // Render all lines of the choice
-      doc.setFontSize(10);
-      choiceLines.forEach((line, lineIndex) => {
-        if (lineIndex > 0) checkPageBreak(5);
-        doc.text(line, margin, yPosition);
-        yPosition += 5;
+        const letter = String.fromCharCode(65 + choiceIndex);
+        const choiceText = `     ${letter}. ${choice.text}`;
+        const choiceLines = wrapText(choiceText, contentWidth);
+
+        doc.setFontSize(10);
+        choiceLines.forEach((line, lineIndex) => {
+          if (lineIndex > 0) checkPageBreak(5);
+          doc.text(line, margin, yPosition);
+          yPosition += 5;
+        });
       });
-    });
 
-    yPosition += 8; // Space between questions
+      yPosition += 8;
+    } else if (questionType === 'Essay') {
+      // For Essay: Question with extra space below (remove any trailing underscores)
+      const cleanQuestionText = q.question_text.replace(/\s*_+\s*$/, '').trim();
+      const questionLines = wrapText(cleanQuestionText, contentWidth);
+
+      // First line with number
+      doc.text(questionPrefix, margin, yPosition);
+      doc.setFont("helvetica", "normal");
+      doc.text(questionLines[0], margin + prefixWidth, yPosition);
+      yPosition += 6;
+
+      // Remaining lines
+      for (let i = 1; i < questionLines.length; i++) {
+        checkPageBreak(6);
+        doc.text(questionLines[i], margin + prefixWidth, yPosition);
+        yPosition += 6;
+      }
+
+      yPosition += 4; // Small space after question
+      
+      // Add multiple blank lines for essay answer
+      doc.setDrawColor(180, 180, 180);
+      for (let i = 0; i < 8; i++) {
+        checkPageBreak(7);
+        doc.line(margin + 5, yPosition, pageWidth - margin - 5, yPosition);
+        yPosition += 7;
+      }
+      
+      yPosition += 4; // Space after lines
+    } else {
+      // For Identification, Fill in the Blank: Question with inline blank
+      const questionLines = wrapText(q.question_text, contentWidth - 40); // Reserve space for blank
+
+      // First line with number and blank
+      doc.text(questionPrefix, margin, yPosition);
+      doc.setFont("helvetica", "normal");
+      doc.text(questionLines[0], margin + prefixWidth, yPosition);
+      
+      // Calculate position for inline blank
+      const textWidth = doc.getTextWidth(questionLines[0]);
+      const blankX = margin + prefixWidth + textWidth + 2;
+      const blankText = ' __________';
+      doc.text(blankText, blankX, yPosition);
+      yPosition += 6;
+
+      // Remaining lines (if any)
+      for (let i = 1; i < questionLines.length; i++) {
+        checkPageBreak(6);
+        doc.text(questionLines[i], margin + prefixWidth, yPosition);
+        yPosition += 6;
+      }
+
+      yPosition += 8;
+    }
 
     // Add extra space after every 5 questions for readability
     if ((qIndex + 1) % 5 === 0 && qIndex !== versionData.questions.length - 1) {
@@ -2014,10 +2190,68 @@ onMounted(async () => {
               </div>
             </div>
 
+            <!-- Search Bar -->
+            <div class="mb-4 bg-white dark:bg-gray-900 p-4 rounded-lg shadow">
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg
+                    class="h-5 w-5 text-gray-400"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </div>
+                <input
+                  v-model="searchQuery"
+                  type="text"
+                  placeholder="Search questions, answer choices, or answers..."
+                  class="block w-full pl-10 pr-10 py-2 border border-gray-300 dark:border-gray-700 rounded-md leading-5 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <div
+                  v-if="searchQuery"
+                  class="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <button
+                    @click="searchQuery = ''"
+                    class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                  >
+                    <svg
+                      class="h-5 w-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div
+                v-if="searchQuery"
+                class="mt-2 text-sm text-gray-600 dark:text-gray-400"
+              >
+                Found {{ filteredQuestions.length }} of {{ questions.length }} question{{
+                  filteredQuestions.length !== 1 ? "s" : ""
+                }}
+              </div>
+            </div>
+
             <!-- Questions List -->
             <!-- Select All and Bulk Actions -->
             <div
-              v-if="questions.length > 0"
+              v-if="filteredQuestions.length > 0"
               class="mb-4 bg-white dark:bg-gray-900 p-4 rounded-lg shadow"
             >
               <div class="flex items-center justify-between">
@@ -2033,8 +2267,8 @@ onMounted(async () => {
                     for="select-all-questions"
                     class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-100 cursor-pointer select-none"
                   >
-                    Select All ({{ questions.length }} question{{
-                      questions.length !== 1 ? "s" : ""
+                    Select All ({{ filteredQuestions.length }} question{{
+                      filteredQuestions.length !== 1 ? "s" : ""
                     }})
                   </label>
                 </div>
@@ -2068,7 +2302,7 @@ onMounted(async () => {
                 class="mt-2 text-xs text-gray-500 dark:text-gray-300"
               >
                 {{ selectedQuestions.length }} of
-                {{ questions.length }} question{{
+                {{ filteredQuestions.length }} question{{
                   selectedQuestions.length !== 1 ? "s" : ""
                 }}
                 selected
@@ -2076,7 +2310,7 @@ onMounted(async () => {
             </div>
 
             <QuestionList
-              :questions="questions"
+              :questions="filteredQuestions"
               :selected-questions="selectedQuestions"
               :part-descriptions="test.part_descriptions || []"
               :directions="test.directions || []"
