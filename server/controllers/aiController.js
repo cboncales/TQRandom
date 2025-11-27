@@ -10,7 +10,9 @@ function convertQuestionType(type) {
     'true_false': 'True or False',
     'identification': 'Identification',
     'fill_in_the_blank': 'Fill in the Blank',
-    'essay': 'Essay'
+    'essay': 'Essay',
+    'matching_type': 'Matching Type',
+    'rearrangement': 'Rearrangement'
   };
   return typeMap[type] || type;
 }
@@ -25,11 +27,11 @@ async function generateTestWithAI(req, res) {
     }
 
     const userId = req.user.id;
-    const { testTitle, topic, numberOfQuestions, numberOfParts, parts, questionTypes } = req.body;
+    const { testTitle, topic, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty } = req.body;
     const file = req.file; // From multer
 
     console.log('Generating test with AI for user:', userId);
-    console.log('Raw parameters:', { testTitle, numberOfQuestions, numberOfParts, parts, questionTypes });
+    console.log('Raw parameters:', { testTitle, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty });
 
     // Parse parts and questionTypes if they are JSON strings
     let parsedParts = parts;
@@ -72,6 +74,7 @@ async function generateTestWithAI(req, res) {
       numberOfParts: parseInt(numberOfParts) || 0,
       parts: parsedParts || [],
       questionTypes: parsedQuestionTypes || [],
+      difficulty: difficulty || 'Medium',
       file: file
     });
 
@@ -93,12 +96,38 @@ async function generateTestWithAI(req, res) {
 
     // Set up part descriptions and directions if parts exist
     if (numberOfParts > 0 && parsedParts && parsedParts.length > 0) {
-      testData.part_descriptions = parsedParts.map((part, index) => 
-        `Part ${['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'][index] || (index + 1)}`
-      );
-      testData.directions = parsedParts.map(() => 
-        'Choose the best answer for each question.'
-      );
+      const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+      testData.part_descriptions = parsedParts.map((part, index) => {
+        const romanNumeral = romanNumerals[index] || (index + 1);
+        const questionType = part.questionType || '';
+        // Convert question type to proper format
+        const formattedType = convertQuestionType(questionType);
+        if (formattedType) {
+          return `Part ${romanNumeral}: ${formattedType}`;
+        }
+        return `Part ${romanNumeral}`;
+      });
+      testData.directions = parsedParts.map((part) => {
+        const questionType = part.questionType || '';
+        // Convert to proper format for switch comparison
+        const formattedType = convertQuestionType(questionType);
+        // Generate appropriate directions based on question type
+        switch (formattedType) {
+          case 'Matching Type':
+            return 'Match each item in Column A with the correct answer in Column B.';
+          case 'True or False':
+            return 'Write T if the statement is true and F if the statement is false.';
+          case 'Identification':
+            return 'Identify the term, concept, or name being described.';
+          case 'Fill in the Blank':
+            return 'Fill in the blank with the correct word or phrase.';
+          case 'Essay':
+            return 'Write a comprehensive answer to the following question. Provide detailed explanations and examples.';
+          case 'Multiple Choice':
+          default:
+            return 'Choose the best answer for each question.';
+        }
+      });
     } else {
       testData.directions = ['Choose the best answer for each question.'];
     }
@@ -125,17 +154,20 @@ async function generateTestWithAI(req, res) {
       for (const part of generatedData.parts) {
         for (const q of part.questions) {
           const convertedType = convertQuestionType(q.type);
+          // For Matching Type, use empty string since instruction is in directions
+          const questionText = convertedType === 'Matching Type' ? '' : q.question;
           questionsToSave.push({
             test_id: test.id,
             part: part.partNumber,
-            text: q.question,
+            text: questionText,
             type: convertedType,
             image_url: null
           });
           questionMetadata.push({
             correctAnswer: q.correctAnswer,
             type: convertedType,
-            options: q.options || []
+            options: q.options || [],
+            items: q.items || []
           });
         }
       }
@@ -143,17 +175,20 @@ async function generateTestWithAI(req, res) {
       // Questions without parts
       for (const q of generatedData.questions) {
         const convertedType = convertQuestionType(q.type);
+        // For Matching Type, use empty string since instruction is in directions
+        const questionText = convertedType === 'Matching Type' ? '' : q.question;
         questionsToSave.push({
           test_id: test.id,
           part: 1,
-          text: q.question,
+          text: questionText,
           type: convertedType,
           image_url: null
         });
         questionMetadata.push({
           correctAnswer: q.correctAnswer,
           type: convertedType,
-          options: q.options || []
+          options: q.options || [],
+          items: q.items || []
         });
       }
     }
@@ -192,6 +227,25 @@ async function generateTestWithAI(req, res) {
           answerChoices.push({
             question_id: question.id,
             text: option,
+            image_url: null
+          });
+        });
+      } else if (metadata.type === 'Matching Type' && metadata.items && metadata.items.length > 0) {
+        // For Matching Type: Store both Column A (question) and Column B (answer) in text field
+        // Format: JSON string with both values so frontend can parse it
+        metadata.items.forEach((item, index) => {
+          // Strip any leading numbers/letters from AI responses (e.g., "1. Text" -> "Text")
+          const cleanQuestion = item.question.replace(/^[0-9]+\.\s*/, '').trim();
+          const cleanAnswer = item.answer.replace(/^[a-z]\.\s*/i, '').trim();
+          
+          // Store as JSON object string that can be parsed
+          const matchingData = {
+            text: cleanQuestion,
+            matchAnswer: cleanAnswer
+          };
+          answerChoices.push({
+            question_id: question.id,
+            text: JSON.stringify(matchingData),
             image_url: null
           });
         });

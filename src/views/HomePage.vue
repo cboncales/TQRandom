@@ -155,7 +155,7 @@ onBeforeUnmount(() => {
 
                 <!-- Visual Placeholder (Example of randomization) -->
                 <!-- Background: Dark Blue #1e2939, Border: Blue #155dfc -->
-                <div class="hidden lg:block lg:w-4/12 mt-12 lg:mt-0">
+                <div class="w-full lg:w-4/12 mt-12 lg:mt-0">
                   <div
                     class="relative p-6 dark:bg-[#1e2939] bg-gray-100 rounded-2xl shadow-2xl border border-[#155dfc]/50"
                   >
@@ -235,7 +235,7 @@ onBeforeUnmount(() => {
 
                 <!-- Visual Placeholder (Example of question import) -->
                 <!-- Background: Dark Blue #1e2939, Border: Blue #155dfc -->
-                <div class="hidden lg:block lg:w-4/12 mt-12 lg:mt-0">
+                <div class="w-full lg:w-4/12 mt-12 lg:mt-0">
                   <div
                     class="relative p-6 dark:bg-[#1e2939] bg-gray-100 rounded-2xl shadow-2xl border border-[#155dfc]/50"
                   >

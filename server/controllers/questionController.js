@@ -53,11 +53,22 @@ async function createQuestion(req, res) {
 
     // Create answer choices if provided (with optional image URLs)
     if (answerChoices && answerChoices.length > 0) {
-      const choicesData = answerChoices.map((choice) => ({
-        question_id: questionData.id,
-        text: choice.text.trim(),
-        image_url: choice.imageUrl || null,
-      }));
+      const choicesData = answerChoices.map((choice) => {
+        // For Matching Type questions, store both text and matchAnswer as JSON
+        let textValue = choice.text.trim();
+        if (choice.matchAnswer) {
+          textValue = JSON.stringify({
+            text: choice.text.trim(),
+            matchAnswer: choice.matchAnswer.trim()
+          });
+        }
+        
+        return {
+          question_id: questionData.id,
+          text: textValue,
+          image_url: choice.imageUrl || null,
+        };
+      });
 
       const { error: choicesError } = await supabase
         .from('answer_choices')
@@ -130,12 +141,38 @@ async function getTestQuestions(req, res) {
     }
 
     // Combine questions with their answer choices
-    const questionsWithChoices = questionsData.map((question) => ({
-      ...question,
-      answer_choices: answerChoicesData.filter(
+    const questionsWithChoices = questionsData.map((question) => {
+      const choices = answerChoicesData.filter(
         (choice) => choice.question_id === question.id
-      ),
-    }));
+      );
+      
+      // Parse JSON format for Matching Type questions
+      const parsedChoices = choices.map(choice => {
+        try {
+          // Try to parse as JSON (for Matching Type)
+          const parsed = JSON.parse(choice.text);
+          if (parsed.text !== undefined && parsed.matchAnswer !== undefined) {
+            // Strip any leading numbers/letters as fallback
+            const cleanText = parsed.text.replace(/^[0-9]+\\.\\s*/, '').trim();
+            const cleanMatch = parsed.matchAnswer.replace(/^[a-z]\\.\\s*/i, '').trim();
+            
+            return {
+              ...choice,
+              text: cleanText,
+              matchAnswer: cleanMatch
+            };
+          }
+        } catch (e) {
+          // Not JSON, return as is
+        }
+        return choice;
+      });
+      
+      return {
+        ...question,
+        answer_choices: parsedChoices,
+      };
+    });
 
     res.json({ data: questionsWithChoices });
   } catch (error) {
@@ -220,9 +257,33 @@ async function updateQuestion(req, res) {
         if (existingChoice && newChoice) {
           // Update existing choice if text or image URL is different
           const choiceUpdateData = {};
-          if (existingChoice.text.trim() !== newChoice.text.trim()) {
-            choiceUpdateData.text = newChoice.text.trim();
+          
+          // Check if text or matchAnswer changed
+          let currentText = existingChoice.text;
+          let newTextValue = newChoice.text.trim();
+          
+          // Handle Matching Type format
+          if (newChoice.matchAnswer) {
+            newTextValue = JSON.stringify({
+              text: newChoice.text.trim(),
+              matchAnswer: newChoice.matchAnswer.trim()
+            });
           }
+          
+          // Try to parse existing text as JSON to compare properly
+          try {
+            const parsed = JSON.parse(currentText);
+            if (parsed.text !== undefined) {
+              currentText = JSON.stringify(parsed);
+            }
+          } catch (e) {
+            // Not JSON, use as is
+          }
+          
+          if (currentText !== newTextValue) {
+            choiceUpdateData.text = newTextValue;
+          }
+          
           if (newChoice.imageUrl !== undefined && existingChoice.image_url !== newChoice.imageUrl) {
             choiceUpdateData.image_url = newChoice.imageUrl;
           }
@@ -236,10 +297,18 @@ async function updateQuestion(req, res) {
           }
         } else if (!existingChoice && newChoice) {
           // Insert new choice with image URL
+          let textValue = newChoice.text.trim();
+          if (newChoice.matchAnswer) {
+            textValue = JSON.stringify({
+              text: newChoice.text.trim(),
+              matchAnswer: newChoice.matchAnswer.trim()
+            });
+          }
+          
           await supabase.from('answer_choices').insert([
             {
               question_id: id,
-              text: newChoice.text.trim(),
+              text: textValue,
               image_url: newChoice.imageUrl || null,
             },
           ]);

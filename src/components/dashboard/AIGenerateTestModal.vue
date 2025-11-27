@@ -17,6 +17,7 @@ const emit = defineEmits(["close", "generate"]);
 // Form state
 const testTitle = ref("");
 const topic = ref("");
+const difficulty = ref("Medium");
 const numberOfQuestions = ref(10);
 const questionTypes = ref([]); // Used when numberOfParts is 0
 const numberOfParts = ref(0);
@@ -212,6 +213,7 @@ const handleGenerate = () => {
   const generateData = {
     testTitle: testTitle.value.trim(),
     topic: topic.value.trim(),
+    difficulty: difficulty.value,
     numberOfQuestions: numberOfParts.value > 0 ? totalQuestionsFromParts.value : numberOfQuestions.value,
     numberOfParts: numberOfParts.value,
     file: uploadedFile.value,
@@ -236,6 +238,7 @@ const handleGenerate = () => {
 const resetForm = () => {
   testTitle.value = "";
   topic.value = "";
+  difficulty.value = "Medium";
   numberOfQuestions.value = 10;
   questionTypes.value = [];
   numberOfParts.value = 0;
@@ -370,6 +373,29 @@ const closeModal = () => {
           />
           <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
             Describe the topic or provide context for question generation
+          </p>
+        </div>
+
+        <!-- Difficulty Level -->
+        <div>
+          <label
+            for="difficulty"
+            class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
+          >
+            Difficulty Level <span class="text-red-500">*</span>
+          </label>
+          <select
+            id="difficulty"
+            v-model="difficulty"
+            :disabled="props.isGenerating"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option value="Easy">Easy - Basic concepts and straightforward questions</option>
+            <option value="Medium">Medium - Moderate complexity and understanding</option>
+            <option value="Hard">Hard - Complex scenarios and critical thinking</option>
+          </select>
+          <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+            Choose the complexity level for the generated questions
           </p>
         </div>
 

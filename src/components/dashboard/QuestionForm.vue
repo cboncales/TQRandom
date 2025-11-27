@@ -50,7 +50,8 @@ const questionTypes = [
   "True or False",
   "Identification",
   "Essay",
-  "Fill in the Blank"
+  "Fill in the Blank",
+  "Matching Type"
 ];
 
 // Initialize options based on question type
@@ -73,6 +74,13 @@ const initializeOptionsForType = (type) => {
     case "Essay":
       return [
         { id: 1, text: "", isCorrect: true, imageUrl: null, imageFile: null },
+      ];
+    case "Matching Type":
+      return [
+        { id: 1, text: "", isCorrect: false, matchAnswer: "", imageUrl: null, imageFile: null },
+        { id: 2, text: "", isCorrect: false, matchAnswer: "", imageUrl: null, imageFile: null },
+        { id: 3, text: "", isCorrect: false, matchAnswer: "", imageUrl: null, imageFile: null },
+        { id: 4, text: "", isCorrect: false, matchAnswer: "", imageUrl: null, imageFile: null },
       ];
     default:
       return [
@@ -122,11 +130,20 @@ watch(
       questionType.value = newQuestion.type || "Multiple Choice";
       questionPart.value = newQuestion.part || null; // Part is now integer or null
       questionImageUrl.value = newQuestion.imageUrl || null;
-      options.value = newQuestion.options.map((opt) => ({
-        ...opt,
-        imageUrl: opt.imageUrl || null,
-        imageFile: null,
-      }));
+      options.value = newQuestion.options.map((opt) => {
+        const mappedOption = {
+          ...opt,
+          imageUrl: opt.imageUrl || null,
+          imageFile: null,
+        };
+        
+        // Preserve matchAnswer for Matching Type
+        if (newQuestion.type === "Matching Type") {
+          mappedOption.matchAnswer = opt.matchAnswer || "";
+        }
+        
+        return mappedOption;
+      });
     } else {
       resetForm();
     }
@@ -147,13 +164,20 @@ watch(
 
 const addOption = () => {
   const newId = Math.max(...options.value.map((o) => o.id)) + 1;
-  options.value.push({
+  const newOption = {
     id: newId,
     text: "",
     isCorrect: false,
     imageUrl: null,
     imageFile: null,
-  });
+  };
+  
+  // Add matchAnswer field for Matching Type
+  if (questionType.value === "Matching Type") {
+    newOption.matchAnswer = "";
+  }
+  
+  options.value.push(newOption);
 };
 
 const confirmRemoveOption = (optionId) => {
@@ -260,13 +284,26 @@ const handleSubmit = async () => {
       errorMessage.value = "Please provide an answer for this question type";
       return;
     }
+  } else if (questionType.value === "Matching Type") {
+    if (filledOptions.length < 2) {
+      errorMessage.value = "Please provide at least 2 items";
+      return;
+    }
+    // Check if all items have matchAnswer filled
+    const hasEmptyMatch = filledOptions.some((opt) => !opt.matchAnswer || !opt.matchAnswer.trim());
+    if (hasEmptyMatch) {
+      errorMessage.value = "Please provide answers for all items in Column B";
+      return;
+    }
   }
 
-  // Validate correct answers are marked
-  const correctAnswers = filledOptions.filter((opt) => opt.isCorrect);
-  if (correctAnswers.length === 0) {
-    errorMessage.value = "Please mark at least one correct answer";
-    return;
+  // Validate correct answers are marked (except for Matching Type)
+  if (questionType.value !== "Matching Type") {
+    const correctAnswers = filledOptions.filter((opt) => opt.isCorrect);
+    if (correctAnswers.length === 0) {
+      errorMessage.value = "Please mark at least one correct answer";
+      return;
+    }
   }
 
   try {
@@ -292,12 +329,19 @@ const handleSubmit = async () => {
             uploadedImageUrl = await uploadImageToServer(opt.imageFile);
           }
 
-          return {
+          const processedOption = {
             id: opt.id,
             text: opt.text,
             isCorrect: opt.isCorrect,
             imageUrl: uploadedImageUrl,
           };
+          
+          // Include matchAnswer for Matching Type
+          if (questionType.value === "Matching Type") {
+            processedOption.matchAnswer = opt.matchAnswer;
+          }
+          
+          return processedOption;
         })
     );
 
@@ -412,10 +456,7 @@ const hasCorrectAnswer = () => {
               :disabled="props.isLoading"
               class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
               placeholder="Enter your question here..."
-            />
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              💡 Math notation: Use <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">$...$</code> for inline math (e.g., $x^2 + y^2 = r^2$) or <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">$$...$$</code> for display math. Supports exponents (^), sqrt(), fractions, Greek letters.
-            </p>
+            ></textarea>
           </div>
 
           <!-- Question Type and Part Row -->
@@ -433,9 +474,9 @@ const hasCorrectAnswer = () => {
                 v-model="questionType"
                 required
                 :disabled="props.isLoading"
-                class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
+                class="block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
               >
-                <option v-for="type in questionTypes" :key="type" :value="type">
+                <option v-for="type in questionTypes" :key="type" :value="type" class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
                   {{ type }}
                 </option>
               </select>
@@ -728,6 +769,70 @@ const hasCorrectAnswer = () => {
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Provide a sample answer or key points that should be included in the essay response.
             </p>
+          </div>
+
+          <!-- Matching Type -->
+          <div v-else-if="questionType === 'Matching Type'">
+            <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-3 sm:mb-4">
+              <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100">
+                Column A (Questions) & Column B (Answers)
+              </h4>
+              <button
+                type="button"
+                @click="addOption"
+                class="bg-blue-600 text-white hover:bg-blue-700 px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+              >
+                <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Pair
+              </button>
+            </div>
+
+            <div class="space-y-3 sm:space-y-4">
+              <div v-for="(option, index) in options" :key="option.id" class="p-2 sm:p-3 border rounded-lg bg-gray-50 border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <!-- Column A (Question) -->
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      {{ index + 1 }}. Column A
+                    </label>
+                    <textarea
+                      v-model="option.text"
+                      rows="3"
+                      class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 resize-y"
+                      :placeholder="`Item ${index + 1}`"
+                    ></textarea>
+                  </div>
+
+                  <!-- Column B (Answer) -->
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      {{ String.fromCharCode(97 + index) }}. Column B (Correct Match)
+                    </label>
+                    <textarea
+                      v-model="option.matchAnswer"
+                      rows="3"
+                      class="w-full px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 resize-y"
+                      :placeholder="`Answer ${String.fromCharCode(97 + index)}`"
+                    ></textarea>
+                  </div>
+                </div>
+
+                <!-- Remove Button -->
+                <button
+                  v-if="options.length > 2"
+                  type="button"
+                  @click="confirmRemoveOption(option.id)"
+                  class="mt-2 text-red-600 hover:text-red-800 text-xs flex items-center"
+                >
+                  <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                  Remove Pair
+                </button>
+              </div>
+            </div>
           </div>
         </form>
       </div>

@@ -2384,7 +2384,7 @@ onMounted(async () => {
                 />
                 <label
                   for="select-all-versions"
-                  class="ml-2 text-sm font-medium text-gray-700 cursor-pointer select-none"
+                  class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer select-none"
                 >
                   Select All ({{ versions.length }} version{{
                     versions.length !== 1 ? "s" : ""

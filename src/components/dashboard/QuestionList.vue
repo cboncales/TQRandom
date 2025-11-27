@@ -313,6 +313,66 @@ const groupedQuestions = computed(() => {
                   </div>
                 </div>
 
+                <!-- Matching Type -->
+                <div v-else-if="question.type === 'Matching Type'" class="mb-3 sm:mb-4">
+                  <div class="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900 dark:to-pink-900 border border-purple-200 dark:border-purple-700">
+                    <!-- Headers -->
+                    <div class="grid grid-cols-2 gap-4 mb-3 pb-2 border-b-2 border-purple-300 dark:border-purple-600">
+                      <h5 class="text-xs sm:text-sm font-bold text-purple-800 dark:text-purple-200">
+                        Column A – Questions/Terms
+                      </h5>
+                      <h5 class="text-xs sm:text-sm font-bold text-purple-800 dark:text-purple-200">
+                        Column B – Choices
+                      </h5>
+                    </div>
+
+                    <!-- Items Grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                      <!-- Column A Items -->
+                      <div class="space-y-2">
+                        <div
+                          v-for="(option, index) in question.options"
+                          :key="'a-' + option.id"
+                          class="flex items-start gap-2"
+                        >
+                          <span class="font-semibold text-purple-700 dark:text-purple-300 shrink-0">{{ index + 1 }}.</span>
+                          <span class="text-xs sm:text-sm text-gray-800 dark:text-gray-200 border-b border-dotted border-purple-300 dark:border-purple-600 flex-1" v-html="renderMath(option.text)">
+                          </span>
+                        </div>
+                      </div>
+
+                      <!-- Column B Items -->
+                      <div class="space-y-2">
+                        <div
+                          v-for="(option, index) in question.options"
+                          :key="'b-' + option.id"
+                          class="flex items-start gap-2"
+                        >
+                          <span class="font-semibold text-purple-700 dark:text-purple-300 shrink-0">{{ String.fromCharCode(97 + index) }}.</span>
+                          <span class="text-xs sm:text-sm text-gray-800 dark:text-gray-200" v-html="renderMath(option.matchAnswer || '')">
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Answer Key -->
+                    <div class="pt-3 border-t border-purple-300 dark:border-purple-600">
+                      <h6 class="text-xs font-semibold text-purple-700 dark:text-purple-300 mb-2">Answer Key:</h6>
+                      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                        <div
+                          v-for="(option, index) in question.options"
+                          :key="'key-' + option.id"
+                          class="text-xs bg-white dark:bg-gray-800 px-2 py-1 rounded border border-purple-200 dark:border-purple-700"
+                        >
+                          <span class="font-semibold text-purple-700 dark:text-purple-300">{{ index + 1 }}</span>
+                          <span class="text-gray-600 dark:text-gray-400 mx-1">=</span>
+                          <span class="font-semibold text-purple-700 dark:text-purple-300">{{ String.fromCharCode(97 + index) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Remove old part badge - now shown as headers -->
               </div>
             </div>
