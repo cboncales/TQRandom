@@ -55,8 +55,9 @@ const getStatusColor = (status) => {
 </script>
 
 <template>
-  <div class="bg-white dark:bg-gray-900 shadow overflow-hidden sm:rounded-md">
-    <div class="px-4 py-5 sm:px-6">
+  <div class="space-y-4">
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-900 shadow rounded-lg px-4 py-5 sm:px-6">
       <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-gray-100">
         Your Test Questionnaires
       </h3>
@@ -65,42 +66,40 @@ const getStatusColor = (status) => {
       </p>
     </div>
 
-    <ul class="divide-y divide-gray-200">
-      <li v-for="test in tests" :key="test.id" class="px-4 py-4 sm:px-6">
-        <!-- Mobile Layout: Stack vertically -->
-        <div
-          class="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <!-- Test Info -->
-          <div class="flex-1 min-w-0">
-            <div
-              class="flex items-center justify-between sm:justify-start sm:space-x-3"
-            >
-              <div class="flex-1 min-w-0">
-                <h4 class="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
-                  {{ test.title }}
-                </h4>
-              </div>
-              <span
-                :class="[
-                  'px-2 inline-flex text-xs leading-5 font-semibold rounded-full shrink-0',
-                  getStatusColor(test.status),
-                ]"
-              >
-                {{ test.status }}
-              </span>
+    <!-- Test Cards -->
+    <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-1">
+      <div
+        v-for="test in tests"
+        :key="test.id"
+        class="bg-white dark:bg-gray-900 shadow rounded-lg overflow-hidden hover:shadow-lg transition-shadow duration-200"
+      >
+        <div class="p-6">
+          <!-- Header with Title and Status -->
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1 min-w-0 mr-4">
+              <h4 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                {{ test.title }}
+              </h4>
+              <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                {{ test.description }}
+              </p>
             </div>
-
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-300">
-              {{ test.description }}
-            </p>
-
-            <div
-              class="mt-2 flex flex-col sm:flex-row sm:items-center text-sm text-gray-500 dark:text-gray-300 space-y-1 sm:space-y-0 sm:space-x-4"
+            <span
+              :class="[
+                'px-3 py-1 text-xs font-semibold rounded-full shrink-0',
+                getStatusColor(test.status),
+              ]"
             >
-              <span class="flex items-center">
+              {{ test.status }}
+            </span>
+          </div>
+
+          <!-- Test Info Cards -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+              <div class="flex items-center">
                 <svg
-                  class="shrink-0 mr-1.5 h-4 w-4"
+                  class="h-5 w-5 text-blue-600 dark:text-blue-400 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -112,11 +111,19 @@ const getStatusColor = (status) => {
                     d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                {{ test.questionCount }} questions
-              </span>
-              <span class="flex items-center">
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Questions</p>
+                  <p class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {{ test.questionCount }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <div class="flex items-center">
                 <svg
-                  class="shrink-0 mr-1.5 h-4 w-4"
+                  class="h-5 w-5 text-gray-600 dark:text-gray-400 mr-2"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -125,23 +132,27 @@ const getStatusColor = (status) => {
                     stroke-linecap="round"
                     stroke-linejoin="round"
                     stroke-width="2"
-                    d="M8 7V3a4 4 0 118 0v4m-4 7h6m-6 0V9a4 4 0 118 0v5"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                Created {{ test.createdAt }}
-              </span>
+                <div>
+                  <p class="text-xs text-gray-600 dark:text-gray-400">Created</p>
+                  <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {{ test.createdAt }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Action Buttons - Full width on mobile, auto width on desktop -->
-          <div class="flex items-center space-x-2 sm:ml-4">
-            <!-- Manage Questions Button -->
+          <!-- Action Buttons -->
+          <div class="flex items-center gap-2">
             <button
               @click="manageQuestions(test.id)"
-              class="flex-1 sm:flex-none bg-blue-500 text-white shadow hover:bg-blue-700 px-3 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
+              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center shadow-sm"
             >
               <svg
-                class="w-4 h-4 sm:mr-1"
+                class="w-4 h-4 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -150,20 +161,19 @@ const getStatusColor = (status) => {
                   stroke-linecap="round"
                   stroke-linejoin="round"
                   stroke-width="2"
-                  d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                 />
               </svg>
-              <span>Questions</span>
+              Manage Questions
             </button>
 
-            <!-- Edit Button -->
             <button
               @click="editTest(test.id)"
-              class="p-2 text-blue-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
-              title="Edit test"
+              class="bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
+              title="Edit test details"
             >
               <svg
-                class="w-5 h-5"
+                class="w-4 h-4 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -175,16 +185,16 @@ const getStatusColor = (status) => {
                   d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                 />
               </svg>
+              Edit
             </button>
 
-            <!-- Delete Button -->
             <button
               @click="confirmDelete(test.id)"
-              class="p-2 text-red-600 shadow dark:bg-gray-800 hover:bg-gray-200 rounded-md transition-colors duration-200"
+              class="bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center"
               title="Delete test"
             >
               <svg
-                class="w-5 h-5"
+                class="w-4 h-4 mr-2"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -196,33 +206,36 @@ const getStatusColor = (status) => {
                   d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                 />
               </svg>
+              Delete
             </button>
           </div>
         </div>
-      </li>
+      </div>
 
-      <li v-if="tests.length === 0" class="px-4 py-8 sm:px-6 text-center">
-        <div class="text-gray-500">
-          <svg
-            class="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-            />
-          </svg>
-          <h3 class="mt-2 text-sm font-medium text-gray-900">No tests</h3>
-          <p class="mt-1 text-sm text-gray-500">
-            Get started by creating a new test.
-          </p>
-        </div>
-      </li>
-    </ul>
+      <!-- Empty State -->
+      <div
+        v-if="tests.length === 0"
+        class="bg-white dark:bg-gray-900 shadow rounded-lg p-12 text-center"
+      >
+        <svg
+          class="mx-auto h-16 w-16 text-gray-400"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <h3 class="mt-4 text-lg font-medium text-gray-900 dark:text-gray-100">No tests yet</h3>
+        <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          Get started by creating your first test questionnaire.
+        </p>
+      </div>
+    </div>
   </div>
 
   <!-- Delete Confirmation Modal -->
