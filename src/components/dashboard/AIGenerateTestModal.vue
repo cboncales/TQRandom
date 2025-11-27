@@ -33,6 +33,8 @@ const availableQuestionTypes = [
   { value: "identification", label: "Identification" },
   { value: "fill_in_the_blank", label: "Fill in the Blank" },
   { value: "essay", label: "Essay" },
+  { value: "matching_type", label: "Matching Type" },
+  { value: "rearrangement", label: "Rearrangement" },
 ];
 
 // Watch for changes in numberOfParts to initialize arrays
@@ -255,14 +257,16 @@ const closeModal = () => {
   <!-- Modal backdrop -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-opacity-95 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-start justify-center p-4"
+    class="fixed inset-0 bg-opacity-95 backdrop-blur-sm h-full w-full z-50 flex items-center justify-center p-4"
     @click.self="closeModal"
   >
     <!-- Modal content -->
     <div
-      class="relative my-8 mx-auto p-6 border border-gray-300 dark:border-gray-700 w-full max-w-2xl shadow-2xl rounded-xl bg-white dark:bg-gray-900"
+      class="relative border border-gray-300 dark:border-gray-700 w-full max-w-2xl shadow-2xl rounded-xl bg-white dark:bg-gray-900 max-h-[90vh] overflow-y-auto"
       @click.stop
     >
+      <!-- Modal inner content with padding -->
+      <div class="p-6">
       <!-- Modal header -->
       <div class="flex items-center justify-between mb-6">
         <div class="flex items-center gap-3">
@@ -691,29 +695,32 @@ const closeModal = () => {
           </button>
         </div>
       </form>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 /* Custom scrollbar for modal content */
-@media (max-height: 768px) {
-  .overflow-y-auto {
-    scrollbar-width: thin;
-    scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
-  }
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
 
-  .overflow-y-auto::-webkit-scrollbar {
-    width: 6px;
-  }
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
 
-  .overflow-y-auto::-webkit-scrollbar-track {
-    background: transparent;
-  }
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
 
-  .overflow-y-auto::-webkit-scrollbar-thumb {
-    background-color: rgba(156, 163, 175, 0.5);
-    border-radius: 3px;
-  }
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
 }
 </style>

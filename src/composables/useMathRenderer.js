@@ -19,10 +19,45 @@ export function useMathRenderer() {
     
     let result = text;
     
-    // Convert exponents (x^2, x^3, etc.) to superscript
+    // Convert exponents with parentheses: e^(2x) → e^(²ˣ) using superscript
+    result = result.replace(/\^(\([^)]+\))/g, (match, expr) => {
+      // Remove outer parentheses
+      let inner = expr.slice(1, -1);
+      
+      const superscriptMap = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹',
+        'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+        'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+        'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+        'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+        'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ',
+        '+': '⁺', '-': '⁻', '=': '⁼', '(': '⁽', ')': '⁾'
+      };
+      
+      const converted = inner.split('').map(char => 
+        superscriptMap[char.toLowerCase()] || char
+      ).join('');
+      
+      return converted;
+    });
+    
+    // Convert simple exponents: x^2, x^3, etc. to superscript Unicode
     result = result.replace(/\^2\b/g, '²');
     result = result.replace(/\^3\b/g, '³');
-    result = result.replace(/\^(\d+)/g, (match, power) => {
+    result = result.replace(/\^1\b/g, '¹');
+    
+    // Convert other single digit exponents to superscript
+    result = result.replace(/\^(\d)\b/g, (match, power) => {
+      const superscripts = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
+      };
+      return superscripts[power] || match;
+    });
+    
+    // Convert multi-digit exponents to superscript
+    result = result.replace(/\^(\d{2,})\b/g, (match, power) => {
       const superscripts = {
         '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
         '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
@@ -30,9 +65,35 @@ export function useMathRenderer() {
       return power.split('').map(d => superscripts[d] || d).join('');
     });
     
+    // Convert single letter exponents: x^n, x^y, etc.
+    result = result.replace(/\^([a-zA-Z])\b/g, (match, letter) => {
+      const superscriptMap = {
+        'a': 'ᵃ', 'b': 'ᵇ', 'c': 'ᶜ', 'd': 'ᵈ', 'e': 'ᵉ',
+        'f': 'ᶠ', 'g': 'ᵍ', 'h': 'ʰ', 'i': 'ⁱ', 'j': 'ʲ',
+        'k': 'ᵏ', 'l': 'ˡ', 'm': 'ᵐ', 'n': 'ⁿ', 'o': 'ᵒ',
+        'p': 'ᵖ', 'r': 'ʳ', 's': 'ˢ', 't': 'ᵗ', 'u': 'ᵘ',
+        'v': 'ᵛ', 'w': 'ʷ', 'x': 'ˣ', 'y': 'ʸ', 'z': 'ᶻ'
+      };
+      return superscriptMap[letter.toLowerCase()] || match;
+    });
+    
     // Convert sqrt() to radical symbol
     result = result.replace(/sqrt\(([^)]+)\)/gi, '√($1)');
     result = result.replace(/√\(([^)]+)\)/g, '√$1');
+    
+    // Convert cbrt() (cube root) to ∛
+    result = result.replace(/cbrt\(([^)]+)\)/gi, '∛($1)');
+    result = result.replace(/∛\(([^)]+)\)/g, '∛$1');
+    
+    // Convert nth root notation: root(n, x) → ⁿ√x
+    result = result.replace(/root\((\d+),\s*([^)]+)\)/gi, (match, n, x) => {
+      const superscripts = {
+        '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴',
+        '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹'
+      };
+      const nSuper = n.split('').map(d => superscripts[d] || d).join('');
+      return `${nSuper}√${x}`;
+    });
     
     // Convert common Greek letters (case insensitive)
     const greekLetters = {
@@ -69,39 +130,74 @@ export function useMathRenderer() {
     if (!text) return '';
     
     try {
-      // First, convert common notations
-      let result = convertMathNotation(text);
+      let result = String(text);
       
-      // Handle display math ($$...$$)
+      // First, protect LaTeX expressions from conversion
+      const latexBlocks = [];
+      
+      // Extract and store display math ($$...$$)
       result = result.replace(/\$\$([^$]+)\$\$/g, (match, math) => {
-        try {
-          return katex.renderToString(math.trim(), {
-            displayMode: true,
-            throwOnError: false,
-            output: 'html'
-          });
-        } catch (e) {
-          return match; // Return original if rendering fails
-        }
+        const placeholder = `__LATEX_DISPLAY_${latexBlocks.length}__`;
+        latexBlocks.push({ type: 'display', content: math.trim() });
+        return placeholder;
       });
       
-      // Handle inline math ($...$)
+      // Extract and store inline math ($...$)
       result = result.replace(/\$([^$]+)\$/g, (match, math) => {
+        const placeholder = `__LATEX_INLINE_${latexBlocks.length}__`;
+        latexBlocks.push({ type: 'inline', content: math.trim() });
+        return placeholder;
+      });
+      
+      // Apply common notation conversions to non-LaTeX text
+      result = convertMathNotation(result);
+      
+      // Escape HTML in non-math parts
+      result = result.replace(/[&<>"']/g, (char) => {
+        const escapeMap = {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        };
+        return escapeMap[char];
+      });
+      
+      // Restore and render LaTeX blocks
+      latexBlocks.forEach((block, index) => {
         try {
-          return katex.renderToString(math.trim(), {
-            displayMode: false,
+          const rendered = katex.renderToString(block.content, {
+            displayMode: block.type === 'display',
             throwOnError: false,
-            output: 'html'
+            output: 'html',
+            trust: false
           });
+          
+          if (block.type === 'display') {
+            result = result.replace(`__LATEX_DISPLAY_${index}__`, rendered);
+          } else {
+            result = result.replace(`__LATEX_INLINE_${index}__`, rendered);
+          }
         } catch (e) {
-          return match; // Return original if rendering fails
+          console.warn('KaTeX rendering error:', e);
+          // Restore original if rendering fails
+          const original = block.type === 'display' 
+            ? `$$${block.content}$$` 
+            : `$${block.content}$`;
+          result = result.replace(
+            block.type === 'display' 
+              ? `__LATEX_DISPLAY_${index}__`
+              : `__LATEX_INLINE_${index}__`,
+            original
+          );
         }
       });
       
       return result;
     } catch (error) {
       console.error('Math rendering error:', error);
-      return text; // Return original text if something goes wrong
+      return String(text); // Return original text if something goes wrong
     }
   };
 

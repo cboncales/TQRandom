@@ -334,16 +334,18 @@ const closeModal = () => {
   <!-- BACKDROP -->
   <div
     v-if="isOpen"
-    class="fixed inset-0 bg-opacity-90 backdrop-blur-sm z-50 flex items-start justify-center overflow-y-auto"
+    class="fixed inset-0 bg-opacity-90 backdrop-blur-sm z-50 flex items-center justify-center p-4"
     @click="closeModal"
     data-aos="fade-up"
     data-aos-delay="300"
   >
     <!-- MODAL CARD -->
     <div
-      class="relative bg-white dark:bg-gray-900 w-full max-w-xs md:max-w-lg lg:max-w-lg mt-12 mb-16 p-6 rounded-lg shadow-lg border border-gray-400"
+      class="relative bg-white dark:bg-gray-900 w-full max-w-xs md:max-w-lg lg:max-w-lg rounded-lg shadow-lg border border-gray-400 max-h-[90vh] overflow-y-auto"
       @click.stop
     >
+      <!-- Modal inner content with padding -->
+      <div class="p-6">
       <!-- HEADER -->
       <div class="flex justify-between items-center mb-4">
         <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100">Edit Test</h2>
@@ -616,6 +618,32 @@ const closeModal = () => {
           </button>
         </div>
       </div>
+      </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+/* Custom scrollbar for modal content */
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.7);
+}
+</style>

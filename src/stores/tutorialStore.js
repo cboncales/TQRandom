@@ -22,6 +22,13 @@ export const useTutorialStore = defineStore('tutorial', () => {
       target: '.tutorial-create-test-btn',
       position: 'center'
     },
+      {
+      id: 'create-test',
+      title: 'Create Test Modal',
+      description: 'This is the create test modal. You can enter the title, description, and upload a header image for the test.',
+      target: '.tutorial-create-test-modal',
+      position: 'bottom'
+    },
     {
       id: 'ai-generate-btn',
       title: 'AI Generate Test Button',
@@ -30,31 +37,17 @@ export const useTutorialStore = defineStore('tutorial', () => {
       position: 'center'
     },
     {
-      id: 'create-test',
-      title: 'Create Test Modal',
-      description: 'This is the create test modal. You can enter the title, description, and upload a header image for the test.',
-      target: '.tutorial-create-test-modal',
-      position: 'bottom'
-    },
-    {
-      id: 'create-test-parts',
-      title: 'Test Parts Configuration',
-      description: 'You can specify the number of parts for your test. For each part, you can add a description and directions to guide students.',
-      target: '.tutorial-create-test-parts',
-      position: 'bottom'
-    },
-    {
       id: 'ai-generate-modal',
       title: 'AI Generate Test Modal',
-      description: 'This is the AI generation modal. Enter a topic or upload reference materials, specify question types and counts, and let AI create your test questions automatically.',
+      description: 'This is the AI generation modal. Enter a topic or upload reference materials.',
       target: '.tutorial-ai-generate-modal',
       position: 'bottom'
     },
     {
-      id: 'ai-question-types',
-      title: 'AI Question Types',
-      description: 'AI can generate 5 types of questions: Multiple Choice, True/False, Identification, Fill in the Blank, and Essay. You can mix types or assign specific types per part.',
-      target: '.tutorial-ai-question-types',
+      id: 'ai-generate-modal-2',
+      title: 'AI Generate Test Modal',
+      description: 'You can specify question types and counts, and let AI create your test questions automatically.',
+      target: '.tutorial-ai-generate-modal',
       position: 'bottom'
     },
     {

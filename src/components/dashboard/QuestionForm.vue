@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from "vue";
 import { imageApi } from "@/services/api";
+import { useMathRenderer } from "@/composables/useMathRenderer";
 
 const props = defineProps({
   isOpen: {
@@ -26,6 +27,9 @@ const emit = defineEmits(["close", "question-saved"]);
 const errorMessage = ref("");
 const isUploadingImage = ref(false);
 const showDeleteOptionConfirm = ref(null);
+
+// Initialize math renderer
+const { renderMath } = useMathRenderer();
 
 // Form data
 const questionText = ref("");
@@ -258,7 +262,7 @@ const handleSubmit = async () => {
     }
   }
 
-  // Allow questions without correct answers marked
+  // Validate correct answers are marked
   const correctAnswers = filledOptions.filter((opt) => opt.isCorrect);
   if (correctAnswers.length === 0) {
     errorMessage.value = "Please mark at least one correct answer";
@@ -409,6 +413,9 @@ const hasCorrectAnswer = () => {
               class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-xs sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed"
               placeholder="Enter your question here..."
             />
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              💡 Math notation: Use <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">$...$</code> for inline math (e.g., $x^2 + y^2 = r^2$) or <code class="px-1 bg-gray-100 dark:bg-gray-700 rounded">$$...$$</code> for display math. Supports exponents (^), sqrt(), fractions, Greek letters.
+            </p>
           </div>
 
           <!-- Question Type and Part Row -->

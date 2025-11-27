@@ -2,9 +2,6 @@
 import { ref, computed } from "vue";
 import DeleteConfirmationModal from "./DeleteConfirmationModal.vue";
 import { useMathRenderer } from "@/composables/useMathRenderer";
-import 'katex/dist/katex.min.css';
-
-const { renderMath } = useMathRenderer();
 
 const props = defineProps({
   questions: {
@@ -29,6 +26,9 @@ const emit = defineEmits(["edit-question", "delete-question", "toggle-selection"
 
 const showDeleteConfirm = ref(null);
 const deleteQuestionId = ref(null);
+
+// Initialize math renderer
+const { renderMath } = useMathRenderer();
 
 // Helper function to get part description by part number
 const getPartDescription = (partNumber) => {
@@ -175,10 +175,8 @@ const groupedQuestions = computed(() => {
                 {{ index + 1 }}
               </span>
               <div class="flex-1">
-                <h4 
-                  class="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3"
-                  v-html="renderMath(question.question)"
-                ></h4>
+                <h4 class="text-sm sm:text-base md:text-lg font-medium text-gray-900 dark:text-gray-100 mb-2 sm:mb-3" v-html="renderMath(question.question)">
+                </h4>
 
                 <!-- Question Image -->
                 <div v-if="question.imageUrl" class="mb-3 sm:mb-4">
@@ -261,15 +259,12 @@ const groupedQuestions = computed(() => {
                   <!-- Correct Answer Summary -->
                   <div class="mt-3 text-xs sm:text-sm text-gray-600 dark:text-gray-100">
                     <strong>Correct answer: </strong>
-                    <span 
-                      class="text-green-600 font-medium dark:text-green-400"
-                      v-html="renderMath(getCorrectAnswers(question.options)
-                        .map((opt, idx) => {
-                          const optIndex = question.options.findIndex(o => o.id === opt.id);
-                          return String.fromCharCode(65 + optIndex) + '. ' + opt.text;
-                        })
-                        .join(', '))"
-                    >
+                    <span class="text-green-600 font-medium dark:text-green-400" v-html="renderMath(getCorrectAnswers(question.options)
+                          .map((opt, idx) => {
+                            const optIndex = question.options.findIndex(o => o.id === opt.id);
+                            return String.fromCharCode(65 + optIndex) + '. ' + opt.text;
+                          })
+                          .join(', '))">
                     </span>
                   </div>
                 </div>
@@ -280,10 +275,7 @@ const groupedQuestions = computed(() => {
                     <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
                       Correct Answer:
                     </h5>
-                    <span 
-                      class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300"
-                      v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')"
-                    >
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300" v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')">
                     </span>
                   </div>
                 </div>
@@ -294,10 +286,7 @@ const groupedQuestions = computed(() => {
                     <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
                       Correct Answer:
                     </h5>
-                    <span 
-                      class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300"
-                      v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')"
-                    >
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300" v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')">
                     </span>
                   </div>
                 </div>
@@ -308,10 +297,7 @@ const groupedQuestions = computed(() => {
                     <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
                       Correct Answer:
                     </h5>
-                    <span 
-                      class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300"
-                      v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')"
-                    >
+                    <span class="text-sm sm:text-base font-semibold text-green-700 dark:text-green-300" v-html="renderMath(getCorrectAnswers(question.options)[0]?.text || 'Not specified')">
                     </span>
                   </div>
                 </div>
@@ -322,10 +308,7 @@ const groupedQuestions = computed(() => {
                     <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
                       Sample Answer / Key Points:
                     </h5>
-                    <p 
-                      class="text-xs sm:text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap"
-                      v-html="renderMath(question.options[0]?.text || 'No sample answer provided')"
-                    >
+                    <p class="text-xs sm:text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap" v-html="renderMath(question.options[0]?.text || 'No sample answer provided')">
                     </p>
                   </div>
                 </div>

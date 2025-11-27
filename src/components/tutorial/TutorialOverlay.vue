@@ -5,7 +5,10 @@ import { useTutorialStore } from '@/stores/tutorialStore';
 // Import tutorial images
 import welcomeImage from '@/assets/images/welcome.png';
 import createTestBtnImage from '@/assets/images/create-test-btn.png';
+import AiGenerateBtnImage from '@/assets/images/ai-generate.png';
 import createTestImage from '@/assets/images/create-test.png';
+import AiGenerateModalImage from '@/assets/images/ai-generate-modal.png';
+import AiGenerateModalImage2 from '@/assets/images/ai-generate-modal-2.png';
 import statsImage from '@/assets/images/stats.png';
 import searchImage from '@/assets/images/search.png';
 import testListImage from '@/assets/images/test-list.png';
@@ -14,6 +17,7 @@ import editTestBtnImage from '@/assets/images/edit-btn.png';
 import deleteTestBtnImage from '@/assets/images/delete-btn.png';
 import addQuestionImage from '@/assets/images/add-question.png';
 import questionFormImage from '@/assets/images/question-form.png';
+import questionTypesImage from '@/assets/images/question-form-2.png';
 import uploadDocumentImage from '@/assets/images/upload-doc.png';
 import uploadDocumentModalTopImage from '@/assets/images/upload-form.png';
 import uploadDocumentModalBotImage from '@/assets/images/upload-form-2.png';
@@ -29,6 +33,8 @@ import randomizedVersionsImage from '@/assets/images/random-tab.png';
 import randomizedVersionFormImage from '@/assets/images/random-form.png';
 import versionsCardImage from '@/assets/images/random-cards.png';
 import versionCardBtnImage from '@/assets/images/random-cards-btn.png';
+import answerKeyModal from '@/assets/images/answer-key.png'
+import PreviewVersionModal from '@/assets/images/preview-version.png';
 import selectAllVersionsImage from '@/assets/images/random-cards-2.png';
 import downloadFormImage from '@/assets/images/DL-form.png';
 
@@ -52,6 +58,9 @@ const getStepImage = (stepId) => {
     'welcome': welcomeImage,
     'create-test-btn': createTestBtnImage,
     'create-test': createTestImage,
+    'ai-generate-btn': AiGenerateBtnImage,
+    'ai-generate-modal': AiGenerateModalImage,
+    'ai-generate-modal-2': AiGenerateModalImage2,
     'stats': statsImage,
     'search': searchImage,
     'test-list': testListImage,
@@ -60,6 +69,7 @@ const getStepImage = (stepId) => {
     'delete-test': deleteTestBtnImage,
     'add-question': addQuestionImage,
     'question-form': questionFormImage,
+    'question-types': questionTypesImage,
     'upload-document': uploadDocumentImage,
     'upload-document-modal-top': uploadDocumentModalTopImage,
     'upload-document-modal-bot': uploadDocumentModalBotImage,
@@ -75,6 +85,8 @@ const getStepImage = (stepId) => {
     'randomized-version-form': randomizedVersionFormImage,
     'versions-card': versionsCardImage,
     'version-card-btn': versionCardBtnImage,
+    'answer-key-modal': answerKeyModal,
+    'preview-version-modal': PreviewVersionModal,
     'select-all-versions': selectAllVersionsImage,
     'download-form': downloadFormImage,
     'complete': welcomeImage, // Reuse welcome image for complete step

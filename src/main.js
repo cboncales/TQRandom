@@ -5,6 +5,7 @@ import App from "./App.vue";
 import router from "./router";
 import AOS from "aos";
 import "aos/dist/aos.css";
+import "katex/dist/katex.min.css";
 import { useThemeStore } from "./stores/themeStore";
 
 // Initialize AOS
