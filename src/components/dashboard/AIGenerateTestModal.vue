@@ -429,7 +429,7 @@ const closeModal = () => {
                 />
               </svg>
               <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                <span class="font-semibold">Click to upload</span> or drag and drop
+                <span class="font-semibold text-blue-500">Click to upload</span> or drag and drop
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
                 PDF, DOC, DOCX, TXT (MAX. 10MB)
@@ -652,44 +652,6 @@ const closeModal = () => {
                 ></div>
               </div>
             </div>
-          </div>
-        </div>
-
-        <!-- Question Types (Only shown when no parts) -->
-        <div v-if="numberOfParts === 0">
-          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
-            Question Types <span class="text-red-500">*</span>
-          </label>
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <label
-              v-for="type in availableQuestionTypes"
-              :key="type.value"
-              class="relative flex items-center p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md"
-              :class="
-                questionTypes.includes(type.value)
-                  ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/20'
-                  : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
-              "
-            >
-              <input
-                type="checkbox"
-                :value="type.value"
-                :checked="questionTypes.includes(type.value)"
-                @change="toggleQuestionType(type.value)"
-                :disabled="props.isGenerating"
-                class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 disabled:opacity-50"
-              />
-              <span
-                class="ml-3 text-sm font-medium"
-                :class="
-                  questionTypes.includes(type.value)
-                    ? 'text-purple-900 dark:text-purple-100'
-                    : 'text-gray-700 dark:text-gray-300'
-                "
-              >
-                {{ type.label }}
-              </span>
-            </label>
           </div>
         </div>
 
