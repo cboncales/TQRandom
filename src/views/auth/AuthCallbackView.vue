@@ -39,11 +39,20 @@ onMounted(async () => {
         // Get user information
         await authStore.getUserInformation();
         
+        // Check if user is new (created within last 30 seconds)
+        const user = authStore.userData;
+        const isNewUser = user && user.created_at && 
+          (new Date() - new Date(user.created_at)) < 30000;
+        
         successMessage.value =
           "Successfully signed in with Google! Redirecting to dashboard...";
 
         setTimeout(() => {
-          router.push("/dashboard");
+          if (isNewUser) {
+            router.push({ name: "dashboard", query: { isNewUser: 'true' } });
+          } else {
+            router.push("/dashboard");
+          }
         }, 2000);
         return;
       }
@@ -71,12 +80,22 @@ onMounted(async () => {
       }, 3000);
     } else {
       console.log("OAuth callback successful");
+      
+      // Check if user is new (created within last 30 seconds)
+      const user = authStore.userData;
+      const isNewUser = user && user.created_at && 
+        (new Date() - new Date(user.created_at)) < 30000;
+      
       successMessage.value =
         "Successfully signed in with Google! Redirecting to dashboard...";
 
       // Redirect to dashboard after a short delay
       setTimeout(() => {
-        router.push("/dashboard");
+        if (isNewUser) {
+          router.push({ name: "dashboard", query: { isNewUser: 'true' } });
+        } else {
+          router.push("/dashboard");
+        }
       }, 2000);
     }
   } catch (error) {

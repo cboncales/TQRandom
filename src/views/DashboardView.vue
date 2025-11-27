@@ -230,18 +230,30 @@ watch(searchQuery, () => {
   filterTests();
 });
 
-onMounted(() => {
-  loadTests();
+onMounted(async () => {
+  await loadTests();
   
-  // Check if user just registered (from query parameter or session)
+  // Check if user just registered (from query parameter)
   const isNewUser = route.query.isNewUser === 'true';
-  const hasCompletedTutorial = localStorage.getItem('tutorialCompleted');
   
-  if (isNewUser && !hasCompletedTutorial) {
-    tutorialStore.currentStep = 0;
-    tutorialStore.showTutorial = true;
+  console.log('Dashboard mounted - isNewUser:', isNewUser);
+  
+  // Auto-start tutorial for new users
+  if (isNewUser) {
+    console.log('New user detected! Starting tutorial...');
+    // Clear any existing tutorial completion flag for new users
+    localStorage.removeItem('tutorialCompleted');
+    // Small delay to ensure UI is ready
+    setTimeout(() => {
+      tutorialStore.showTutorial = true;
+      tutorialStore.currentStep = 0;
+      tutorialStore.hasCompletedTutorial = false;
+      console.log('Tutorial should be visible now:', tutorialStore.showTutorial);
+    }, 1000);
+  } else {
+    const hasCompletedTutorial = localStorage.getItem('tutorialCompleted') === 'true';
+    console.log('Existing user - hasCompletedTutorial:', hasCompletedTutorial);
   }
-
 });
 </script>
 

@@ -50,8 +50,7 @@ const questionTypes = [
   "True or False",
   "Identification",
   "Essay",
-  "Fill in the Blank",
-  "Matching Type"
+  "Fill in the Blank"
 ];
 
 // Initialize options based on question type

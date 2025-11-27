@@ -34,8 +34,6 @@ const availableQuestionTypes = [
   { value: "identification", label: "Identification" },
   { value: "fill_in_the_blank", label: "Fill in the Blank" },
   { value: "essay", label: "Essay" },
-  { value: "matching_type", label: "Matching Type" },
-  { value: "rearrangement", label: "Rearrangement" },
 ];
 
 // Watch for changes in numberOfParts to initialize arrays
