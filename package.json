@@ -12,6 +12,7 @@
     "dev:full": "concurrently \"npm run dev:server\" \"npm run dev:client\""
   },
   "dependencies": {
+    "@openrouter/sdk": "^0.2.9",
     "@supabase/supabase-js": "^2.78.0",
     "@tailwindcss/vite": "^4.1.16",
     "aos": "^2.3.4",

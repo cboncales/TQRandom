@@ -704,8 +704,14 @@ const generateVersionWord = async (versionData) => {
   // Test Title (centered)
   headerParagraphs.push(
     new Paragraph({
-      text: versionData.test_title,
-      heading: HeadingLevel.HEADING_1,
+      children: [
+        new TextRun({
+          text: versionData.test_title,
+          bold: true,
+          size: 32,
+          color: "000000",
+        }),
+      ],
       alignment: AlignmentType.CENTER,
       spacing: { after: 200 },
     })
@@ -727,16 +733,20 @@ const generateVersionWord = async (versionData) => {
     );
   }
 
-  // Add name and date row
+  // Add name and date row (using two columns)
   headerParagraphs.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Name: _____________________",
+          text: "Name: ____________________________",
           size: 22,
         }),
         new TextRun({
-          text: "\t\t\t\t\t\t\t\tDate: _____________________",
+          text: "        ",
+          size: 22,
+        }),
+        new TextRun({
+          text: "Date: ____________________________",
           size: 22,
         }),
       ],
@@ -744,16 +754,20 @@ const generateVersionWord = async (versionData) => {
     })
   );
 
-  // Add section and score row
+  // Add section and score row (using two columns)
   headerParagraphs.push(
     new Paragraph({
       children: [
         new TextRun({
-          text: "Section: _____________________",
+          text: "Section: __________________________",
           size: 22,
         }),
         new TextRun({
-          text: "\t\t\t\t\t\t\tScore: _____________________",
+          text: "        ",
+          size: 22,
+        }),
+        new TextRun({
+          text: "Score: ___________",
           size: 22,
         }),
       ],

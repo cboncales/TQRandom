@@ -50,7 +50,9 @@ const questionTypes = [
   "True or False",
   "Identification",
   "Essay",
-  "Fill in the Blank"
+  "Fill in the Blank",
+  "Problem Solving",
+  "Enumeration"
 ];
 
 // Initialize options based on question type
@@ -71,6 +73,8 @@ const initializeOptionsForType = (type) => {
     case "Identification":
     case "Fill in the Blank":
     case "Essay":
+    case "Problem Solving":
+    case "Enumeration":
       return [
         { id: 1, text: "", isCorrect: true, imageUrl: null, imageFile: null },
       ];
@@ -278,7 +282,7 @@ const handleSubmit = async () => {
       errorMessage.value = "True or False questions must have exactly 2 options";
       return;
     }
-  } else if (["Identification", "Essay", "Fill in the Blank"].includes(questionType.value)) {
+  } else if (["Identification", "Essay", "Fill in the Blank", "Problem Solving", "Enumeration"].includes(questionType.value)) {
     if (filledOptions.length < 1) {
       errorMessage.value = "Please provide an answer for this question type";
       return;
@@ -767,6 +771,38 @@ const hasCorrectAnswer = () => {
             ></textarea>
             <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
               Provide a sample answer or key points that should be included in the essay response.
+            </p>
+          </div>
+
+          <!-- Problem Solving Answer -->
+          <div v-else-if="questionType === 'Problem Solving'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Solution / Answer Key
+            </h4>
+            <textarea
+              v-model="options[0].text"
+              rows="6"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100 font-mono"
+              placeholder="Enter the complete solution with steps and final answer"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Provide the step-by-step solution and final answer. Students will show their work on the test.
+            </p>
+          </div>
+
+          <!-- Enumeration Answer -->
+          <div v-else-if="questionType === 'Enumeration'">
+            <h4 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-3 sm:mb-4">
+              Correct Answers (one per line)
+            </h4>
+            <textarea
+              v-model="options[0].text"
+              rows="5"
+              class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm dark:bg-gray-800 dark:border-gray-700 dark:text-gray-100"
+              placeholder="Enter each answer on a new line:&#10;Answer 1&#10;Answer 2&#10;Answer 3"
+            ></textarea>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              List all acceptable answers, one per line. Students must enumerate these items.
             </p>
           </div>
 

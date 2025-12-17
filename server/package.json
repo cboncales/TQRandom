@@ -12,6 +12,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@openrouter/sdk": "^0.2.9",
     "@supabase/supabase-js": "^2.78.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",

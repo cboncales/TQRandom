@@ -14,6 +14,7 @@ import versionRoutes from "./routes/versionRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import imageRoutes from "./routes/imageRoutes.js";
 import aiRoutes from "./routes/aiRoutes.js";
+import tosRoutes from "./routes/tosRoutes.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -68,6 +69,7 @@ app.use("/api/versions", versionRoutes);
 app.use("/api/user", userRoutes);
 app.use("/api/images", imageRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/tos", tosRoutes);
 
 // 404 handler
 app.use((req, res) => {

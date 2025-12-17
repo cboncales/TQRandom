@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { generateTestWithAI } from '../controllers/aiController.js';
+import { generateTestWithAI, generateTestWithTOS } from '../controllers/aiController.js';
 import { authenticateUser } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -30,5 +30,8 @@ const upload = multer({
 
 // Generate test with AI
 router.post('/generate', authenticateUser, upload.single('file'), generateTestWithAI);
+
+// Generate test with TOS template
+router.post('/generate-with-tos', authenticateUser, upload.single('file'), generateTestWithTOS);
 
 export default router;

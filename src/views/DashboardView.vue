@@ -63,6 +63,11 @@ const handleAIGenerate = async (formData) => {
     // Add question types (for backward compatibility)
     apiFormData.append('questionTypes', JSON.stringify(formData.questionTypes));
     
+    // Add TOS template ID if selected
+    if (formData.tosTemplateId) {
+      apiFormData.append('tosTemplateId', formData.tosTemplateId);
+    }
+    
     // Add file if provided
     if (formData.file) {
       apiFormData.append('file', formData.file);
@@ -276,20 +281,40 @@ onMounted(async () => {
                   Create and manage your tests
                 </p>
               </div>
-              <div class="flex items-center gap-4">
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4">
                 <button
                   @click="tutorialStore.restartTutorial()"
-                  class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium flex items-center transition-colors duration-200"
+                  class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 text-sm font-medium flex items-center justify-center transition-colors duration-200 py-2 sm:py-0"
                   title="Start tutorial (shows you around)"
                 >
-                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Help
                 </button>
                 <button
+                  @click="$router.push('/tos')"
+                  class="bg-gradient-to-r from-green-600 to-teal-600 text-white shadow hover:from-green-700 hover:to-teal-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center"
+                  title="Manage Table of Specifications templates"
+                >
+                  <svg
+                    class="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                    />
+                  </svg>
+                  <span class="whitespace-nowrap">Manage TOS</span>
+                </button>
+                <button
                   @click="openAIGenerateModal"
-                  class="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center"
+                  class="bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow hover:from-purple-700 hover:to-pink-700 px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 flex items-center justify-center"
                 >
                   <svg
                     class="w-5 h-5 mr-2"
@@ -304,14 +329,14 @@ onMounted(async () => {
                       d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
                     />
                   </svg>
-                  AI Generate
+                  <span class="whitespace-nowrap">AI Generate</span>
                 </button>
                 <button
                   @click="openCreateModal"
-                  class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center"
+                  class="bg-blue-500 text-white shadow hover:bg-blue-700 px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center"
                 >
                   <svg
-                    class="w-6 h-6 mr-2 md:w-5 md:h-5 md:mr-2 lg:w-5 lg:h-5 lg:mr-2"
+                    class="w-5 h-5 mr-2"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -323,7 +348,7 @@ onMounted(async () => {
                       d="M12 6v6m0 0v6m0-6h6m-6 0H6"
                     />
                   </svg>
-                  Create Test
+                  <span class="whitespace-nowrap">Create Test</span>
                 </button>
               </div>
             </div>

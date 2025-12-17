@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
+import api from "@/services/api";
 
 const props = defineProps({
   isOpen: {
@@ -27,6 +28,11 @@ const uploadedFile = ref(null);
 const fileName = ref("");
 const errorMessage = ref("");
 
+// TOS template selection
+const tosTemplates = ref([]);
+const selectedTosTemplateId = ref(null);
+const isLoadingTos = ref(false);
+
 // Available question types
 const availableQuestionTypes = [
   { value: "multiple_choice", label: "Multiple Choice" },
@@ -34,6 +40,8 @@ const availableQuestionTypes = [
   { value: "identification", label: "Identification" },
   { value: "fill_in_the_blank", label: "Fill in the Blank" },
   { value: "essay", label: "Essay" },
+  { value: "problem_solving", label: "Problem Solving" },
+  { value: "enumeration", label: "Enumeration" },
 ];
 
 // Watch for changes in numberOfParts to initialize arrays
@@ -170,7 +178,16 @@ const toggleQuestionType = (type) => {
 
 // Validation
 const isFormValid = computed(() => {
-  const basicValid = testTitle.value.trim() &&
+  // Basic validation for test title
+  const hasTestTitle = testTitle.value.trim();
+  
+  // If TOS template is selected, validate test title and optionally topic/file
+  if (selectedTosTemplateId.value) {
+    return hasTestTitle;
+  }
+  
+  // For regular generation without TOS
+  const basicValid = hasTestTitle &&
     (topic.value.trim() || uploadedFile.value) &&
     numberOfQuestions.value > 0;
   
@@ -193,6 +210,36 @@ const totalQuestionsFromParts = computed(() => {
   return numberOfQuestions.value;
 });
 
+// Load TOS templates
+const loadTosTemplates = async () => {
+  try {
+    isLoadingTos.value = true;
+    const result = await api.tosApi.getUserTOSTemplates();
+    if (result.error) {
+      console.error("Error loading TOS templates:", result.error);
+    } else {
+      tosTemplates.value = result.data || [];
+    }
+  } catch (error) {
+    console.error("Error loading TOS templates:", error);
+  } finally {
+    isLoadingTos.value = false;
+  }
+};
+
+// Watch for modal open to load TOS templates
+watch(() => props.isOpen, (isOpen) => {
+  if (isOpen) {
+    loadTosTemplates();
+  }
+});
+
+onMounted(() => {
+  if (props.isOpen) {
+    loadTosTemplates();
+  }
+});
+
 // Handle form submission
 const handleGenerate = () => {
   if (!isFormValid.value) {
@@ -210,12 +257,17 @@ const handleGenerate = () => {
   // Prepare data based on whether parts are used
   const generateData = {
     testTitle: testTitle.value.trim(),
-    topic: topic.value.trim(),
     difficulty: difficulty.value,
-    numberOfQuestions: numberOfParts.value > 0 ? totalQuestionsFromParts.value : numberOfQuestions.value,
-    numberOfParts: numberOfParts.value,
-    file: uploadedFile.value,
+    tosTemplateId: selectedTosTemplateId.value, // Include TOS template if selected
+    file: uploadedFile.value, // Always include file
   };
+  
+  // Only include topic/questions/parts data if NOT using TOS
+  if (!selectedTosTemplateId.value) {
+    generateData.topic = topic.value.trim();
+    generateData.numberOfQuestions = numberOfParts.value > 0 ? totalQuestionsFromParts.value : numberOfQuestions.value;
+    generateData.numberOfParts = numberOfParts.value;
+  }
 
   if (numberOfParts.value > 0) {
     // Include per-part data
@@ -242,6 +294,7 @@ const resetForm = () => {
   numberOfParts.value = 0;
   partQuestionTypes.value = [];
   partQuestionCounts.value = [];
+  selectedTosTemplateId.value = null;
   uploadedFile.value = null;
   fileName.value = "";
   errorMessage.value = "";
@@ -353,8 +406,68 @@ const closeModal = () => {
           />
         </div>
 
-        <!-- Topic (Text) -->
+        <!-- TOS Template Selection (Optional) -->
         <div>
+          <label
+            for="tos-template"
+            class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
+          >
+            Table of Specifications (Optional)
+          </label>
+          <select
+            id="tos-template"
+            v-model="selectedTosTemplateId"
+            :disabled="props.isGenerating || isLoadingTos"
+            class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent sm:text-sm disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+          >
+            <option :value="null">None - Generate without TOS template</option>
+            <option
+              v-for="template in tosTemplates"
+              :key="template.id"
+              :value="template.id"
+            >
+              {{ template.template_name }}
+              <span v-if="template.subject"> - {{ template.subject }}</span>
+              <span v-if="template.grade_level"> ({{ template.grade_level }})</span>
+            </option>
+          </select>
+          <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <span v-if="isLoadingTos">Loading TOS templates...</span>
+            <span v-else-if="tosTemplates.length === 0">
+              No TOS templates found. 
+              <router-link to="/tos" class="text-blue-500 hover:text-blue-600 underline">Create one</router-link>
+            </span>
+            <span v-else-if="selectedTosTemplateId">
+              Questions will be generated following the selected TOS blueprint
+            </span>
+            <span v-else>
+              Select a TOS template to generate questions based on cognitive levels and topics
+            </span>
+          </p>
+        </div>
+
+        <!-- TOS Template Info Display (when selected) -->
+        <div v-if="selectedTosTemplateId" class="bg-gradient-to-r from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border-2 border-green-300 dark:border-green-700 rounded-lg p-4">
+          <div class="flex items-start gap-3">
+            <div class="shrink-0">
+              <svg class="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <h4 class="text-sm font-semibold text-green-900 dark:text-green-100 mb-2">
+                Using TOS Template Blueprint
+              </h4>
+              <p class="text-xs text-green-800 dark:text-green-200">
+                Questions will be generated following the cognitive levels and topic distribution defined in your selected TOS template. 
+                You can select a difficulty level and optionally upload a reference file to provide additional context.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Topic (Text) -->
+        <div v-if="!selectedTosTemplateId">
           <label
             for="topic"
             class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2"
@@ -400,7 +513,8 @@ const closeModal = () => {
         <!-- File Upload (Optional alternative to topic) -->
         <div>
           <label class="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2">
-            Or Upload Topic File (Optional)
+            <span v-if="selectedTosTemplateId">Upload Reference File (Optional)</span>
+            <span v-else>Or Upload Topic File (Optional)</span>
           </label>
           
           <!-- File preview -->
@@ -478,7 +592,7 @@ const closeModal = () => {
         </div>
 
         <!-- Number of Questions & Parts (Grid) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div v-if="!selectedTosTemplateId" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <!-- Number of Questions (Only shown when no parts) -->
           <div v-if="numberOfParts === 0">
             <label

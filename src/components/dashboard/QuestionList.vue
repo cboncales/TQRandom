@@ -30,6 +30,60 @@ const deleteQuestionId = ref(null);
 // Initialize math renderer
 const { renderMath } = useMathRenderer();
 
+// Format question type for display
+const formatQuestionType = (type) => {
+  if (!type) return '';
+  // If already formatted (has spaces or capital letters in middle), return as is
+  if (type.includes(' ') || /[a-z][A-Z]/.test(type)) {
+    return type;
+  }
+  // Convert snake_case to Title Case
+  return type
+    .split('_')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Safely extract text from option (handles both object and string formats)
+const getOptionText = (option) => {
+  if (!option) return '';
+  
+  // If it's already an object with text property, return the text
+  if (typeof option === 'object' && option.text !== undefined) {
+    // Check if text itself is a JSON string
+    if (typeof option.text === 'string' && option.text.startsWith('{') && option.text.includes('"text"')) {
+      try {
+        const parsed = JSON.parse(option.text);
+        return parsed.text || option.text;
+      } catch (e) {
+        return option.text;
+      }
+    }
+    return option.text;
+  }
+  
+  // If it's a string
+  if (typeof option === 'string') {
+    // Check if it's a JSON string
+    if (option.startsWith('{') && option.includes('"text"')) {
+      try {
+        const parsed = JSON.parse(option);
+        return parsed.text || option;
+      } catch (e) {
+        return option;
+      }
+    }
+    return option;
+  }
+  
+  // Fallback: try to stringify and extract
+  if (typeof option === 'object') {
+    return JSON.stringify(option);
+  }
+  
+  return String(option);
+};
+
 // Helper function to get part description by part number
 const getPartDescription = (partNumber) => {
   if (!partNumber || !props.partDescriptions || props.partDescriptions.length === 0) {
@@ -151,7 +205,7 @@ const groupedQuestions = computed(() => {
       </div>
 
       <!-- Questions in this part -->
-      <ul class="divide-y divide-gray-200">
+      <ul class="divide-y divide-gray-200 dark:divide-gray-700">
         <li
           v-for="(question, index) in group.questions"
           :key="question.id"
@@ -183,7 +237,7 @@ const groupedQuestions = computed(() => {
                   <img 
                     :src="question.imageUrl" 
                     alt="Question image"
-                    class="max-w-full sm:max-w-md h-auto rounded-lg shadow-md border border-gray-200"
+                    class="max-w-full sm:max-w-md h-auto rounded-lg shadow-md border border-gray-200 dark:border-gray-700"
                     @error="(e) => e.target.style.display='none'"
                   />
                 </div>
@@ -192,7 +246,7 @@ const groupedQuestions = computed(() => {
                 <span
                   class="inline-flex items-center px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-100 mb-2 sm:mb-3"
                 >
-                  {{ question.type }}
+                  {{ formatQuestionType(question.type) }}
                 </span>
 
                 <!-- Multiple Choice Options -->
@@ -249,7 +303,7 @@ const groupedQuestions = computed(() => {
                           v-if="option.imageUrl" 
                           :src="option.imageUrl" 
                           alt="Choice image"
-                          class="mt-2 max-w-full sm:max-w-xs h-auto rounded-md shadow-sm border border-gray-200"
+                          class="mt-2 max-w-full sm:max-w-xs h-auto rounded-md shadow-sm border border-gray-200 dark:border-gray-700"
                           @error="(e) => e.target.style.display='none'"
                         />
                       </div>
@@ -308,8 +362,30 @@ const groupedQuestions = computed(() => {
                     <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
                       Sample Answer / Key Points:
                     </h5>
-                    <p class="text-xs sm:text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap" v-html="renderMath(question.options[0]?.text || 'No sample answer provided')">
+                    <p class="text-xs sm:text-sm text-green-800 dark:text-green-200 whitespace-pre-wrap" v-html="renderMath(getOptionText(question.options[0]) || 'No sample answer provided')">
                     </p>
+                  </div>
+                </div>
+
+                <!-- Problem Solving Answer -->
+                <div v-else-if="question.type === 'Problem Solving' && question.options && question.options.length > 0" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-blue-50 border border-blue-200 dark:bg-blue-900 dark:border-blue-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                      Solution / Answer Key:
+                    </h5>
+                    <pre class="text-xs sm:text-sm text-blue-800 dark:text-blue-200 whitespace-pre-wrap font-mono" v-html="renderMath(getOptionText(question.options[0]) || 'No solution provided')"></pre>
+                  </div>
+                </div>
+
+                <!-- Enumeration Answer -->
+                <div v-else-if="question.type === 'Enumeration' && question.options && question.options.length > 0" class="mb-3 sm:mb-4">
+                  <div class="p-3 rounded-lg bg-purple-50 border border-purple-200 dark:bg-purple-900 dark:border-purple-700">
+                    <h5 class="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-100 mb-2">
+                      Correct Answers:
+                    </h5>
+                    <ol class="list-decimal list-inside space-y-1 text-xs sm:text-sm text-purple-800 dark:text-purple-200">
+                      <li v-for="(answer, idx) in (question.options[0]?.text || '').split('\n').filter(a => a.trim())" :key="idx" v-html="renderMath(answer.trim())"></li>
+                    </ol>
                   </div>
                 </div>
 

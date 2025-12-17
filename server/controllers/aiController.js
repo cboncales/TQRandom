@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase.js';
-import { generateQuestions } from '../services/openaiService.js';
+import { generateQuestions, generateQuestionsFromTOS } from '../services/openaiService.js';
 
 /**
  * Convert question type from API format to database format
@@ -27,11 +27,17 @@ async function generateTestWithAI(req, res) {
     }
 
     const userId = req.user.id;
-    const { testTitle, topic, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty } = req.body;
+    const { testTitle, topic, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty, tosTemplateId } = req.body;
     const file = req.file; // From multer
 
     console.log('Generating test with AI for user:', userId);
-    console.log('Raw parameters:', { testTitle, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty });
+    console.log('Raw parameters:', { testTitle, numberOfQuestions, numberOfParts, parts, questionTypes, difficulty, tosTemplateId });
+
+    // If TOS template is selected, use TOS-based generation
+    if (tosTemplateId && tosTemplateId !== 'null' && tosTemplateId !== '') {
+      console.log('Using TOS template:', tosTemplateId);
+      return await generateTestWithTOS(req, res);
+    }
 
     // Parse parts and questionTypes if they are JSON strings
     let parsedParts = parts;
@@ -390,4 +396,248 @@ async function generateTestWithAI(req, res) {
   }
 }
 
-export { generateTestWithAI };
+/**
+ * Generate test with AI using TOS template
+ */
+async function generateTestWithTOS(req, res) {
+  try {
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ error: 'User not authenticated' });
+    }
+
+    const userId = req.user.id;
+    const { testTitle, tosTemplateId, difficulty } = req.body;
+    const file = req.file;
+
+    console.log('Generating test with TOS template for user:', userId);
+    console.log('Parameters:', { testTitle, tosTemplateId, difficulty, hasFile: !!file });
+
+    // Validate required fields
+    if (!testTitle || !testTitle.trim()) {
+      return res.status(400).json({ error: 'Test title is required' });
+    }
+
+    if (!tosTemplateId) {
+      return res.status(400).json({ error: 'TOS template ID is required' });
+    }
+
+    // Fetch TOS template
+    const { data: tosTemplate, error: tosError } = await supabase
+      .from('tos_templates')
+      .select(`
+        *,
+        tos_template_topics (*)
+      `)
+      .eq('id', tosTemplateId)
+      .eq('user_id', userId)
+      .single();
+
+    if (tosError || !tosTemplate) {
+      return res.status(404).json({ error: 'TOS template not found or access denied' });
+    }
+
+    // Extract text from file if provided
+    let topicContent = '';
+    if (file) {
+      const { extractTextFromFile } = await import('../utils/fileParser.js');
+      const extractedText = await extractTextFromFile(file);
+      topicContent = extractedText || '';
+    }
+    
+    // Fallback to TOS topics if no file provided
+    if (!topicContent || !topicContent.trim()) {
+      topicContent = `Topics covered: ${tosTemplate.tos_template_topics.map(t => t.topic_name).join(', ')}`;
+    }
+
+    // Generate questions using TOS with difficulty
+    const difficultyLevel = difficulty || 'Medium';
+    const generationResult = await generateQuestionsFromTOS(tosTemplate, topicContent, testTitle.trim(), difficultyLevel);
+
+    if (!generationResult.success) {
+      return res.status(500).json({ error: generationResult.error });
+    }
+
+    const generatedData = generationResult.data;
+
+    // Create the test in database
+    const testData = {
+      user_id: userId,
+      title: testTitle.trim(),
+      description: `Generated using TOS: ${tosTemplate.template_name}`,
+      number_of_parts: 0,
+      part_descriptions: [],
+      directions: []
+    };
+
+    const { data: test, error: testError } = await supabase
+      .from('tests')
+      .insert(testData)
+      .select()
+      .single();
+
+    if (testError) {
+      console.error('Error creating test:', testError);
+      return res.status(500).json({ error: testError.message });
+    }
+
+    console.log('Test created with ID:', test.id);
+
+    // Prepare questions data
+    const questionsToSave = [];
+    const questionMetadata = [];
+
+    generatedData.questions.forEach(q => {
+      const convertedType = convertQuestionType(q.type);
+      const questionText = q.question;
+      
+      questionsToSave.push({
+        test_id: test.id,
+        part: null,
+        text: questionText,
+        type: convertedType,
+        image_url: null
+      });
+      
+      questionMetadata.push({
+        questionText: q.question,
+        correctAnswer: q.correctAnswer,
+        options: q.options || [],
+        type: q.type,
+        cognitiveLevel: q.cognitiveLevel,
+        topic: q.topic
+      });
+    });
+
+    if (questionsToSave.length === 0) {
+      await supabase.from('tests').delete().eq('id', test.id);
+      return res.status(500).json({ error: 'No questions were generated' });
+    }
+
+    const { data: savedQuestions, error: questionsError } = await supabase
+      .from('questions')
+      .insert(questionsToSave)
+      .select();
+
+    if (questionsError) {
+      console.error('Error saving questions:', questionsError);
+      await supabase.from('tests').delete().eq('id', test.id);
+      return res.status(500).json({ error: questionsError.message });
+    }
+
+    console.log(`Saved ${savedQuestions.length} questions`);
+
+    // Create answer choices and correct answers
+    const answerChoices = [];
+    const correctAnswers = [];
+
+    for (let i = 0; i < savedQuestions.length; i++) {
+      const question = savedQuestions[i];
+      const metadata = questionMetadata[i];
+
+      if (metadata.type === 'Multiple Choice' && metadata.options && metadata.options.length > 0) {
+        // For multiple choice questions with options array
+        metadata.options.forEach(optionText => {
+          const cleanText = typeof optionText === 'string' 
+            ? optionText.replace(/^[0-9]+\.\s*/, '').trim() 
+            : (optionText.text || optionText);
+          
+          answerChoices.push({
+            question_id: question.id,
+            text: cleanText,
+            image_url: null
+          });
+        });
+      } else {
+        // For non-multiple choice question types (Essay, Problem Solving, etc.)
+        // Save only the correctAnswer as text
+        answerChoices.push({
+          question_id: question.id,
+          text: metadata.correctAnswer,
+          image_url: null
+        });
+      }
+    }
+
+    const { data: savedChoices, error: choicesError } = await supabase
+      .from('answer_choices')
+      .insert(answerChoices)
+      .select();
+
+    if (choicesError) {
+      console.error('Error saving answer choices:', choicesError);
+      return res.status(500).json({ error: choicesError.message });
+    }
+
+    // Map correct answers
+    let choiceIndex = 0;
+    for (let i = 0; i < savedQuestions.length; i++) {
+      const question = savedQuestions[i];
+      const metadata = questionMetadata[i];
+      const choicesForQuestion = [];
+
+      if (metadata.options && metadata.options.length > 0) {
+        for (let j = 0; j < metadata.options.length; j++) {
+          choicesForQuestion.push(savedChoices[choiceIndex++]);
+        }
+        
+        const correctChoice = choicesForQuestion.find(choice => {
+          const normalizedChoice = choice.text.toLowerCase().trim();
+          const normalizedAnswer = metadata.correctAnswer.toLowerCase().trim();
+          return normalizedChoice === normalizedAnswer || 
+                 normalizedChoice.includes(normalizedAnswer) ||
+                 normalizedAnswer.includes(normalizedChoice);
+        });
+
+        if (correctChoice) {
+          correctAnswers.push({
+            question_id: question.id,
+            answer_choices_id: correctChoice.id
+          });
+        }
+      } else {
+        const correctChoice = savedChoices[choiceIndex++];
+        correctAnswers.push({
+          question_id: question.id,
+          answer_choices_id: correctChoice.id
+        });
+      }
+    }
+
+    if (correctAnswers.length > 0) {
+      const { error: answersError } = await supabase
+        .from('answers')
+        .insert(correctAnswers);
+
+      if (answersError) {
+        console.error('Error saving correct answers:', answersError);
+      }
+    }
+
+    // Link TOS template to test
+    await supabase
+      .from('test_tos_templates')
+      .insert({
+        test_id: test.id,
+        tos_template_id: tosTemplateId
+      });
+
+    // Return response
+    res.status(201).json({
+      test: {
+        id: test.id,
+        title: test.title,
+        description: test.description,
+        tosTemplate: tosTemplate.template_name,
+        created_at: test.created_at,
+        questionCount: savedQuestions.length
+      },
+      questions: savedQuestions.length
+    });
+
+  } catch (error) {
+    console.error('Error in generateTestWithTOS:', error);
+    res.status(500).json({ error: 'Failed to generate test with TOS' });
+  }
+}
+
+export { generateTestWithAI, generateTestWithTOS };

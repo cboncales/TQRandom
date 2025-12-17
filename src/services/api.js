@@ -653,6 +653,130 @@ export const aiApi = {
   },
 };
 
+// ============================================
+// TOS (Table of Specifications) ENDPOINTS
+// ============================================
+
+export const tosApi = {
+  /**
+   * Create a new TOS template
+   */
+  async createTOSTemplate(templateData) {
+    return apiRequest('/api/tos/templates', {
+      method: 'POST',
+      body: JSON.stringify(templateData),
+    });
+  },
+
+  /**
+   * Get all TOS templates for the authenticated user
+   */
+  async getUserTOSTemplates() {
+    return apiRequest('/api/tos/templates', {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Get a single TOS template by ID
+   */
+  async getTOSTemplate(id) {
+    return apiRequest(`/api/tos/templates/${id}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Update a TOS template
+   */
+  async updateTOSTemplate(id, templateData) {
+    return apiRequest(`/api/tos/templates/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(templateData),
+    });
+  },
+
+  /**
+   * Delete a TOS template
+   */
+  async deleteTOSTemplate(id) {
+    return apiRequest(`/api/tos/templates/${id}`, {
+      method: 'DELETE',
+    });
+  },
+
+  /**
+   * Link a TOS template to a test
+   */
+  async linkTOSToTest(testId, tosTemplateId) {
+    return apiRequest('/api/tos/link', {
+      method: 'POST',
+      body: JSON.stringify({ testId, tosTemplateId }),
+    });
+  },
+
+  /**
+   * Get TOS template linked to a test
+   */
+  async getTestTOS(testId) {
+    return apiRequest(`/api/tos/test/${testId}`, {
+      method: 'GET',
+    });
+  },
+
+  /**
+   * Generate test using TOS template
+   */
+  async generateTestWithTOS(testTitle, tosTemplateId, topic = null, file = null) {
+    const formData = new FormData();
+    formData.append('testTitle', testTitle);
+    formData.append('tosTemplateId', tosTemplateId);
+    if (topic) {
+      formData.append('topic', topic);
+    }
+    if (file) {
+      formData.append('file', file);
+    }
+
+    const token = getAuthToken();
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/generate-with-tos`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+
+      if (!response.ok) {
+        return {
+          error: data.error || data.message || `HTTP error! status: ${response.status}`,
+          status: response.status,
+        };
+      }
+
+      return { data, status: response.status };
+    } catch (error) {
+      console.error('TOS generation error:', error);
+      return {
+        error: error.message || 'Network error occurred',
+      };
+    }
+  },
+};
+
 export default {
   authApi,
   testApi,
@@ -663,5 +787,6 @@ export default {
   userApi,
   imageApi,
   aiApi,
+  tosApi,
 };
 

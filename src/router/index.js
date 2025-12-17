@@ -48,6 +48,12 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/tos",
+    name: "tos-management",
+    component: () => import("@/views/TOSManagementView.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/learn-more",
     name: "learn-more",
     component: () => import("@/views/LearnMore.vue"),
